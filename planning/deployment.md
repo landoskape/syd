@@ -2,112 +2,116 @@
 
 ## Overview
 
-DataViewer is designed to be accessible to users of all skill levels while maintaining the flexibility needed for advanced use cases. This guide covers the different ways to deploy DataViewer applications and provides implementation guidance for each approach.
+DataViewer is designed to be accessible to users of all skill levels while maintaining the flexibility needed for advanced use cases. This guide covers the different ways to deploy DataViewer applications, with special attention to deployment state management.
 
 ## Core Concepts
 
-Before diving into deployment options, understand that every DataViewer application consists of:
+Every DataViewer application consists of:
 
 1. Parameter definitions (what users can control)
 2. Plot function (how data is visualized)
 3. Deployment method (how users interact with the viewer)
+4. Deployment state (when parameters can be modified)
+
+## Deployment State Management
+
+DataViewer enforces strict rules about when parameters can be modified:
+
+```python
+# Pre-deployment: Can add parameters
+viewer = MyViewer()
+viewer.add_selection("dataset", ["A", "B"])  # ✓ Allowed
+
+# During deployment: Can only update existing parameters
+with viewer._app_deployed():
+    viewer.update_selection("dataset", ["A", "B", "C"])  # ✓ Allowed
+    viewer.add_float("new_param", 0, 1)  # ✗ Raises RuntimeError
+```
 
 ## Deployment Options
 
 ### 1. Jupyter Notebook Integration
 **Difficulty Level: 2/10**
 
-The simplest way to use DataViewer. Perfect for data exploration and prototyping.
-
 ```python
 from dataviewer import ViewerBuilder
 
+# Define parameters before deployment
 viewer = ViewerBuilder()\
     .add_selection("dataset", ["A", "B"])\
     .add_float("threshold", 0, 1)\
     .build()
 
-viewer.run_in_notebook()
+# Run with automatic deployment state management
+viewer.run_in_notebook()  # Handles _app_deployed context
 ```
 
 **Implementation Requirements:**
 - Special notebook renderer class
 - IPython widget integration
-- Automatic display handling
-- Notebook-specific state management
+- Automatic deployment state management
+- Notebook-specific state handling
 
 ### 2. Standalone Python Script
 **Difficulty Level: 3/10**
-
-Good for reproducible analysis and sharing with other Python users.
 
 ```python
 # view_data.py
 from dataviewer import ViewerBuilder
 
-viewer = ViewerBuilder()\
-    .add_selection("dataset", ["A", "B"])\
-    .build()
+class MyViewer(ViewerBuilder):
+    def __init__(self):
+        super().__init__()
+        # Add parameters before deployment
+        self.add_selection("dataset", ["A", "B"])
+        
+        # Register callbacks for parameter updates
+        self.on_change("dataset", self._update_params)
+    
+    def _update_params(self, dataset: str):
+        # Updates happen during deployment
+        if dataset == "A":
+            self.update_float("threshold", 0, 1)
+        else:
+            self.update_float("threshold", 0, 2)
 
 if __name__ == "__main__":
-    viewer.run()
+    viewer = MyViewer()
+    viewer.run()  # Handles deployment state internally
 ```
-
-**Implementation Requirements:**
-- Command line tool for generating templates
-- Project scaffolding utilities
-- Clear entry points
-- Error handling and logging
 
 ### 3. Web Application
 **Difficulty Level: 3/10**
 
-Ideal for sharing with non-technical users or deploying to servers.
-
 ```python
 from dataviewer.web import create_web_app
 
+# Define parameters before deployment
 viewer = ViewerBuilder()\
     .add_selection("dataset", ["A", "B"])\
     .build()
 
 app = create_web_app(viewer)
-app.run()
+app.run()  # Handles deployment state
 ```
-
-**Implementation Requirements:**
-- Web server abstraction layer
-- State management system
-- Security considerations
-- Static asset handling
-- Deployment guides
 
 ### 4. Desktop Application
 **Difficulty Level: 3/10**
 
-Best for standalone tools and offline use.
-
 ```python
 from dataviewer.desktop import create_desktop_app
 
+# Define parameters before deployment
 viewer = ViewerBuilder()\
     .add_selection("dataset", ["A", "B"])\
     .build()
 
 app = create_desktop_app(viewer)
-app.run()
+app.run()  # Handles deployment state
 ```
-
-**Implementation Requirements:**
-- Window management
-- Native OS integration
-- Installation packaging
-- Update mechanism
 
 ### 5. Command Line Interface
 **Difficulty Level: 3/10**
-
-Useful for automation and scripting.
 
 ```python
 from dataviewer.cli import CLI
@@ -116,50 +120,21 @@ viewer = ViewerBuilder()\
     .add_selection("dataset", ["A", "B"])\
     .build()
 
-CLI(viewer).run()
+CLI(viewer).run()  # Handles deployment state
 ```
-
-**Implementation Requirements:**
-- Argument parsing
-- Progress indicators
-- Terminal UI components
-- Shell completion
 
 ## Making Deployment Easy
 
 ### 1. Project Templates
-
-Provide templates for all deployment types:
-
 ```bash
-# Command line tools
+# Command line tools that handle deployment state
 dataviewer create notebook
 dataviewer create script
 dataviewer create webapp
 dataviewer create desktop
 ```
 
-### 2. Consistent Interface
-
-Use same building blocks regardless of deployment:
-
-```python
-# Core viewer definition stays the same
-viewer = ViewerBuilder()\
-    .add_selection("dataset", ["A", "B"])\
-    .build()
-
-# Just change how it's run
-viewer.run_notebook()  # For notebooks
-viewer.run_desktop()   # For desktop
-viewer.run_web()       # For web
-viewer.run_cli()       # For CLI
-```
-
-### 3. Configuration Files
-
-Support YAML configuration for all settings:
-
+### 2. Configuration Files
 ```yaml
 # config.yaml
 viewer:
@@ -169,73 +144,62 @@ viewer:
       options: [A, B]
   
 deployment:
-  type: web  # or notebook, desktop, cli
+  type: web
   settings:
     port: 8080
+    auto_deploy: true  # Automatically handles deployment state
 ```
 
-### 4. Interactive Builder
-
-Provide GUI tool for viewer creation:
+## Error Handling During Deployment
 
 ```python
-from dataviewer.builder import interactive_build
-
-viewer = interactive_build()  # Opens GUI builder
-viewer.save("my_viewer.yaml")  # Save configuration
+class MyViewer(InteractiveViewer):
+    def handle_deployment_errors(self):
+        try:
+            with self._app_deployed():
+                # Parameter updates allowed
+                self.update_float("threshold", 0, 2)
+                
+                # These will raise errors
+                self.add_new_param()  # RuntimeError
+                self.update_wrong_type()  # TypeError
+                self.update_missing()  # ValueError
+        except RuntimeError:
+            # Handle deployment state violations
+            pass
+        except TypeError:
+            # Handle type mismatches
+            pass
+        except ValueError:
+            # Handle missing parameters
+            pass
 ```
 
 ## Implementation Guidelines
 
 ### Core Architecture
-
-1. Separate viewer definition from deployment
+1. Separate parameter definition from deployment
 2. Use dependency injection for platform-specific code
 3. Implement common interface for all deployment types
-4. Build robust state management system
+4. Maintain deployment state consistency
 
 ### Testing Strategy
-
 1. Unit tests for viewer building
 2. Integration tests for each deployment type
 3. End-to-end tests for complete workflows
-4. Performance benchmarks
+4. Deployment state transition tests
+5. Error handling tests
 
-### Documentation Requirements
-
-1. Getting started guides for each deployment
-2. Complete API reference
-3. Example gallery
-4. Troubleshooting guides
-5. Deployment-specific tips
-
-### Error Handling
-
-1. Clear error messages for common issues
-2. Graceful fallbacks when possible
-3. Detailed logging for debugging
-4. User-friendly error displays
-
-## Development Roadmap
-
-1. Phase 1: Core viewer functionality
-2. Phase 2: Notebook and script deployment
-3. Phase 3: Web deployment
-4. Phase 4: Desktop and CLI deployment
-5. Phase 5: Interactive builder and tools
-
-## Security Considerations
-
+### Security Considerations
 1. Data handling and privacy
 2. Web security for server deployment
 3. File system access controls
 4. Network security for remote data
+5. Deployment state validation
 
-## Performance Optimization
-
-1. Caching strategies
-2. Lazy loading
-3. Data streaming
-4. Resource management
-
-Remember: The goal is to make every deployment option accessible to novices while maintaining the power and flexibility needed for advanced users.
+## Development Roadmap
+1. Phase 1: Core viewer functionality and state management
+2. Phase 2: Notebook and script deployment
+3. Phase 3: Web deployment
+4. Phase 4: Desktop and CLI deployment
+5. Phase 5: Interactive builder and tools

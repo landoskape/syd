@@ -2,18 +2,19 @@
 
 ## Design Philosophy
 
-DataViewer provides two approaches for adding parameters to viewers: method-based (primary API) and string-based (advanced API). The method-based approach is recommended for most users.
+InteractiveViewer provides two distinct phases for parameter handling: addition (pre-deployment) and updating (during deployment). This separation ensures parameter consistency while allowing runtime flexibility.
 
-## Method-Based API
+## Parameter Addition API (Pre-deployment)
 
 ### Core Design
 ```python
-viewer = ViewerBuilder()\
-    .add_text("title")\
-    .add_selection("dataset", ["A", "B"])\
-    .add_float("threshold", 0, 1)\
-    .add_range("dates", min="2023-01-01", max="2024-01-01")\
-    .build()
+class MyViewer(InteractiveViewer):
+    def __init__(self):
+        super().__init__()
+        self.add_text("title")
+        self.add_selection("dataset", ["A", "B"])
+        self.add_float("threshold", 0, 1)
+        self.add_boolean("show_grid", default=True)
 ```
 
 ### Available Methods
@@ -21,83 +22,70 @@ viewer = ViewerBuilder()\
 Each parameter type has its own dedicated method:
 
 ```python
-add_text(name: str, default: str = "") -> Builder
-add_selection(name: str, options: List[Any], default: str = None) -> Builder
-add_multiple_selection(name: str, options: List[Any], defaults: List[Any] = None) -> Builder
-add_integer(name: str, min_value: int, max_value: int, step: int = 1) -> Builder
-add_float(name: str, min_value: float, max_value: float, step: float = 0.1) -> Builder
-add_boolean(name: str, default: bool = False) -> Builder
-add_pair(name: str, min_value: Union[int, float], max_value: Union[int, float]) -> Builder
-add_range(name: str, min_value: Union[int, float], max_value: Union[int, float]) -> Builder
+add_text(name: str, default: str = "") -> None
+add_selection(name: str, options: List[Any], default: Any = None) -> None
+add_multiple_selection(name: str, options: List[Any], defaults: List[Any] = None) -> None
+add_integer(name: str, min_value: int, max_value: int, default: int = None) -> None
+add_float(name: str, min_value: float, max_value: float, step: float = 0.1, default: float = None) -> None
+add_boolean(name: str, default: bool = False) -> None
+add_integer_pair(name: str, min_value: int, max_value: int, default_low: int = None, default_high: int = None) -> None
+add_float_pair(name: str, min_value: float, max_value: float, step: float = 0.1, default_low: float = None, default_high: float = None) -> None
 ```
 
-### Advantages
-- Type safety and IDE support
-- Clear parameter validation
-- Discoverable API
-- Less prone to errors
-- Self-documenting
-
-### Disadvantages
-- Less flexible for extensions
-- More implementation code
-- Harder for programmatic generation
-
-## String-Based API (Advanced)
+## Parameter Update API (During Deployment)
 
 ### Core Design
 ```python
-viewer = ViewerBuilder()\
-    .add_parameter("dataset", type="selection", options=["A", "B"])\
-    .add_parameter("threshold", type="float", min=0, max=1)\
-    .build()
+# During deployment
+viewer.update_text("title", default="New Title")
+viewer.update_selection("dataset", ["A", "B", "C"])
+viewer.update_float("threshold", 0, 2)
 ```
 
-### Usage
+### Available Methods
+
+Each parameter type has a corresponding update method with the same signature as its add method:
+
 ```python
-add_parameter(
-    name: str,
-    type: str,
-    **config: Dict[str, Any]
-) -> Builder
+update_text(name: str, default: str = "") -> None
+update_selection(name: str, options: List[Any], default: Any = None) -> None
+update_multiple_selection(name: str, options: List[Any], defaults: List[Any] = None) -> None
+update_integer(name: str, min_value: int, max_value: int, default: int = None) -> None
+update_float(name: str, min_value: float, max_value: float, step: float = 0.1, default: float = None) -> None
+update_boolean(name: str, default: bool = False) -> None
+update_integer_pair(name: str, min_value: int, max_value: int, default_low: int = None, default_high: int = None) -> None
+update_float_pair(name: str, min_value: float, max_value: float, step: float = 0.1, default_low: float = None, default_high: float = None) -> None
 ```
-
-### Advantages
-- More flexible for extensions
-- Easier programmatic generation
-- Better for serialization
-- Supports dynamic parameters
-
-### Disadvantages
-- Less IDE support
-- Runtime type checking only
-- More prone to errors
-- Less discoverable
 
 ## Implementation Strategy
 
-1. Implement method-based API as primary interface
-2. Build string-based API on top of method-based
-3. Share validation logic between both approaches
-
+1. Parameter Registration (Pre-deployment):
 ```python
-class ViewerBuilder:
-    def add_selection(self, name: str, options: List[Any], default: str = None) -> 'ViewerBuilder':
-        """Primary API method for selection parameters."""
-        self._validate_selection_params(name, options, default)
-        return self.add_parameter(name, type="selection", options=options, default=default)
+class MyViewer(InteractiveViewer):
+    def __init__(self):
+        super().__init__()
+        # Add initial parameters
+        self.add_selection("dataset", ["A", "B"])
+        self.add_float("threshold", 0, 1)
+        
+        # Register callbacks
+        self.on_change("dataset", self._update_threshold_range)
+    
+    def _update_threshold_range(self, dataset: str):
+        """Update threshold range based on dataset."""
+        with self._app_deployed():
+            if dataset == "A":
+                self.update_float("threshold", 0, 1)
+            else:
+                self.update_float("threshold", 0, 2)
+```
 
-    def add_parameter(self, name: str, type: str, **config: Dict[str, Any]) -> 'ViewerBuilder':
-        """Advanced API method for flexible parameter addition."""
-        if type not in PARAMETER_TYPES:
-            raise ValueError(f"Unknown parameter type: {type}")
-        # Delegate to appropriate validation method
-        getattr(self, f"_validate_{type}_params")(name, **config)
-        self.parameters[name] = {
-            "type": type,
-            **config
-        }
-        return self
+2. Runtime Updates (During Deployment):
+```python
+viewer = MyViewer()
+with viewer._app_deployed():
+    viewer.update_selection("dataset", ["A", "B", "C"])
+    viewer.update_float("threshold", 0, 3)
 ```
 
 ## Best Practices
@@ -105,66 +93,66 @@ class ViewerBuilder:
 1. Parameter Naming:
 ```python
 # Good
-.add_selection("dataset", ["A", "B"])
-.add_float("threshold", 0, 1)
+viewer.add_selection("dataset", ["A", "B"])
+viewer.add_float("threshold", 0, 1)
 
 # Avoid
-.add_selection("d", ["A", "B"])  # Too short
-.add_float("my_very_long_parameter_name", 0, 1)  # Too long
+viewer.add_selection("d", ["A", "B"])  # Too short
+viewer.add_float("my_very_long_parameter_name", 0, 1)  # Too long
 ```
 
 2. Default Values:
 ```python
 # Good - sensible defaults
-.add_integer("bins", 1, 100, default=10)
-.add_boolean("show_grid", default=True)
+viewer.add_integer("bins", 1, 100, default=10)
+viewer.add_boolean("show_grid", default=True)
 
 # Avoid - unclear defaults
-.add_integer("bins", 1, 100)  # No default
-.add_selection("color", ["red", "blue"], default="chartreuse")  # Unexpected default
+viewer.add_integer("bins", 1, 100)  # No default
+viewer.add_selection("color", ["red", "blue"], default="chartreuse")  # Unexpected default
 ```
 
 3. Value Ranges:
 ```python
 # Good - logical ranges
-.add_float("opacity", 0, 1)
-.add_integer("age", 0, 150)
+viewer.add_float("opacity", 0, 1)
+viewer.add_integer("age", 0, 150)
 
 # Avoid - arbitrary ranges
-.add_float("opacity", -1000, 1000)
-.add_integer("age", -100, 1000)
+viewer.add_float("opacity", -1000, 1000)
+viewer.add_integer("age", -100, 1000)
 ```
 
 ## Error Handling
 
-Provide clear error messages for common issues:
+The system provides clear error messages for common issues:
 
 ```python
-def add_selection(self, name: str, options: List[Any], default: str = None):
-    if not options:
-        raise ValueError(f"Parameter '{name}': Options list cannot be empty")
-    if default and default not in options:
-        raise ValueError(f"Parameter '{name}': Default value '{default}' not in options")
-    # ... rest of implementation
+# Adding parameter during deployment
+with viewer._app_deployed():
+    viewer.add_float("new_param", 0, 1)  # Raises RuntimeError
+
+# Updating non-existent parameter
+viewer.update_float("unknown", 0, 1)  # Raises ValueError
+
+# Updating with wrong type
+viewer.update_integer("float_param", 0, 1)  # Raises TypeError
 ```
 
 ## Type Hints
 
-Use comprehensive type hints for better IDE support:
+Method signatures include comprehensive type hints:
 
 ```python
 from typing import List, Union, TypeVar, Optional
 
-T = TypeVar('T', bound='ViewerBuilder')
-
-class ViewerBuilder:
-    def add_selection(
-        self: T,
-        name: str,
-        options: List[Any],
-        default: Optional[str] = None
-    ) -> T:
-        ...
+def add_selection(
+    self,
+    name: str,
+    options: List[Any],
+    default: Optional[Any] = None
+) -> None:
+    ...
 ```
 
-This design balances ease of use with flexibility, making the API accessible to newcomers while supporting advanced use cases.
+This design maintains consistency while providing flexibility for runtime updates, with clear separation between parameter addition and update operations.
