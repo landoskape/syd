@@ -62,7 +62,7 @@ def validate_parameter_operation(operation: str, parameter_type: ParameterType) 
 
 
 class InteractiveViewer:
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
         instance.parameters = {}
         instance.callbacks = {}

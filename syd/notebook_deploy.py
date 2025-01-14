@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 import matplotlib.pyplot as plt
 import ipywidgets as widgets
 from IPython.display import display
@@ -22,7 +22,7 @@ class NotebookDeployment:
     Includes enhanced layout control and figure size management.
     """
 
-    def __init__(self, viewer: InteractiveViewer):
+    def __init__(self, viewer: InteractiveViewer, figsize: Tuple[float, float] = (8, 6), controls_width: float = 30, continuous=False):
         """Initialize with an InteractiveViewer instance."""
         self.viewer = viewer
         self.widgets: Dict[str, widgets.Widget] = {}
@@ -30,8 +30,10 @@ class NotebookDeployment:
         self._current_figure = None
 
         # Default figure size
-        self.fig_width = 8
-        self.fig_height = 6
+        self.fig_width = figsize[0]
+        self.fig_height = figsize[1]
+        self.controls_width = controls_width
+        self.continuous = continuous
 
     def _create_text_widget(self, param: TextParameter) -> widgets.Text:
         """Create a text input widget."""
@@ -72,6 +74,7 @@ class NotebookDeployment:
             min=param.min_value,
             max=param.max_value,
             description=param.name,
+            continuous_update=self.continuous,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
@@ -85,6 +88,7 @@ class NotebookDeployment:
             max=param.max_value,
             step=param.step,
             description=param.name,
+            continuous_update=self.continuous,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
@@ -149,6 +153,7 @@ class NotebookDeployment:
             max=20,
             step=0.5,
             description="Figure Width",
+            continuous_update=True,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
@@ -159,6 +164,7 @@ class NotebookDeployment:
             max=15,
             step=0.5,
             description="Figure Height",
+            continuous_update=True,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
@@ -168,6 +174,7 @@ class NotebookDeployment:
             min=20,
             max=80,
             description="Controls Width %",
+            continuous_update=True,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
