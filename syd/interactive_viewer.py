@@ -76,7 +76,7 @@ class InteractiveViewer:
         self.state = {}
         self._app_deployed = False
 
-    def param_dict(self) -> Dict[str, Any]:
+    def get_state(self) -> Dict[str, Any]:
         return {name: param.value for name, param in self.parameters.items()}
 
     def plot(self, **kwargs) -> Figure:
@@ -94,8 +94,9 @@ class InteractiveViewer:
     def perform_callbacks(self, name: str) -> bool:
         """Perform callbacks for all parameters that have changed"""
         if name in self.callbacks:
+            state = self.get_state()
             for callback in self.callbacks[name]:
-                callback(self.parameters[name].value)
+                callback(state)
 
     def on_change(self, parameter_name: str, callback: Callable):
         """Register a function to be called when a parameter changes."""

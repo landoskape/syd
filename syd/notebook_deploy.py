@@ -220,7 +220,7 @@ class NotebookDeployment:
         """Update the plot with current parameters and size."""
         self._current_fig.clear()
         self._current_fig.set_size_inches(self.fig_width, self.fig_height)
-        self._current_fig = self.viewer.plot(fig=self._current_fig, state=self.viewer.param_dict())
+        self._current_fig = self.viewer.plot(fig=self._current_fig, state=self.viewer.get_state())
 
         # Apply tight layout to remove dead space
         self._current_fig.tight_layout()
@@ -266,7 +266,7 @@ class NotebookDeployment:
         # Create initial plot
         self._current_fig = plt.figure(figsize=(self.fig_width, self.fig_height))
         plt.close(self._current_fig)  # close the figure to prevent it from being displayed
-        self._current_fig = self.viewer.plot(fig=self._current_fig, state=self.viewer.param_dict())
+        self._current_fig = self.viewer.plot(fig=self._current_fig, state=self.viewer.get_state())
         with self.plot_output:
             display(self._current_fig)
 

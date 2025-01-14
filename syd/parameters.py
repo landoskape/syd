@@ -182,7 +182,7 @@ class PairParameter(Parameter[Tuple[T, T]], ABC):
         raise NotImplementedError("Need to define in subclass for proper IDE support")
 
     @abstractmethod
-    def _validate_value(self, value: Any) -> T:
+    def _validate(self, value: Any) -> T:
         raise NotImplementedError
 
 
