@@ -97,13 +97,13 @@ class NotebookDeployment:
     def _create_integer_pair_widget(self, param: IntegerPairParameter) -> widgets.HBox:
         """Create a pair of integer input widgets."""
         low = widgets.IntText(
-            value=param.default_low if param.default_low is not None else param.min_value,
+            value=param.default[0],
             description=f"{param.name} (low)",
             layout=widgets.Layout(width="47%"),
             style={"description_width": "initial"},
         )
         high = widgets.IntText(
-            value=param.default_high if param.default_high is not None else param.max_value,
+            value=param.default[1],
             description=f"{param.name} (high)",
             layout=widgets.Layout(width="47%"),
             style={"description_width": "initial"},
@@ -113,13 +113,13 @@ class NotebookDeployment:
     def _create_float_pair_widget(self, param: FloatPairParameter) -> widgets.HBox:
         """Create a pair of float input widgets."""
         low = widgets.FloatText(
-            value=param.default_low if param.default_low is not None else param.min_value,
+            value=param.default[0],
             description=f"{param.name} (low)",
             layout=widgets.Layout(width="47%"),
             style={"description_width": "initial"},
         )
         high = widgets.FloatText(
-            value=param.default_high if param.default_high is not None else param.max_value,
+            value=param.default[1],
             description=f"{param.name} (high)",
             layout=widgets.Layout(width="47%"),
             style={"description_width": "initial"},
