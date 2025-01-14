@@ -7,8 +7,15 @@ T = TypeVar("T")
 
 @dataclass
 class Parameter(Generic[T]):
+    """Abstract base class for parameters that should not be instantiated directly."""
+
+    def __new__(cls, *args, **kwargs):
+        if cls is Parameter:
+            raise TypeError("Cannot instantiate abstract Parameter class directly")
+        return super().__new__(cls)
+
     name: str
-    default: T = None
+    default: T
 
     def __post_init__(self):
         self._value = self.default
@@ -33,9 +40,15 @@ class TextParameter(Parameter[str]):
         return str(new_value)
 
 
-@dataclass
+@dataclass(init=False)
 class SingleSelectionParameter(Parameter[Any]):
     options: List[Any]
+
+    def __init__(self, name: str, options: List[Any], default: Any = None):
+        if default is None and options:
+            default = options[0]
+        super().__init__(name=name, default=default)
+        self.options = options
 
     def _validate(self, new_value: Any) -> Any:
         if new_value not in self.options:
@@ -43,13 +56,13 @@ class SingleSelectionParameter(Parameter[Any]):
         return new_value
 
 
-@dataclass
+@dataclass(init=False)
 class MultipleSelectionParameter(Parameter[List[Any]]):
     options: List[Any]
-    default: List[Any] = None
 
-    def __post_init__(self):
-        self._value = self.default or []
+    def __init__(self, name: str, options: List[Any], default: List[Any] = None):
+        super().__init__(name=name, default=default or [])
+        self.options = options
 
     def _validate(self, new_value: List[Any]) -> List[Any]:
         if not isinstance(new_value, (list, tuple)):

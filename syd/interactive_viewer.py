@@ -76,11 +76,14 @@ class InteractiveViewer:
         self.state = {}
         self._app_deployed = False
 
+    def param_dict(self) -> Dict[str, Any]:
+        return {name: param.value for name, param in self.parameters.items()}
+
     def plot(self, **kwargs) -> Figure:
         raise NotImplementedError("Subclasses must implement the plot method")
 
     @contextmanager
-    def _app_deployed(self):
+    def deploy_app(self):
         """Internal context manager to control app deployment state"""
         self._app_deployed = True
         try:
@@ -116,27 +119,27 @@ class InteractiveViewer:
     # -------------------- parameter registration methods --------------------
     @validate_parameter_operation("add", ParameterType.text)
     def add_text(self, name: str, default: str = "") -> None:
-        self.parameters[name] = ParameterType.text(name, default)
+        self.parameters[name] = ParameterType.text.value(name, default)
 
     @validate_parameter_operation("add", ParameterType.selection)
     def add_selection(self, name: str, options: List[Any], default: str = None) -> None:
-        self.parameters[name] = ParameterType.selection(name, options, default)
+        self.parameters[name] = ParameterType.selection.value(name, options, default)
 
     @validate_parameter_operation("add", ParameterType.multiple_selection)
     def add_multiple_selection(self, name: str, options: List[Any], defaults: List[Any] = None) -> None:
-        self.parameters[name] = ParameterType.multiple_selection(name, options, defaults)
+        self.parameters[name] = ParameterType.multiple_selection.value(name, options, defaults)
 
     @validate_parameter_operation("add", ParameterType.boolean)
     def add_boolean(self, name: str, default: bool = False) -> None:
-        self.parameters[name] = ParameterType.boolean(name, default)
+        self.parameters[name] = ParameterType.boolean.value(name, default)
 
     @validate_parameter_operation("add", ParameterType.integer)
     def add_integer(self, name: str, min_value: int, max_value: int, default: int = None) -> None:
-        self.parameters[name] = ParameterType.integer(name, min_value, max_value, default)
+        self.parameters[name] = ParameterType.integer.value(name, min_value, max_value, default)
 
     @validate_parameter_operation("add", ParameterType.float)
     def add_float(self, name: str, min_value: float, max_value: float, step: float = 0.1, default: float = None) -> None:
-        self.parameters[name] = ParameterType.float(name, min_value, max_value, step, default)
+        self.parameters[name] = ParameterType.float.value(name, min_value, max_value, step, default)
 
     @validate_parameter_operation("add", ParameterType.integer_pair)
     def add_integer_pair(
@@ -147,7 +150,7 @@ class InteractiveViewer:
         default_low: int = None,
         default_high: int = None,
     ) -> None:
-        self.parameters[name] = ParameterType.integer_pair(name, min_value, max_value, default_low, default_high)
+        self.parameters[name] = ParameterType.integer_pair.value(name, min_value, max_value, default_low, default_high)
 
     @validate_parameter_operation("add", ParameterType.float_pair)
     def add_float_pair(
@@ -159,32 +162,32 @@ class InteractiveViewer:
         default_low: float = None,
         default_high: float = None,
     ) -> None:
-        self.parameters[name] = ParameterType.float_pair(name, min_value, max_value, step, default_low, default_high)
+        self.parameters[name] = ParameterType.float_pair.value(name, min_value, max_value, step, default_low, default_high)
 
     # -------------------- parameter update methods --------------------
     @validate_parameter_operation("update", ParameterType.text)
     def update_text(self, name: str, default: str = "") -> None:
-        self.parameters[name] = ParameterType.text(name, default)
+        self.parameters[name] = ParameterType.text.value(name, default)
 
     @validate_parameter_operation("update", ParameterType.selection)
     def update_selection(self, name: str, options: List[Any], default: str = None) -> None:
-        self.parameters[name] = ParameterType.selection(name, options, default)
+        self.parameters[name] = ParameterType.selection.value(name, options, default)
 
     @validate_parameter_operation("update", ParameterType.multiple_selection)
     def update_multiple_selection(self, name: str, options: List[Any], defaults: List[Any] = None) -> None:
-        self.parameters[name] = ParameterType.multiple_selection(name, options, defaults)
+        self.parameters[name] = ParameterType.multiple_selection.value(name, options, defaults)
 
     @validate_parameter_operation("update", ParameterType.boolean)
     def update_boolean(self, name: str, default: bool = False) -> None:
-        self.parameters[name] = ParameterType.boolean(name, default)
+        self.parameters[name] = ParameterType.boolean.value(name, default)
 
     @validate_parameter_operation("update", ParameterType.integer)
     def update_integer(self, name: str, min_value: int, max_value: int, default: int = None) -> None:
-        self.parameters[name] = ParameterType.integer(name, min_value, max_value, default)
+        self.parameters[name] = ParameterType.integer.value(name, min_value, max_value, default)
 
     @validate_parameter_operation("update", ParameterType.float)
     def update_float(self, name: str, min_value: float, max_value: float, step: float = 0.1, default: float = None) -> None:
-        self.parameters[name] = ParameterType.float(name, min_value, max_value, step, default)
+        self.parameters[name] = ParameterType.float.value(name, min_value, max_value, step, default)
 
     @validate_parameter_operation("update", ParameterType.integer_pair)
     def update_integer_pair(
@@ -195,7 +198,7 @@ class InteractiveViewer:
         default_low: int = None,
         default_high: int = None,
     ) -> None:
-        self.parameters[name] = ParameterType.integer_pair(name, min_value, max_value, default_low, default_high)
+        self.parameters[name] = ParameterType.integer_pair.value(name, min_value, max_value, default_low, default_high)
 
     @validate_parameter_operation("update", ParameterType.float_pair)
     def update_float_pair(
@@ -207,4 +210,4 @@ class InteractiveViewer:
         default_low: float = None,
         default_high: float = None,
     ) -> None:
-        self.parameters[name] = ParameterType.float_pair(name, min_value, max_value, step, default_low, default_high)
+        self.parameters[name] = ParameterType.float_pair.value(name, min_value, max_value, step, default_low, default_high)
