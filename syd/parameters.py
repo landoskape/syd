@@ -12,6 +12,7 @@ class Parameter(Generic[T], ABC):
     """Abstract base class for parameters that should not be instantiated directly."""
 
     name: str
+    default: T
 
     @abstractmethod
     def __init__(self, name: str, default: T):
@@ -107,16 +108,15 @@ class NumericParameter(Parameter[T], ABC):
 
 @dataclass(init=False)
 class IntegerParameter(NumericParameter[int]):
-    def __init__(self, name: str, min_value: int = None, max_value: int = None, default: int = 0):
+    def __init__(self, name: str, min_value, max_value, default: int = 0):
         self.name = name
         try:
             self.min_value = int(min_value)
             self.max_value = int(max_value)
         except TypeError as e:
             raise TypeError(f"Cannot convert {min_value} and {max_value} to integer") from e
-        if self.min_value is not None and self.max_value is not None:
-            if self.min_value > self.max_value:
-                raise ValueError(f"Minimum value {self.min_value} is greater than maximum value {self.max_value}")
+        if self.min_value > self.max_value:
+            raise ValueError(f"Minimum value {self.min_value} is greater than maximum value {self.max_value}")
         valid_default = self._validate(default)
         if valid_default != default:
             warn(f"Default value {default} is not in the range [{self.min_value}, {self.max_value}]. Clamping to {valid_default}.")
@@ -129,10 +129,8 @@ class IntegerParameter(NumericParameter[int]):
         except (TypeError, ValueError):
             raise TypeError(f"Cannot convert {new_value} to integer")
 
-        if self.min_value is not None:
-            value = max(self.min_value, value)
-        if self.max_value is not None:
-            value = min(self.max_value, value)
+        value = max(self.min_value, value)
+        value = min(self.max_value, value)
         return value
 
 
@@ -140,7 +138,7 @@ class IntegerParameter(NumericParameter[int]):
 class FloatParameter(NumericParameter[float]):
     step: float
 
-    def __init__(self, name: str, min_value: float = None, max_value: float = None, default: float = 0.0, step: float = 0.1):
+    def __init__(self, name: str, min_value: float, max_value: float, default: float = 0.0, step: float = 0.1):
         self.name = name
         self.default = default
         try:
@@ -148,9 +146,8 @@ class FloatParameter(NumericParameter[float]):
             self.max_value = float(max_value)
         except TypeError as e:
             raise TypeError(f"Cannot convert {min_value} and {max_value} to float") from e
-        if self.min_value is not None and self.max_value is not None:
-            if self.min_value > self.max_value:
-                raise ValueError(f"Minimum value {self.min_value} is greater than maximum value {self.max_value}")
+        if self.min_value > self.max_value:
+            raise ValueError(f"Minimum value {self.min_value} is greater than maximum value {self.max_value}")
         self.step = step
         valid_default = self._validate(default)
         if valid_default != default:
@@ -164,10 +161,8 @@ class FloatParameter(NumericParameter[float]):
         except (TypeError, ValueError):
             raise TypeError(f"Cannot convert {new_value} to float")
 
-        if self.min_value is not None:
-            value = max(self.min_value, value)
-        if self.max_value is not None:
-            value = min(self.max_value, value)
+        value = max(self.min_value, value)
+        value = min(self.max_value, value)
         return value
 
 
@@ -188,16 +183,15 @@ class PairParameter(Parameter[Tuple[T, T]], ABC):
 
 @dataclass(init=False)
 class IntegerPairParameter(PairParameter[int]):
-    def __init__(self, name: str, default: Tuple[int, int], min_value: int = None, max_value: int = None):
+    def __init__(self, name: str, default: Tuple[int, int], min_value: int, max_value: int):
         self.name = name
         try:
             self.min_value = int(min_value)
             self.max_value = int(max_value)
         except TypeError as e:
             raise TypeError(f"Cannot convert {min_value} and {max_value} to integer") from e
-        if self.min_value is not None and self.max_value is not None:
-            if self.min_value > self.max_value:
-                raise ValueError(f"Minimum value {self.min_value} is greater than maximum value {self.max_value}")
+        if self.min_value > self.max_value:
+            raise ValueError(f"Minimum value {self.min_value} is greater than maximum value {self.max_value}")
         valid_default = self._validate(default)
         if valid_default != default:
             warn(f"Default value {default} is not in the range [{self.min_value}, {self.max_value}]. Clamping to {valid_default}.")
@@ -210,10 +204,8 @@ class IntegerPairParameter(PairParameter[int]):
         except (TypeError, ValueError):
             raise TypeError(f"Cannot convert {new_value} to integer pair")
 
-        if self.min_value is not None:
-            values = (max(self.min_value, values[0]), max(self.min_value, values[1]))
-        if self.max_value is not None:
-            values = (min(self.max_value, values[0]), min(self.max_value, values[1]))
+        values = (max(self.min_value, values[0]), max(self.min_value, values[1]))
+        values = (min(self.max_value, values[0]), min(self.max_value, values[1]))
         return values
 
 
@@ -235,9 +227,8 @@ class FloatPairParameter(PairParameter[float]):
             self.max_value = float(max_value)
         except TypeError as e:
             raise TypeError(f"Cannot convert {min_value} and {max_value} to float") from e
-        if self.min_value is not None and self.max_value is not None:
-            if self.min_value > self.max_value:
-                raise ValueError(f"Minimum value {self.min_value} is greater than maximum value {self.max_value}")
+        if self.min_value > self.max_value:
+            raise ValueError(f"Minimum value {self.min_value} is greater than maximum value {self.max_value}")
         valid_default = self._validate(default)
         if valid_default != default:
             warn(f"Default value {default} is not in the range [{self.min_value}, {self.max_value}]. Clamping to {valid_default}.")
@@ -251,10 +242,8 @@ class FloatPairParameter(PairParameter[float]):
         except (TypeError, ValueError):
             raise TypeError(f"Cannot convert {new_value} to float pair")
 
-        if self.min_value is not None:
-            values = (max(self.min_value, values[0]), max(self.min_value, values[1]))
-        if self.max_value is not None:
-            values = (min(self.max_value, values[0]), min(self.max_value, values[1]))
+        values = (max(self.min_value, values[0]), max(self.min_value, values[1]))
+        values = (min(self.max_value, values[0]), min(self.max_value, values[1]))
         return values
 
 
