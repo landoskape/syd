@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union, Tuple, Protocol
-from dataclasses import dataclass
+from typing import Any, Dict, Generic, List, TypeVar, Union, Tuple, Protocol, Callable
 import ipywidgets as widgets
-from traitlets import Any as TraitAny
-from traitlets import Bool, Float, Int, List as TraitList, Unicode
 from typing_extensions import TypeVar
 
 from ..parameters import (
@@ -32,119 +29,134 @@ class BaseParameterWidget(Generic[T, W], ABC):
     """
 
     _widget: W
-    parameter: T
+    _callbacks: List[Dict[str, Union[Callable, Union[str, List[str]]]]]
 
     def __init__(self, parameter: T):
-        self.parameter = parameter
-        self._widget = self._create_widget()
+        self._widget = self._create_widget(parameter)
         self._updating = False  # Flag to prevent circular updates
-        self._setup_observers()
+        self._callbacks = []  # List of callbacks to remember here for quick disabling / reenabling
 
     @abstractmethod
-    def _create_widget(self) -> W:
+    def _create_widget(self, parameter: T) -> W:
         """Create and return the appropriate ipywidget."""
         pass
-
-    def _setup_observers(self) -> None:
-        """Set up two-way binding between parameter and widget."""
-        # Observe widget changes
-        self._widget.observe(self._handle_widget_change, names=["value"])
-
-    def _handle_widget_change(self, change: Dict[str, Any]) -> None:
-        """Handle changes to the widget value."""
-        if self._updating:
-            return
-
-        try:
-            self._updating = True
-            new_value = change["new"]
-            self.parameter.value = new_value
-        finally:
-            self._updating = False
-
-    def update_from_parameter(self) -> None:
-        """Update widget state to match parameter."""
-        if self._updating:
-            return
-
-        try:
-            self._updating = True
-            self._widget.value = self.parameter.value
-        finally:
-            self._updating = False
 
     @property
     def widget(self) -> W:
         """Get the underlying ipywidget."""
         return self._widget
 
+    @property
+    def value(self) -> Any:
+        """Get the current value of the widget."""
+        return self._widget.value
+
+    @value.setter
+    def value(self, new_value: Any) -> None:
+        """Set the value of the widget."""
+        self._widget.value = new_value
+
+    def matches_parameter(self, parameter: T) -> bool:
+        """Check if the widget matches the parameter."""
+        return self.value == parameter.value
+
+    def update_from_parameter(self, parameter: T) -> None:
+        """Update the widget from the parameter."""
+        try:
+            self._updating = True
+            self.disable_callbacks()
+            self.value = parameter.value
+            self.extra_updates_from_parameter(parameter)
+        finally:
+            self.reenable_callbacks()
+            self._updating = False
+
+    def extra_updates_from_parameter(self, parameter: T) -> None:
+        """Extra updates from the parameter."""
+        pass
+
+    def observe(self, callback: Callable) -> None:
+        """Observe the widget and call the callback when the value changes."""
+        full_callback = dict(handler=callback, names="value")
+        self._widget.observe(**full_callback)
+        self._callbacks.append(full_callback)
+
+    def unobserve(self, callback: Callable[[Any], None]) -> None:
+        """Unobserve the widget and stop calling the callback when the value changes."""
+        full_callback = dict(handler=callback, names="value")
+        self._widget.unobserve(**full_callback)
+        self._callbacks.remove(full_callback)
+
+    def reenable_callbacks(self) -> None:
+        """Reenable all callbacks from the widget."""
+        for callback in self._callbacks:
+            self._widget.observe(**callback)
+
+    def disable_callbacks(self) -> None:
+        """Disable all callbacks from the widget."""
+        for callback in self._callbacks:
+            self._widget.unobserve(**callback)
+
 
 class TextParameterWidget(BaseParameterWidget[TextParameter, widgets.Text]):
     """Widget for text parameters."""
 
-    def _create_widget(self) -> widgets.Text:
-        return widgets.Text(value=self.parameter.value, description=self.parameter.name, continuous_update=False)
+    def _create_widget(self, parameter: TextParameter) -> widgets.Text:
+        return widgets.Text(value=parameter.value, description=parameter.name, continuous_update=False)
 
 
 class SingleSelectionParameterWidget(BaseParameterWidget[SingleSelectionParameter, widgets.Dropdown]):
     """Widget for single selection parameters."""
 
-    def _create_widget(self) -> widgets.Dropdown:
-        param = self.parameter
-        assert isinstance(param, SingleSelectionParameter)
+    def _create_widget(self, parameter: SingleSelectionParameter) -> widgets.Dropdown:
+        return widgets.Dropdown(value=parameter.value, options=parameter.options, description=parameter.name)
 
-        return widgets.Dropdown(value=param.value, options=param.options, description=param.name)
+    def matches_parameter(self, parameter: SingleSelectionParameter) -> bool:
+        """Check if the widget matches the parameter."""
+        value_correct = self.value == parameter.value
+        options_correct = self._widget.options == parameter.options
+        return value_correct and options_correct
 
-    def update_options(self, new_options: List[Any]) -> None:
-        """Update the available options in the dropdown."""
-        if self._updating:
-            return
-
-        try:
-            self._updating = True
-            current_value = self._widget.value
-            self._widget.options = new_options
-
-            # Try to maintain current value if it's still valid
-            if current_value in new_options:
-                self._widget.value = current_value
-            else:
-                self._widget.value = new_options[0]
-        finally:
-            self._updating = False
+    def extra_updates_from_parameter(self, parameter: SingleSelectionParameter) -> None:
+        """Extra updates from the parameter."""
+        new_options = parameter.options
+        current_value = self._widget.value
+        new_value = current_value if current_value in new_options else new_options[0]
+        self._widget.options = new_options
+        self._widget.value = new_value
 
 
 class MultipleSelectionParameterWidget(BaseParameterWidget[MultipleSelectionParameter, widgets.SelectMultiple]):
     """Widget for multiple selection parameters."""
 
-    def _create_widget(self) -> widgets.SelectMultiple:
-        param = self.parameter
-        assert isinstance(param, MultipleSelectionParameter)
+    def _create_widget(self, parameter: MultipleSelectionParameter) -> widgets.SelectMultiple:
+        return widgets.SelectMultiple(
+            value=parameter.value,
+            options=parameter.options,
+            description=parameter.name,
+            rows=min(len(parameter.options), 4),
+        )
 
-        return widgets.SelectMultiple(value=param.value, options=param.options, description=param.name, rows=min(len(param.options), 5))
+    def matches_parameter(self, parameter: MultipleSelectionParameter) -> bool:
+        """Check if the widget matches the parameter."""
+        value_correct = self.value == parameter.value
+        options_correct = self._widget.options == parameter.options
+        return value_correct and options_correct
 
-    def update_options(self, new_options: List[Any]) -> None:
-        """Update the available options in the selection widget."""
-        if self._updating:
-            return
-
-        try:
-            self._updating = True
-            current_values = set(self._widget.value)
-            self._widget.options = new_options
-
-            # Maintain valid current selections
-            new_values = [v for v in current_values if v in new_options]
-            self._widget.value = new_values
-        finally:
-            self._updating = False
+    def extra_updates_from_parameter(self, parameter: MultipleSelectionParameter) -> None:
+        """Extra updates from the parameter."""
+        new_options = parameter.options
+        current_values = set(self._widget.value)
+        new_values = [v for v in current_values if v in new_options]
+        self._widget.options = new_options
+        self._widget.value = new_values
 
 
 class BooleanParameterWidget(BaseParameterWidget[BooleanParameter, widgets.Checkbox]):
     """Widget for boolean parameters."""
 
-    def _create_widget(self) -> widgets.Checkbox:
-        return widgets.Checkbox(value=self.parameter.value, description=self.parameter.name)
+    def _create_widget(self, parameter: BooleanParameter) -> widgets.Checkbox:
+        return widgets.Checkbox(value=parameter.value, description=parameter.name)
 
 
 class NumericWidget(Protocol):
@@ -159,79 +171,94 @@ N = TypeVar("N", bound=NumericParameter[Any])
 NW = TypeVar("NW", bound=NumericWidget)
 
 
-class NumericParameterWidgetMixin(BaseParameterWidget[N, NW]):
+class NumericParameterWidgetMixin(Generic[N, NW]):
     """Mixin class for numeric parameter widgets."""
 
-    def update_bounds(self, min_value: Union[int, float], max_value: Union[int, float]) -> None:
-        """Update slider bounds while preserving value if possible."""
-        if self._updating:
-            return
+    def matches_parameter(self, parameter: N) -> bool:
+        """Check if the widget matches the parameter."""
+        value_correct = self.value == parameter.value
+        min_correct = self._widget.min == parameter.min_value
+        max_correct = self._widget.max == parameter.max_value
+        return value_correct and min_correct and max_correct
 
-        try:
-            self._updating = True
-            current_value = self._widget.value
-            self._widget.min = min_value
-            self._widget.max = max_value
+    def extra_updates_from_parameter(self, parameter: N) -> None:
+        """Extra updates from the parameter."""
+        current_value = self._widget.value
+        self._widget.min = parameter.min_value
+        self._widget.max = parameter.max_value
 
-            # Clamp current value to new bounds
-            self._widget.value = max(min_value, min(max_value, current_value))
-        finally:
-            self._updating = False
+        # Clamp current value to new bounds
+        self.value = max(parameter.min_value, min(parameter.max_value, current_value))
 
 
-class IntegerParameterWidget(BaseParameterWidget[IntegerParameter, widgets.IntSlider], NumericParameterWidgetMixin[widgets.IntSlider]):
+class IntegerParameterWidget(
+    BaseParameterWidget[IntegerParameter, widgets.IntSlider],
+    NumericParameterWidgetMixin[IntegerParameter, widgets.IntSlider],
+):
     """Widget for integer parameters."""
 
-    def _create_widget(self) -> widgets.IntSlider:
-        param = self.parameter
-        assert isinstance(param, IntegerParameter)
-
-        return widgets.IntSlider(value=param.value, min=param.min_value, max=param.max_value, description=param.name, continuous_update=False)
-
-
-class FloatParameterWidget(BaseParameterWidget[FloatParameter, widgets.FloatSlider], NumericParameterWidgetMixin[widgets.FloatSlider]):
-    """Widget for float parameters."""
-
-    def _create_widget(self) -> widgets.FloatSlider:
-        param = self.parameter
-        assert isinstance(param, FloatParameter)
-
-        return widgets.FloatSlider(
-            value=param.value, min=param.min_value, max=param.max_value, step=param.step, description=param.name, continuous_update=False
-        )
-
-
-class IntegerPairParameterWidget(BaseParameterWidget[Tuple[int, int], widgets.IntRangeSlider]):
-    """Widget for integer pair parameters using IntRangeSlider."""
-
-    def _create_widget(self) -> widgets.IntRangeSlider:
-        param = self.parameter
-        assert isinstance(param, IntegerPairParameter)
-
-        return widgets.IntRangeSlider(
-            value=param.value,
-            min=param.min_value,
-            max=param.max_value,
-            description=param.name,
+    def _create_widget(self, parameter: IntegerParameter) -> widgets.IntSlider:
+        return widgets.IntSlider(
+            value=parameter.value,
+            min=parameter.min_value,
+            max=parameter.max_value,
+            description=parameter.name,
             continuous_update=False,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
 
 
-class FloatPairParameterWidget(BaseParameterWidget[Tuple[float, float], widgets.FloatRangeSlider]):
+class FloatParameterWidget(
+    BaseParameterWidget[FloatParameter, widgets.FloatSlider],
+    NumericParameterWidgetMixin[FloatParameter, widgets.FloatSlider],
+):
+    """Widget for float parameters."""
+
+    def _create_widget(self, parameter: FloatParameter) -> widgets.FloatSlider:
+        return widgets.FloatSlider(
+            value=parameter.value,
+            min=parameter.min_value,
+            max=parameter.max_value,
+            step=parameter.step,
+            description=parameter.name,
+            continuous_update=False,
+            layout=widgets.Layout(width="95%"),
+            style={"description_width": "initial"},
+        )
+
+
+class IntegerPairParameterWidget(
+    BaseParameterWidget[IntegerPairParameter, widgets.IntRangeSlider],
+    NumericParameterWidgetMixin[IntegerPairParameter, widgets.IntRangeSlider],
+):
+    """Widget for integer pair parameters using IntRangeSlider."""
+
+    def _create_widget(self, parameter: IntegerPairParameter) -> widgets.IntRangeSlider:
+        return widgets.IntRangeSlider(
+            value=parameter.value,
+            min=parameter.min_value,
+            max=parameter.max_value,
+            description=parameter.name,
+            continuous_update=False,
+            layout=widgets.Layout(width="95%"),
+            style={"description_width": "initial"},
+        )
+
+
+class FloatPairParameterWidget(
+    BaseParameterWidget[FloatPairParameter, widgets.FloatRangeSlider],
+    NumericParameterWidgetMixin[FloatPairParameter, widgets.FloatRangeSlider],
+):
     """Widget for float pair parameters using FloatRangeSlider."""
 
-    def _create_widget(self) -> widgets.FloatRangeSlider:
-        param = self.parameter
-        assert isinstance(param, FloatPairParameter)
-
+    def _create_widget(self, parameter: FloatPairParameter) -> widgets.FloatRangeSlider:
         return widgets.FloatRangeSlider(
-            value=param.value,
-            min=param.min_value,
-            max=param.max_value,
-            step=param.step,
-            description=param.name,
+            value=parameter.value,
+            min=parameter.min_value,
+            max=parameter.max_value,
+            step=parameter.step,
+            description=parameter.name,
             continuous_update=False,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
@@ -239,7 +266,7 @@ class FloatPairParameterWidget(BaseParameterWidget[Tuple[float, float], widgets.
 
 
 # Factory function to create the appropriate widget for a parameter
-def create_parameter_widget(parameter: Parameter[Any]) -> BaseParameterWidget[Any]:
+def create_parameter_widget(parameter: Parameter[Any]) -> BaseParameterWidget[Parameter[Any], widgets.Widget]:
     """Create and return the appropriate widget for the given parameter."""
     widget_map = {
         TextParameter: TextParameterWidget,
