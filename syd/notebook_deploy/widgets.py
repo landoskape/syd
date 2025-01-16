@@ -6,7 +6,7 @@ from typing_extensions import TypeVar
 from ..parameters import (
     Parameter,
     TextParameter,
-    SingleSelectionParameter,
+    SelectionParameter,
     MultipleSelectionParameter,
     BooleanParameter,
     NumericParameter,
@@ -14,6 +14,8 @@ from ..parameters import (
     FloatParameter,
     IntegerPairParameter,
     FloatPairParameter,
+    UnboundedIntegerParameter,
+    UnboundedFloatParameter,
 )
 
 T = TypeVar("T", bound=Parameter[Any])
@@ -105,19 +107,19 @@ class TextParameterWidget(BaseParameterWidget[TextParameter, widgets.Text]):
         return widgets.Text(value=parameter.value, description=parameter.name, continuous_update=False)
 
 
-class SingleSelectionParameterWidget(BaseParameterWidget[SingleSelectionParameter, widgets.Dropdown]):
+class SelectionParameterWidget(BaseParameterWidget[SelectionParameter, widgets.Dropdown]):
     """Widget for single selection parameters."""
 
-    def _create_widget(self, parameter: SingleSelectionParameter) -> widgets.Dropdown:
+    def _create_widget(self, parameter: SelectionParameter) -> widgets.Dropdown:
         return widgets.Dropdown(value=parameter.value, options=parameter.options, description=parameter.name)
 
-    def matches_parameter(self, parameter: SingleSelectionParameter) -> bool:
+    def matches_parameter(self, parameter: SelectionParameter) -> bool:
         """Check if the widget matches the parameter."""
         value_correct = self.value == parameter.value
         options_correct = self._widget.options == parameter.options
         return value_correct and options_correct
 
-    def extra_updates_from_parameter(self, parameter: SingleSelectionParameter) -> None:
+    def extra_updates_from_parameter(self, parameter: SelectionParameter) -> None:
         """Extra updates from the parameter."""
         new_options = parameter.options
         current_value = self._widget.value
@@ -265,18 +267,66 @@ class FloatPairParameterWidget(
         )
 
 
+class UnboundedNumericParameterWidgetMixin(Generic[N, NW]):
+    """Mixin class for unbounded numeric parameter widgets."""
+
+    def extra_updates_from_parameter(self, parameter: N) -> None:
+        """Update widget bounds if they exist."""
+        if hasattr(self._widget, "min"):
+            self._widget.min = parameter.min_value if parameter.min_value is not None else -float("inf")
+        if hasattr(self._widget, "max"):
+            self._widget.max = parameter.max_value if parameter.max_value is not None else float("inf")
+
+
+class UnboundedIntegerParameterWidget(
+    BaseParameterWidget[UnboundedIntegerParameter, widgets.BoundedIntText],
+    UnboundedNumericParameterWidgetMixin[UnboundedIntegerParameter, widgets.BoundedIntText],
+):
+    """Widget for unbounded integer parameters using BoundedIntText."""
+
+    def _create_widget(self, parameter: UnboundedIntegerParameter) -> widgets.BoundedIntText:
+        return widgets.BoundedIntText(
+            value=parameter.value,
+            min=-(2**31) if parameter.min_value is None else parameter.min_value,
+            max=2**31 - 1 if parameter.max_value is None else parameter.max_value,
+            description=parameter.name,
+            layout=widgets.Layout(width="200px"),
+            style={"description_width": "initial"},
+        )
+
+
+class UnboundedFloatParameterWidget(
+    BaseParameterWidget[UnboundedFloatParameter, widgets.BoundedFloatText],
+    UnboundedNumericParameterWidgetMixin[UnboundedFloatParameter, widgets.BoundedFloatText],
+):
+    """Widget for unbounded float parameters using BoundedFloatText."""
+
+    def _create_widget(self, parameter: UnboundedFloatParameter) -> widgets.BoundedFloatText:
+        return widgets.BoundedFloatText(
+            value=parameter.value,
+            min=float("-inf") if parameter.min_value is None else parameter.min_value,
+            max=float("inf") if parameter.max_value is None else parameter.max_value,
+            step=parameter.step if parameter.step is not None else 0.01,
+            description=parameter.name,
+            layout=widgets.Layout(width="200px"),
+            style={"description_width": "initial"},
+        )
+
+
 # Factory function to create the appropriate widget for a parameter
 def create_parameter_widget(parameter: Parameter[Any]) -> BaseParameterWidget[Parameter[Any], widgets.Widget]:
     """Create and return the appropriate widget for the given parameter."""
     widget_map = {
         TextParameter: TextParameterWidget,
-        SingleSelectionParameter: SingleSelectionParameterWidget,
+        SelectionParameter: SelectionParameterWidget,
         MultipleSelectionParameter: MultipleSelectionParameterWidget,
         BooleanParameter: BooleanParameterWidget,
         IntegerParameter: IntegerParameterWidget,
         FloatParameter: FloatParameterWidget,
         IntegerPairParameter: IntegerPairParameterWidget,
         FloatPairParameter: FloatPairParameterWidget,
+        UnboundedIntegerParameter: UnboundedIntegerParameterWidget,
+        UnboundedFloatParameter: UnboundedFloatParameterWidget,
     }
 
     widget_class = widget_map.get(type(parameter))
