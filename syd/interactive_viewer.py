@@ -1,10 +1,28 @@
-from typing import List, Any, Callable, Dict, Tuple, Union
+from typing import List, Any, Callable, Dict, Tuple, Union, Optional
 from functools import wraps
 from contextlib import contextmanager
 from abc import ABC, abstractmethod
 from matplotlib.figure import Figure
 
 from .parameters import ParameterType, Parameter
+
+
+class _NoUpdate:
+    """Singleton class to represent a non-update in parameter operations."""
+
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __repr__(self):
+        return "NO_UPDATE"
+
+
+# Create the singleton instance
+_NO_UPDATE = _NoUpdate()
 
 
 def validate_parameter_operation(operation: str, parameter_type: ParameterType) -> Callable:
@@ -132,92 +150,220 @@ class InteractiveViewer(ABC):
 
     # -------------------- parameter registration methods --------------------
     @validate_parameter_operation("add", ParameterType.text)
-    def add_text(self, name: str, default: str = "") -> None:
-        self.parameters[name] = ParameterType.text.value(name, default)
+    def add_text(self, name: str, *, value: str) -> None:
+        self.parameters[name] = ParameterType.text.value(name, value)
 
     @validate_parameter_operation("add", ParameterType.selection)
-    def add_selection(self, name: str, options: List[Any], default: Any = None) -> None:
-        self.parameters[name] = ParameterType.selection.value(name, options, default)
+    def add_selection(self, name: str, *, value: Any, options: List[Any]) -> None:
+        self.parameters[name] = ParameterType.selection.value(name, value, options)
 
     @validate_parameter_operation("add", ParameterType.multiple_selection)
-    def add_multiple_selection(self, name: str, options: List[Any], default: List[Any] = None) -> None:
-        self.parameters[name] = ParameterType.multiple_selection.value(name, options, default)
+    def add_multiple_selection(self, name: str, *, value: List[Any], options: List[Any]) -> None:
+        self.parameters[name] = ParameterType.multiple_selection.value(name, value, options)
 
     @validate_parameter_operation("add", ParameterType.boolean)
-    def add_boolean(self, name: str, default: bool = True) -> None:
-        self.parameters[name] = ParameterType.boolean.value(name, default)
+    def add_boolean(self, name: str, *, value: bool) -> None:
+        self.parameters[name] = ParameterType.boolean.value(name, value)
 
     @validate_parameter_operation("add", ParameterType.integer)
-    def add_integer(self, name: str, min_value: int = None, max_value: int = None, default: int = 0) -> None:
-        self.parameters[name] = ParameterType.integer.value(name, min_value, max_value, default)
+    def add_integer(self, name: str, *, value: int, min_value: int, max_value: int) -> None:
+        self.parameters[name] = ParameterType.integer.value(name, value, min_value, max_value)
 
     @validate_parameter_operation("add", ParameterType.float)
-    def add_float(self, name: str, min_value: float = None, max_value: float = None, default: float = 0.0, step: float = 0.1) -> None:
-        self.parameters[name] = ParameterType.float.value(name, min_value, max_value, default, step)
+    def add_float(self, name: str, *, value: float, min_value: float, max_value: float, step: float = 0.1) -> None:
+        self.parameters[name] = ParameterType.float.value(name, value, min_value, max_value, step)
 
     @validate_parameter_operation("add", ParameterType.integer_pair)
     def add_integer_pair(
         self,
         name: str,
-        default: Tuple[int, int],
+        *,
+        value: Tuple[int, int],
         min_value: int = None,
         max_value: int = None,
     ) -> None:
-        self.parameters[name] = ParameterType.integer_pair.value(name, default, min_value, max_value)
+        self.parameters[name] = ParameterType.integer_pair.value(name, value, min_value, max_value)
 
     @validate_parameter_operation("add", ParameterType.float_pair)
     def add_float_pair(
         self,
         name: str,
-        default: Tuple[float, float],
+        *,
+        value: Tuple[float, float],
         min_value: float = None,
         max_value: float = None,
         step: float = 0.1,
     ) -> None:
-        self.parameters[name] = ParameterType.float_pair.value(name, default, min_value, max_value, step)
+        self.parameters[name] = ParameterType.float_pair.value(name, value, min_value, max_value, step)
+
+    @validate_parameter_operation("add", ParameterType.unbounded_integer)
+    def add_unbounded_integer(self, name: str, *, value: int = 0, min_value: Optional[int] = None, max_value: Optional[int] = None) -> None:
+        self.parameters[name] = ParameterType.unbounded_integer.value(name, value, min_value, max_value)
+
+    @validate_parameter_operation("add", ParameterType.unbounded_float)
+    def add_unbounded_float(
+        self, name: str, *, value: float = 0.0, min_value: Optional[float] = None, max_value: Optional[float] = None, step: Optional[float] = None
+    ) -> None:
+        self.parameters[name] = ParameterType.unbounded_float.value(name, value, min_value, max_value, step)
 
     # -------------------- parameter update methods --------------------
     @validate_parameter_operation("update", ParameterType.text)
-    def update_text(self, name: str, default: str = "") -> None:
-        self.parameters[name] = ParameterType.text.value(name, default)
+    def update_text(self, name: str, *, value: Union[str, _NoUpdate] = _NO_UPDATE) -> None:
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if updates:
+            self.parameters[name].update(updates)
 
     @validate_parameter_operation("update", ParameterType.selection)
-    def update_selection(self, name: str, options: List[Any], default: Any = None) -> None:
-        self.parameters[name] = ParameterType.selection.value(name, options, default)
+    def update_selection(self, name: str, *, value: Union[Any, _NoUpdate] = _NO_UPDATE, options: Union[List[Any], _NoUpdate] = _NO_UPDATE) -> None:
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if options is not _NO_UPDATE:
+            updates["options"] = options
+        if updates:
+            self.parameters[name].update(updates)
 
     @validate_parameter_operation("update", ParameterType.multiple_selection)
-    def update_multiple_selection(self, name: str, options: List[Any], default: List[Any] = None) -> None:
-        self.parameters[name] = ParameterType.multiple_selection.value(name, options, default)
+    def update_multiple_selection(
+        self, name: str, *, value: Union[List[Any], _NoUpdate] = _NO_UPDATE, options: Union[List[Any], _NoUpdate] = _NO_UPDATE
+    ) -> None:
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if options is not _NO_UPDATE:
+            updates["options"] = options
+        if updates:
+            self.parameters[name].update(updates)
 
     @validate_parameter_operation("update", ParameterType.boolean)
-    def update_boolean(self, name: str, default: bool = True) -> None:
-        self.parameters[name] = ParameterType.boolean.value(name, default)
+    def update_boolean(self, name: str, *, value: Union[bool, _NoUpdate] = _NO_UPDATE) -> None:
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if updates:
+            self.parameters[name].update(updates)
 
     @validate_parameter_operation("update", ParameterType.integer)
-    def update_integer(self, name: str, min_value: int = None, max_value: int = None, default: int = 0) -> None:
-        self.parameters[name] = ParameterType.integer.value(name, min_value, max_value, default)
+    def update_integer(
+        self,
+        name: str,
+        *,
+        value: Union[int, _NoUpdate] = _NO_UPDATE,
+        min_value: Union[int, _NoUpdate] = _NO_UPDATE,
+        max_value: Union[int, _NoUpdate] = _NO_UPDATE,
+    ) -> None:
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if min_value is not _NO_UPDATE:
+            updates["min_value"] = min_value
+        if max_value is not _NO_UPDATE:
+            updates["max_value"] = max_value
+        if updates:
+            self.parameters[name].update(updates)
 
     @validate_parameter_operation("update", ParameterType.float)
-    def update_float(self, name: str, min_value: float = None, max_value: float = None, default: float = 0.0, step: float = 0.1) -> None:
-        self.parameters[name] = ParameterType.float.value(name, min_value, max_value, default, step)
+    def update_float(
+        self,
+        name: str,
+        *,
+        value: Union[float, _NoUpdate] = _NO_UPDATE,
+        min_value: Union[float, _NoUpdate] = _NO_UPDATE,
+        max_value: Union[float, _NoUpdate] = _NO_UPDATE,
+        step: Union[float, _NoUpdate] = _NO_UPDATE,
+    ) -> None:
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if min_value is not _NO_UPDATE:
+            updates["min_value"] = min_value
+        if max_value is not _NO_UPDATE:
+            updates["max_value"] = max_value
+        if step is not _NO_UPDATE:
+            updates["step"] = step
+        if updates:
+            self.parameters[name].update(updates)
 
     @validate_parameter_operation("update", ParameterType.integer_pair)
     def update_integer_pair(
         self,
         name: str,
-        default: Tuple[int, int],
-        min_value: int = None,
-        max_value: int = None,
+        *,
+        value: Union[Tuple[int, int], _NoUpdate] = _NO_UPDATE,
+        min_value: Union[int, _NoUpdate] = _NO_UPDATE,
+        max_value: Union[int, _NoUpdate] = _NO_UPDATE,
     ) -> None:
-        self.parameters[name] = ParameterType.integer_pair.value(name, default, min_value, max_value)
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if min_value is not _NO_UPDATE:
+            updates["min_value"] = min_value
+        if max_value is not _NO_UPDATE:
+            updates["max_value"] = max_value
+        if updates:
+            self.parameters[name].update(updates)
 
     @validate_parameter_operation("update", ParameterType.float_pair)
     def update_float_pair(
         self,
         name: str,
-        default: Tuple[float, float],
-        min_value: float = None,
-        max_value: float = None,
-        step: float = 0.1,
+        *,
+        value: Union[Tuple[float, float], _NoUpdate] = _NO_UPDATE,
+        min_value: Union[float, _NoUpdate] = _NO_UPDATE,
+        max_value: Union[float, _NoUpdate] = _NO_UPDATE,
+        step: Union[float, _NoUpdate] = _NO_UPDATE,
     ) -> None:
-        self.parameters[name] = ParameterType.float_pair.value(name, default, min_value, max_value, step)
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if min_value is not _NO_UPDATE:
+            updates["min_value"] = min_value
+        if max_value is not _NO_UPDATE:
+            updates["max_value"] = max_value
+        if step is not _NO_UPDATE:
+            updates["step"] = step
+        if updates:
+            self.parameters[name].update(updates)
+
+    @validate_parameter_operation("update", ParameterType.unbounded_integer)
+    def update_unbounded_integer(
+        self,
+        name: str,
+        *,
+        value: Union[int, _NoUpdate] = _NO_UPDATE,
+        min_value: Union[Optional[int], _NoUpdate] = _NO_UPDATE,
+        max_value: Union[Optional[int], _NoUpdate] = _NO_UPDATE,
+    ) -> None:
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if min_value is not _NO_UPDATE:
+            updates["min_value"] = min_value
+        if max_value is not _NO_UPDATE:
+            updates["max_value"] = max_value
+        if updates:
+            self.parameters[name].update(updates)
+
+    @validate_parameter_operation("update", ParameterType.unbounded_float)
+    def update_unbounded_float(
+        self,
+        name: str,
+        *,
+        value: Union[float, _NoUpdate] = _NO_UPDATE,
+        min_value: Union[float, _NoUpdate] = _NO_UPDATE,
+        max_value: Union[float, _NoUpdate] = _NO_UPDATE,
+        step: Union[float, _NoUpdate] = _NO_UPDATE,
+    ) -> None:
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if min_value is not _NO_UPDATE:
+            updates["min_value"] = min_value
+        if max_value is not _NO_UPDATE:
+            updates["max_value"] = max_value
+        if step is not _NO_UPDATE:
+            updates["step"] = step
+        if updates:
+            self.parameters[name].update(updates)
