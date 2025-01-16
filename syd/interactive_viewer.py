@@ -1,6 +1,7 @@
-from typing import List, Any, Callable, Dict, Tuple
+from typing import List, Any, Callable, Dict, Tuple, Union
 from functools import wraps
 from contextlib import contextmanager
+from abc import ABC, abstractmethod
 from matplotlib.figure import Figure
 
 from .parameters import ParameterType, Parameter
@@ -50,7 +51,7 @@ def validate_parameter_operation(operation: str, parameter_type: ParameterType) 
             if operation == "update":
                 if name not in self.parameters:
                     raise ValueError(f"Parameter called {name} not found - you can only update registered parameters!")
-                if type(self.parameters[name]) != parameter_type:
+                if type(self.parameters[name]) != parameter_type.value:
                     msg = f"Parameter called {name} was found but is registered as a different parameter type ({type(self.parameters[name])})"
                     raise TypeError(msg)
 
@@ -61,24 +62,26 @@ def validate_parameter_operation(operation: str, parameter_type: ParameterType) 
     return decorator
 
 
-class InteractiveViewer:
+class InteractiveViewer(ABC):
+    parameters: Dict[str, Parameter]
+    callbacks: Dict[str, List[Callable]]
+    state: Dict[str, Any]
+    _app_deployed: bool
+    _in_callbacks: bool
+
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
         instance.parameters = {}
         instance.callbacks = {}
         instance.state = {}
         instance._app_deployed = False
+        instance._in_callbacks = False
         return instance
-
-    def __init__(self):
-        self.parameters: Dict[str, Parameter] = {}
-        self.callbacks: Dict[str, List[Callable]] = {}
-        self.state = {}
-        self._app_deployed = False
 
     def get_state(self) -> Dict[str, Any]:
         return {name: param.value for name, param in self.parameters.items()}
 
+    @abstractmethod
     def plot(self, **kwargs) -> Figure:
         raise NotImplementedError("Subclasses must implement the plot method")
 
@@ -93,18 +96,28 @@ class InteractiveViewer:
 
     def perform_callbacks(self, name: str) -> bool:
         """Perform callbacks for all parameters that have changed"""
-        if name in self.callbacks:
-            state = self.get_state()
-            for callback in self.callbacks[name]:
-                callback(state)
+        if self._in_callbacks:
+            return
+        try:
+            self._in_callbacks = True
+            if name in self.callbacks:
+                state = self.get_state()
+                for callback in self.callbacks[name]:
+                    callback(state)
+        finally:
+            self._in_callbacks = False
 
-    def on_change(self, parameter_name: str, callback: Callable):
+    def on_change(self, parameter_name: Union[str, List[str]], callback: Callable):
         """Register a function to be called when a parameter changes."""
-        if parameter_name not in self.parameters:
-            raise ValueError(f"Parameter '{parameter_name}' is not registered!")
-        if parameter_name not in self.callbacks:
-            self.callbacks[parameter_name] = []
-        self.callbacks[parameter_name].append(callback)
+        if isinstance(parameter_name, str):
+            parameter_name = [parameter_name]
+
+        for param_name in parameter_name:
+            if param_name not in self.parameters:
+                raise ValueError(f"Parameter '{param_name}' is not registered!")
+            if param_name not in self.callbacks:
+                self.callbacks[param_name] = []
+            self.callbacks[param_name].append(callback)
 
     def set_parameter_value(self, name: str, value: Any) -> None:
         """Set a parameter value and trigger dependency updates"""
