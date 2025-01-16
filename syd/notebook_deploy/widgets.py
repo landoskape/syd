@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union, Tuple, Protocol
 from dataclasses import dataclass
 import ipywidgets as widgets
 from traitlets import Any as TraitAny
 from traitlets import Bool, Float, Int, List as TraitList, Unicode
+from typing_extensions import TypeVar
 
 from ..parameters import (
     Parameter,
@@ -11,13 +12,14 @@ from ..parameters import (
     SingleSelectionParameter,
     MultipleSelectionParameter,
     BooleanParameter,
+    NumericParameter,
     IntegerParameter,
     FloatParameter,
     IntegerPairParameter,
     FloatPairParameter,
 )
 
-T = TypeVar("T")
+T = TypeVar("T", bound=Parameter[Any])
 W = TypeVar("W", bound=widgets.Widget)
 
 
@@ -30,8 +32,9 @@ class BaseParameterWidget(Generic[T, W], ABC):
     """
 
     _widget: W
+    parameter: T
 
-    def __init__(self, parameter: Parameter[T]):
+    def __init__(self, parameter: T):
         self.parameter = parameter
         self._widget = self._create_widget()
         self._updating = False  # Flag to prevent circular updates
@@ -76,14 +79,14 @@ class BaseParameterWidget(Generic[T, W], ABC):
         return self._widget
 
 
-class TextParameterWidget(BaseParameterWidget[str, widgets.Text]):
+class TextParameterWidget(BaseParameterWidget[TextParameter, widgets.Text]):
     """Widget for text parameters."""
 
     def _create_widget(self) -> widgets.Text:
         return widgets.Text(value=self.parameter.value, description=self.parameter.name, continuous_update=False)
 
 
-class SingleSelectionParameterWidget(BaseParameterWidget[Any, widgets.Dropdown]):
+class SingleSelectionParameterWidget(BaseParameterWidget[SingleSelectionParameter, widgets.Dropdown]):
     """Widget for single selection parameters."""
 
     def _create_widget(self) -> widgets.Dropdown:
@@ -111,7 +114,7 @@ class SingleSelectionParameterWidget(BaseParameterWidget[Any, widgets.Dropdown])
             self._updating = False
 
 
-class MultipleSelectionParameterWidget(BaseParameterWidget[List[Any], widgets.SelectMultiple]):
+class MultipleSelectionParameterWidget(BaseParameterWidget[MultipleSelectionParameter, widgets.SelectMultiple]):
     """Widget for multiple selection parameters."""
 
     def _create_widget(self) -> widgets.SelectMultiple:
@@ -137,32 +140,29 @@ class MultipleSelectionParameterWidget(BaseParameterWidget[List[Any], widgets.Se
             self._updating = False
 
 
-class BooleanParameterWidget(BaseParameterWidget[bool, widgets.Checkbox]):
+class BooleanParameterWidget(BaseParameterWidget[BooleanParameter, widgets.Checkbox]):
     """Widget for boolean parameters."""
 
     def _create_widget(self) -> widgets.Checkbox:
         return widgets.Checkbox(value=self.parameter.value, description=self.parameter.name)
 
 
-class NumericParameterWidget(BaseParameterWidget[Union[int, float], Any], ABC):
-    """Base class for numeric parameter widgets."""
+class NumericWidget(Protocol):
+    """Protocol defining the interface for numeric widgets."""
 
-    @abstractmethod
+    min: Union[int, float]
+    max: Union[int, float]
+    value: Union[int, float]
+
+
+N = TypeVar("N", bound=NumericParameter[Any])
+NW = TypeVar("NW", bound=NumericWidget)
+
+
+class NumericParameterWidgetMixin(BaseParameterWidget[N, NW]):
+    """Mixin class for numeric parameter widgets."""
+
     def update_bounds(self, min_value: Union[int, float], max_value: Union[int, float]) -> None:
-        """Update the minimum and maximum allowed values."""
-        pass
-
-
-class IntegerParameterWidget(NumericParameterWidget[int, widgets.IntSlider]):
-    """Widget for integer parameters."""
-
-    def _create_widget(self) -> widgets.IntSlider:
-        param = self.parameter
-        assert isinstance(param, IntegerParameter)
-
-        return widgets.IntSlider(value=param.value, min=param.min_value, max=param.max_value, description=param.name, continuous_update=False)
-
-    def update_bounds(self, min_value: int, max_value: int) -> None:
         """Update slider bounds while preserving value if possible."""
         if self._updating:
             return
@@ -179,7 +179,17 @@ class IntegerParameterWidget(NumericParameterWidget[int, widgets.IntSlider]):
             self._updating = False
 
 
-class FloatParameterWidget(NumericParameterWidget[float, widgets.FloatSlider]):
+class IntegerParameterWidget(BaseParameterWidget[IntegerParameter, widgets.IntSlider], NumericParameterWidgetMixin[widgets.IntSlider]):
+    """Widget for integer parameters."""
+
+    def _create_widget(self) -> widgets.IntSlider:
+        param = self.parameter
+        assert isinstance(param, IntegerParameter)
+
+        return widgets.IntSlider(value=param.value, min=param.min_value, max=param.max_value, description=param.name, continuous_update=False)
+
+
+class FloatParameterWidget(BaseParameterWidget[FloatParameter, widgets.FloatSlider], NumericParameterWidgetMixin[widgets.FloatSlider]):
     """Widget for float parameters."""
 
     def _create_widget(self) -> widgets.FloatSlider:
@@ -190,109 +200,46 @@ class FloatParameterWidget(NumericParameterWidget[float, widgets.FloatSlider]):
             value=param.value, min=param.min_value, max=param.max_value, step=param.step, description=param.name, continuous_update=False
         )
 
-    def update_bounds(self, min_value: float, max_value: float) -> None:
-        """Update slider bounds while preserving value if possible."""
-        if self._updating:
-            return
 
-        try:
-            self._updating = True
-            current_value = self._widget.value
-            self._widget.min = min_value
-            self._widget.max = max_value
+class IntegerPairParameterWidget(BaseParameterWidget[Tuple[int, int], widgets.IntRangeSlider]):
+    """Widget for integer pair parameters using IntRangeSlider."""
 
-            # Clamp current value to new bounds
-            self._widget.value = max(min_value, min(max_value, current_value))
-        finally:
-            self._updating = False
-
-
-class IntegerPairParameterWidget(BaseParameterWidget[tuple[int, int], widgets.HBox]):
-    """Widget for integer pair parameters."""
-
-    def _create_widget(self) -> widgets.HBox:
+    def _create_widget(self) -> widgets.IntRangeSlider:
         param = self.parameter
         assert isinstance(param, IntegerPairParameter)
 
-        self._low_slider = widgets.IntSlider(
-            value=param.value[0], min=param.min_value, max=param.value[1], description=f"{param.name} (min)", continuous_update=False
+        return widgets.IntRangeSlider(
+            value=param.value,
+            min=param.min_value,
+            max=param.max_value,
+            description=param.name,
+            continuous_update=False,
+            layout=widgets.Layout(width="95%"),
+            style={"description_width": "initial"},
         )
 
-        self._high_slider = widgets.IntSlider(
-            value=param.value[1], min=param.value[0], max=param.max_value, description=f"{param.name} (max)", continuous_update=False
-        )
 
-        # Link the sliders to maintain min <= max
-        self._low_slider.observe(self._update_high_min, names=["value"])
-        self._high_slider.observe(self._update_low_max, names=["value"])
+class FloatPairParameterWidget(BaseParameterWidget[Tuple[float, float], widgets.FloatRangeSlider]):
+    """Widget for float pair parameters using FloatRangeSlider."""
 
-        return widgets.HBox([self._low_slider, self._high_slider])
-
-    def _update_high_min(self, change: Dict[str, Any]) -> None:
-        """Update high slider's minimum when low slider changes."""
-        self._high_slider.min = change["new"]
-
-    def _update_low_max(self, change: Dict[str, Any]) -> None:
-        """Update low slider's maximum when high slider changes."""
-        self._low_slider.max = change["new"]
-
-    def _handle_widget_change(self, change: Dict[str, Any]) -> None:
-        """Override to handle changes from either slider."""
-        if self._updating:
-            return
-
-        try:
-            self._updating = True
-            new_value = (self._low_slider.value, self._high_slider.value)
-            self.parameter.value = new_value
-        finally:
-            self._updating = False
-
-
-class FloatPairParameterWidget(BaseParameterWidget[tuple[float, float], widgets.HBox]):
-    """Widget for float pair parameters."""
-
-    def _create_widget(self) -> widgets.HBox:
+    def _create_widget(self) -> widgets.FloatRangeSlider:
         param = self.parameter
         assert isinstance(param, FloatPairParameter)
 
-        self._low_slider = widgets.FloatSlider(
-            value=param.value[0], min=param.min_value, max=param.value[1], step=param.step, description=f"{param.name} (min)", continuous_update=False
+        return widgets.FloatRangeSlider(
+            value=param.value,
+            min=param.min_value,
+            max=param.max_value,
+            step=param.step,
+            description=param.name,
+            continuous_update=False,
+            layout=widgets.Layout(width="95%"),
+            style={"description_width": "initial"},
         )
-
-        self._high_slider = widgets.FloatSlider(
-            value=param.value[1], min=param.value[0], max=param.max_value, step=param.step, description=f"{param.name} (max)", continuous_update=False
-        )
-
-        # Link the sliders to maintain min <= max
-        self._low_slider.observe(self._update_high_min, names=["value"])
-        self._high_slider.observe(self._update_low_max, names=["value"])
-
-        return widgets.HBox([self._low_slider, self._high_slider])
-
-    def _update_high_min(self, change: Dict[str, Any]) -> None:
-        """Update high slider's minimum when low slider changes."""
-        self._high_slider.min = change["new"]
-
-    def _update_low_max(self, change: Dict[str, Any]) -> None:
-        """Update low slider's maximum when high slider changes."""
-        self._low_slider.max = change["new"]
-
-    def _handle_widget_change(self, change: Dict[str, Any]) -> None:
-        """Override to handle changes from either slider."""
-        if self._updating:
-            return
-
-        try:
-            self._updating = True
-            new_value = (self._low_slider.value, self._high_slider.value)
-            self.parameter.value = new_value
-        finally:
-            self._updating = False
 
 
 # Factory function to create the appropriate widget for a parameter
-def create_parameter_widget(parameter: Parameter[Any]) -> BaseParameterWidget[Any, Any]:
+def create_parameter_widget(parameter: Parameter[Any]) -> BaseParameterWidget[Any]:
     """Create and return the appropriate widget for the given parameter."""
     widget_map = {
         TextParameter: TextParameterWidget,
