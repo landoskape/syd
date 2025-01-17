@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from abc import ABC, abstractmethod
 from matplotlib.figure import Figure
 
-from .parameters import ParameterType, Parameter
+from .parameters import ParameterType, Parameter, ParameterConstructionError, ParameterUpdateError
 
 
 class _NoUpdate:
@@ -64,6 +64,10 @@ def validate_parameter_operation(operation: str, parameter_type: ParameterType) 
             # Validate deployment state
             if operation == "add" and self._app_deployed:
                 raise RuntimeError("The app is currently deployed, cannot add a new parameter right now.")
+
+            if operation == "add":
+                if name in self.parameters:
+                    raise ValueError(f"Parameter called {name} already exists!")
 
             # For updates, validate parameter existence and type
             if operation == "update":
@@ -151,27 +155,57 @@ class InteractiveViewer(ABC):
     # -------------------- parameter registration methods --------------------
     @validate_parameter_operation("add", ParameterType.text)
     def add_text(self, name: str, *, value: str) -> None:
-        self.parameters[name] = ParameterType.text.value(name, value)
+        try:
+            new_param = ParameterType.text.value(name, value)
+        except Exception as e:
+            raise ParameterConstructionError(name, "text", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.selection)
     def add_selection(self, name: str, *, value: Any, options: List[Any]) -> None:
-        self.parameters[name] = ParameterType.selection.value(name, value, options)
+        try:
+            new_param = ParameterType.selection.value(name, value, options)
+        except Exception as e:
+            raise ParameterConstructionError(name, "selection", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.multiple_selection)
     def add_multiple_selection(self, name: str, *, value: List[Any], options: List[Any]) -> None:
-        self.parameters[name] = ParameterType.multiple_selection.value(name, value, options)
+        try:
+            new_param = ParameterType.multiple_selection.value(name, value, options)
+        except Exception as e:
+            raise ParameterConstructionError(name, "multiple_selection", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.boolean)
     def add_boolean(self, name: str, *, value: bool) -> None:
-        self.parameters[name] = ParameterType.boolean.value(name, value)
+        try:
+            new_param = ParameterType.boolean.value(name, value)
+        except Exception as e:
+            raise ParameterConstructionError(name, "boolean", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.integer)
     def add_integer(self, name: str, *, value: int, min_value: int, max_value: int) -> None:
-        self.parameters[name] = ParameterType.integer.value(name, value, min_value, max_value)
+        try:
+            new_param = ParameterType.integer.value(name, value, min_value, max_value)
+        except Exception as e:
+            raise ParameterConstructionError(name, "integer", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.float)
     def add_float(self, name: str, *, value: float, min_value: float, max_value: float, step: float = 0.1) -> None:
-        self.parameters[name] = ParameterType.float.value(name, value, min_value, max_value, step)
+        try:
+            new_param = ParameterType.float.value(name, value, min_value, max_value, step)
+        except Exception as e:
+            raise ParameterConstructionError(name, "float", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.integer_pair)
     def add_integer_pair(
@@ -179,10 +213,15 @@ class InteractiveViewer(ABC):
         name: str,
         *,
         value: Tuple[int, int],
-        min_value: int = None,
-        max_value: int = None,
+        min_value: int,
+        max_value: int,
     ) -> None:
-        self.parameters[name] = ParameterType.integer_pair.value(name, value, min_value, max_value)
+        try:
+            new_param = ParameterType.integer_pair.value(name, value, min_value, max_value)
+        except Exception as e:
+            raise ParameterConstructionError(name, "integer_pair", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.float_pair)
     def add_float_pair(
@@ -190,21 +229,36 @@ class InteractiveViewer(ABC):
         name: str,
         *,
         value: Tuple[float, float],
-        min_value: float = None,
-        max_value: float = None,
+        min_value: float,
+        max_value: float,
         step: float = 0.1,
     ) -> None:
-        self.parameters[name] = ParameterType.float_pair.value(name, value, min_value, max_value, step)
+        try:
+            new_param = ParameterType.float_pair.value(name, value, min_value, max_value, step)
+        except Exception as e:
+            raise ParameterConstructionError(name, "float_pair", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.unbounded_integer)
-    def add_unbounded_integer(self, name: str, *, value: int = 0, min_value: Optional[int] = None, max_value: Optional[int] = None) -> None:
-        self.parameters[name] = ParameterType.unbounded_integer.value(name, value, min_value, max_value)
+    def add_unbounded_integer(self, name: str, *, value: int, min_value: Optional[int] = None, max_value: Optional[int] = None) -> None:
+        try:
+            new_param = ParameterType.unbounded_integer.value(name, value, min_value, max_value)
+        except Exception as e:
+            raise ParameterConstructionError(name, "unbounded_integer", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.unbounded_float)
     def add_unbounded_float(
-        self, name: str, *, value: float = 0.0, min_value: Optional[float] = None, max_value: Optional[float] = None, step: Optional[float] = None
+        self, name: str, *, value: float, min_value: Optional[float] = None, max_value: Optional[float] = None, step: Optional[float] = None
     ) -> None:
-        self.parameters[name] = ParameterType.unbounded_float.value(name, value, min_value, max_value, step)
+        try:
+            new_param = ParameterType.unbounded_float.value(name, value, min_value, max_value, step)
+        except Exception as e:
+            raise ParameterConstructionError(name, "unbounded_float", str(e)) from e
+        else:
+            self.parameters[name] = new_param
 
     # -------------------- parameter update methods --------------------
     @validate_parameter_operation("update", ParameterType.text)
