@@ -37,17 +37,24 @@ class Parameter(Generic[T], ABC):
             updates: Dictionary of attributes to update
         Raises:
             ValueError: If attempting to update 'name' or an invalid attribute
+            ParameterUpdateError: If the update fails due to invalid arguments or state
         """
-        valid_attributes = {"value"} | {key for key in self.__annotations__ if not key.startswith("_") and key != "name"}
+        valid_attributes = {key for key in self.__annotations__ if not key.startswith("_") and key != "name"}
 
         for key, new_value in updates.items():
             if key == "name":
                 raise ValueError(f"Cannot update parameter name")
+            elif key == "value":
+                continue  # Extra security to avoid setting value before other attributes are set.
             elif key not in valid_attributes:
                 raise ValueError(f"Update failed, {key} is not a valid attribute for {self.name}")
             else:
                 # Use property setters to ensure validation
                 setattr(self, key, new_value)
+
+        # Update value last to avoid validation errors in case the user changed options / bounds / etc.
+        if "value" in updates:
+            setattr(self, "value", updates["value"])
 
         self._validate_update()
 
@@ -81,6 +88,8 @@ class SelectionParameter(Parameter[Any]):
         return new_value
 
     def _validate_update(self) -> None:
+        if not isinstance(self.options, (list, tuple)):
+            raise TypeError(f"Options for parameter {self.name} are not a list or tuple: {self.options}")
         if self.value not in self.options:
             warn(f"For parameter {self.name}, value {self.value} not in options: {self.options}. Setting to first option.")
             self.value = self.options[0]
@@ -332,3 +341,21 @@ class ParameterType(Enum):
     float_pair = FloatPairParameter
     unbounded_integer = UnboundedIntegerParameter
     unbounded_float = UnboundedFloatParameter
+
+
+class ParameterConstructionError(Exception):
+    """Raised when parameter creation fails due to invalid arguments or state."""
+
+    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
+        self.parameter_name = parameter_name
+        self.parameter_type = parameter_type
+        super().__init__(f"Failed to create {parameter_type} parameter '{parameter_name}'" + (f": {message}" if message else ""))
+
+
+class ParameterUpdateError(Exception):
+    """Raised when parameter update fails due to invalid arguments or state."""
+
+    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
+        self.parameter_name = parameter_name
+        self.parameter_type = parameter_type
+        super().__init__(f"Failed to update {parameter_type} parameter '{parameter_name}'" + (f": {message}" if message else ""))
