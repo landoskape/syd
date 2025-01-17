@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from abc import ABC, abstractmethod
 from matplotlib.figure import Figure
 
-from .parameters import ParameterType, Parameter, ParameterConstructionError
+from .parameters import ParameterType, Parameter, ParameterAddError, ParameterUpdateError
 
 
 class _NoUpdate:
@@ -55,11 +55,21 @@ def validate_parameter_operation(operation: str, parameter_type: ParameterType) 
     """
 
     def decorator(func: Callable) -> Callable:
+        if operation not in ["add", "update"]:
+            raise ValueError("Incorrect use of validate_parameter_operation decorator. Must be called with 'add' or 'update' as the first argument.")
+
         @wraps(func)
-        def wrapper(self: "InteractiveViewer", name: str, *args, **kwargs):
+        def wrapper(self: "InteractiveViewer", name: Any, *args, **kwargs):
             # Validate operation matches method name (add/update)
             if not func.__name__.startswith(operation):
                 raise ValueError(f"Invalid operation type specified ({operation}) for method {func.__name__}")
+
+            # Validate parameter name is a string
+            if not isinstance(name, str):
+                if operation == "add":
+                    raise ParameterAddError(name, parameter_type.name, "Parameter name must be a string")
+                elif operation == "update":
+                    raise ParameterUpdateError(name, parameter_type.name, "Parameter name must be a string")
 
             # Validate deployment state
             if operation == "add" and self._app_deployed:
@@ -67,17 +77,25 @@ def validate_parameter_operation(operation: str, parameter_type: ParameterType) 
 
             if operation == "add":
                 if name in self.parameters:
-                    raise ValueError(f"Parameter called {name} already exists!")
+                    raise ParameterAddError(name, parameter_type.name, "Parameter already exists!")
 
             # For updates, validate parameter existence and type
             if operation == "update":
                 if name not in self.parameters:
-                    raise ValueError(f"Parameter called {name} not found - you can only update registered parameters!")
+                    raise ParameterUpdateError(name, parameter_type.name, "Parameter not found - you can only update registered parameters!")
                 if type(self.parameters[name]) != parameter_type.value:
                     msg = f"Parameter called {name} was found but is registered as a different parameter type ({type(self.parameters[name])})"
-                    raise TypeError(msg)
+                    raise ParameterUpdateError(name, parameter_type.name, msg)
 
-            return func(self, name, *args, **kwargs)
+            try:
+                return func(self, name, *args, **kwargs)
+            except Exception as e:
+                if operation == "add":
+                    raise ParameterAddError(name, parameter_type.name, str(e)) from e
+                elif operation == "update":
+                    raise ParameterUpdateError(name, parameter_type.name, str(e)) from e
+                else:
+                    raise e
 
         return wrapper
 
@@ -158,7 +176,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.text.value(name, value)
         except Exception as e:
-            raise ParameterConstructionError(name, "text", str(e)) from e
+            raise ParameterAddError(name, "text", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -167,7 +185,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.selection.value(name, value, options)
         except Exception as e:
-            raise ParameterConstructionError(name, "selection", str(e)) from e
+            raise ParameterAddError(name, "selection", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -176,7 +194,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.multiple_selection.value(name, value, options)
         except Exception as e:
-            raise ParameterConstructionError(name, "multiple_selection", str(e)) from e
+            raise ParameterAddError(name, "multiple_selection", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -185,7 +203,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.boolean.value(name, value)
         except Exception as e:
-            raise ParameterConstructionError(name, "boolean", str(e)) from e
+            raise ParameterAddError(name, "boolean", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -194,7 +212,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.integer.value(name, value, min_value, max_value)
         except Exception as e:
-            raise ParameterConstructionError(name, "integer", str(e)) from e
+            raise ParameterAddError(name, "integer", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -203,7 +221,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.float.value(name, value, min_value, max_value, step)
         except Exception as e:
-            raise ParameterConstructionError(name, "float", str(e)) from e
+            raise ParameterAddError(name, "float", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -219,7 +237,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.integer_pair.value(name, value, min_value, max_value)
         except Exception as e:
-            raise ParameterConstructionError(name, "integer_pair", str(e)) from e
+            raise ParameterAddError(name, "integer_pair", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -236,7 +254,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.float_pair.value(name, value, min_value, max_value, step)
         except Exception as e:
-            raise ParameterConstructionError(name, "float_pair", str(e)) from e
+            raise ParameterAddError(name, "float_pair", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -245,7 +263,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.unbounded_integer.value(name, value, min_value, max_value)
         except Exception as e:
-            raise ParameterConstructionError(name, "unbounded_integer", str(e)) from e
+            raise ParameterAddError(name, "unbounded_integer", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -256,7 +274,7 @@ class InteractiveViewer(ABC):
         try:
             new_param = ParameterType.unbounded_float.value(name, value, min_value, max_value, step)
         except Exception as e:
-            raise ParameterConstructionError(name, "unbounded_float", str(e)) from e
+            raise ParameterAddError(name, "unbounded_float", str(e)) from e
         else:
             self.parameters[name] = new_param
 
