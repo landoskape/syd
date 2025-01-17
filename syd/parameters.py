@@ -2,9 +2,28 @@ from typing import List, Any, Tuple, Generic, TypeVar, Optional, Dict
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from enum import Enum
+from copy import deepcopy
 from warnings import warn
 
 T = TypeVar("T")
+
+
+class ParameterConstructionError(Exception):
+    """Raised when parameter creation fails due to invalid arguments or state."""
+
+    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
+        self.parameter_name = parameter_name
+        self.parameter_type = parameter_type
+        super().__init__(f"Failed to create {parameter_type} parameter '{parameter_name}'" + (f": {message}" if message else ""))
+
+
+class ParameterUpdateError(Exception):
+    """Raised when parameter update fails due to invalid arguments or state."""
+
+    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
+        self.parameter_name = parameter_name
+        self.parameter_type = parameter_type
+        super().__init__(f"Failed to update {parameter_type} parameter '{parameter_name}'" + (f": {message}" if message else ""))
 
 
 @dataclass
@@ -33,29 +52,72 @@ class Parameter(Generic[T], ABC):
     def update(self, updates: Dict[str, Any]) -> None:
         """Update parameter attributes while respecting validation rules.
 
+        Updates are performed atomically - either all updates succeed or none do.
+        The parameter state remains unchanged if any validation fails.
+
         Args:
             updates: Dictionary of attributes to update
+
         Raises:
             ValueError: If attempting to update 'name' or an invalid attribute
-            ParameterUpdateError: If the update fails due to invalid arguments or state
+            ParameterUpdateError: If any validation fails during the update
         """
-        valid_attributes = {key for key in self.__annotations__ if not key.startswith("_") and key != "name"}
+        # Make a copy of self
+        param_copy = deepcopy(self)
+
+        try:
+            # Apply updates to copy using private method
+            param_copy._unsafe_update(updates)
+
+            # If we get here, updates and validation succeeded on the copy
+            # Now transfer all non-private attributes using proper setters
+            for key, value in vars(param_copy).items():
+                if not key.startswith("_"):
+                    setattr(self, key, value)
+
+            # Handle value separately using property setter
+            self.value = param_copy.value
+
+        except Exception as e:
+            # Re-raise as ParameterUpdateError with context
+            if isinstance(e, ValueError):
+                raise ParameterUpdateError(self.name, type(self).__name__, str(e)) from e
+            else:
+                raise ParameterUpdateError(self.name, type(self).__name__, f"Update failed: {str(e)}") from e
+
+    def _unsafe_update(self, updates: Dict[str, Any]) -> None:
+        """Internal method to apply updates without safety mechanisms.
+
+        This method performs the actual update logic but without the safety of doing it
+        on a copy first. It should only be called from the safe update() method. This
+        method will leave self in an inconsistent state if it fails.
+
+        Args:
+            updates: Dictionary of attributes to update
+
+        Raises:
+            ValueError: If attempting to update 'name' or an invalid attribute
+        """
+        # Validate the updates first
+        valid_attributes = {key for key in self.__annotations__ if not key.startswith("_") and key != "name"} | {"value"}
 
         for key, new_value in updates.items():
             if key == "name":
                 raise ValueError(f"Cannot update parameter name")
-            elif key == "value":
-                continue  # Extra security to avoid setting value before other attributes are set.
             elif key not in valid_attributes:
                 raise ValueError(f"Update failed, {key} is not a valid attribute for {self.name}")
-            else:
-                # Use property setters to ensure validation
+
+        # Apply non-value updates first
+        for key, new_value in updates.items():
+            if key != "value":
                 setattr(self, key, new_value)
 
-        # Update value last to avoid validation errors in case the user changed options / bounds / etc.
+        # Update value last to avoid validation errors in case
+        # the user changed options/bounds/etc
         if "value" in updates:
-            setattr(self, "value", updates["value"])
+            self.value = updates["value"]
 
+        # Final validation of the complete state
         self._validate_update()
 
     def _validate_update(self) -> None:
@@ -341,21 +403,3 @@ class ParameterType(Enum):
     float_pair = FloatPairParameter
     unbounded_integer = UnboundedIntegerParameter
     unbounded_float = UnboundedFloatParameter
-
-
-class ParameterConstructionError(Exception):
-    """Raised when parameter creation fails due to invalid arguments or state."""
-
-    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
-        self.parameter_name = parameter_name
-        self.parameter_type = parameter_type
-        super().__init__(f"Failed to create {parameter_type} parameter '{parameter_name}'" + (f": {message}" if message else ""))
-
-
-class ParameterUpdateError(Exception):
-    """Raised when parameter update fails due to invalid arguments or state."""
-
-    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
-        self.parameter_name = parameter_name
-        self.parameter_type = parameter_type
-        super().__init__(f"Failed to update {parameter_type} parameter '{parameter_name}'" + (f": {message}" if message else ""))

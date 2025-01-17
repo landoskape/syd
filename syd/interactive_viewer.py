@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from abc import ABC, abstractmethod
 from matplotlib.figure import Figure
 
-from .parameters import ParameterType, Parameter, ParameterConstructionError, ParameterUpdateError
+from .parameters import ParameterType, Parameter, ParameterConstructionError
 
 
 class _NoUpdate:
