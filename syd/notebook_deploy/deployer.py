@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 from dataclasses import dataclass
 from contextlib import contextmanager
 import ipywidgets as widgets
@@ -31,7 +31,9 @@ class LayoutConfig:
     def __post_init__(self):
         valid_positions = ["left", "top"]
         if self.controls_position not in valid_positions:
-            raise ValueError(f"Invalid controls position: {self.controls_position}. Must be one of {valid_positions}")
+            raise ValueError(
+                f"Invalid controls position: {self.controls_position}. Must be one of {valid_positions}"
+            )
 
     @property
     def is_horizontal(self) -> bool:
@@ -44,7 +46,14 @@ class NotebookDeployment:
     Built around the parameter widget system for clean separation of concerns.
     """
 
-    def __init__(self, viewer: InteractiveViewer, layout_config: Optional[LayoutConfig] = None):
+    def __init__(
+        self, viewer: InteractiveViewer, layout_config: Optional[LayoutConfig] = None
+    ):
+        if not isinstance(viewer, InteractiveViewer):  # type: ignore
+            raise TypeError(
+                f"viewer must be an InteractiveViewer, got {type(viewer).__name__}"
+            )
+
         self.viewer = viewer
         self.config = layout_config or LayoutConfig()
 
@@ -73,7 +82,9 @@ class NotebookDeployment:
                 layout=widgets.Layout(width="95%"),
                 style={"description_width": "initial"},
             )
-            controls["controls_width"].observe(self._handle_container_width_change, names="value")
+            controls["controls_width"].observe(
+                self._handle_container_width_change, names="value"
+            )
 
         return controls
 
@@ -152,7 +163,8 @@ class NotebookDeployment:
         """Create the main layout combining controls and plot."""
         # Create layout controls section
         layout_box = widgets.VBox(
-            [widgets.HTML("<b>Layout Controls</b>")] + list(self.layout_widgets.values()),
+            [widgets.HTML("<b>Layout Controls</b>")]
+            + list(self.layout_widgets.values()),
             layout=widgets.Layout(margin="10px 0px"),
         )
 
@@ -162,7 +174,8 @@ class NotebookDeployment:
 
         # Create parameter controls section
         param_box = widgets.VBox(
-            [widgets.HTML("<b>Parameters</b>")] + [w.widget for w in self.parameter_widgets.values()],
+            [widgets.HTML("<b>Parameters</b>")]
+            + [w.widget for w in self.parameter_widgets.values()],
             layout=widgets.Layout(margin="10px 0px"),
         )
 
@@ -170,7 +183,11 @@ class NotebookDeployment:
         self.widgets_container = widgets.VBox(
             [param_box, layout_box],
             layout=widgets.Layout(
-                width=f"{self.config.controls_width_percent}%" if self.config.is_horizontal else "100%",
+                width=(
+                    f"{self.config.controls_width_percent}%"
+                    if self.config.is_horizontal
+                    else "100%"
+                ),
                 padding="10px",
                 overflow_y="auto",
             ),
@@ -179,7 +196,14 @@ class NotebookDeployment:
         # Create plot container
         self.plot_container = widgets.VBox(
             [self.plot_output],
-            layout=widgets.Layout(width=f"{100 - self.config.controls_width_percent}%" if self.config.is_horizontal else "100%", padding="10px"),
+            layout=widgets.Layout(
+                width=(
+                    f"{100 - self.config.controls_width_percent}%"
+                    if self.config.is_horizontal
+                    else "100%"
+                ),
+                padding="10px",
+            ),
         )
 
         # Create final layout based on configuration
