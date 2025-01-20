@@ -4,7 +4,12 @@ from contextlib import contextmanager
 from abc import ABC, abstractmethod
 from matplotlib.figure import Figure
 
-from .parameters import ParameterType, Parameter, ParameterAddError, ParameterUpdateError
+from .parameters import (
+    ParameterType,
+    Parameter,
+    ParameterAddError,
+    ParameterUpdateError,
+)
 
 
 class _NoUpdate:
@@ -25,7 +30,9 @@ class _NoUpdate:
 _NO_UPDATE = _NoUpdate()
 
 
-def validate_parameter_operation(operation: str, parameter_type: ParameterType) -> Callable:
+def validate_parameter_operation(
+    operation: str, parameter_type: ParameterType
+) -> Callable:
     """
     Decorator that validates parameter operations for the InteractiveViewer class.
 
@@ -56,33 +63,49 @@ def validate_parameter_operation(operation: str, parameter_type: ParameterType) 
 
     def decorator(func: Callable) -> Callable:
         if operation not in ["add", "update"]:
-            raise ValueError("Incorrect use of validate_parameter_operation decorator. Must be called with 'add' or 'update' as the first argument.")
+            raise ValueError(
+                "Incorrect use of validate_parameter_operation decorator. Must be called with 'add' or 'update' as the first argument."
+            )
 
         @wraps(func)
         def wrapper(self: "InteractiveViewer", name: Any, *args, **kwargs):
             # Validate operation matches method name (add/update)
             if not func.__name__.startswith(operation):
-                raise ValueError(f"Invalid operation type specified ({operation}) for method {func.__name__}")
+                raise ValueError(
+                    f"Invalid operation type specified ({operation}) for method {func.__name__}"
+                )
 
             # Validate parameter name is a string
             if not isinstance(name, str):
                 if operation == "add":
-                    raise ParameterAddError(name, parameter_type.name, "Parameter name must be a string")
+                    raise ParameterAddError(
+                        name, parameter_type.name, "Parameter name must be a string"
+                    )
                 elif operation == "update":
-                    raise ParameterUpdateError(name, parameter_type.name, "Parameter name must be a string")
+                    raise ParameterUpdateError(
+                        name, parameter_type.name, "Parameter name must be a string"
+                    )
 
             # Validate deployment state
             if operation == "add" and self._app_deployed:
-                raise RuntimeError("The app is currently deployed, cannot add a new parameter right now.")
+                raise RuntimeError(
+                    "The app is currently deployed, cannot add a new parameter right now."
+                )
 
             if operation == "add":
                 if name in self.parameters:
-                    raise ParameterAddError(name, parameter_type.name, "Parameter already exists!")
+                    raise ParameterAddError(
+                        name, parameter_type.name, "Parameter already exists!"
+                    )
 
             # For updates, validate parameter existence and type
             if operation == "update":
                 if name not in self.parameters:
-                    raise ParameterUpdateError(name, parameter_type.name, "Parameter not found - you can only update registered parameters!")
+                    raise ParameterUpdateError(
+                        name,
+                        parameter_type.name,
+                        "Parameter not found - you can only update registered parameters!",
+                    )
                 if type(self.parameters[name]) != parameter_type.value:
                     msg = f"Parameter called {name} was found but is registered as a different parameter type ({type(self.parameters[name])})"
                     raise ParameterUpdateError(name, parameter_type.name, msg)
@@ -180,6 +203,15 @@ class InteractiveViewer(ABC):
         else:
             self.parameters[name] = new_param
 
+    @validate_parameter_operation("add", ParameterType.boolean)
+    def add_boolean(self, name: str, *, value: bool) -> None:
+        try:
+            new_param = ParameterType.boolean.value(name, value)
+        except Exception as e:
+            raise ParameterAddError(name, "boolean", str(e)) from e
+        else:
+            self.parameters[name] = new_param
+
     @validate_parameter_operation("add", ParameterType.selection)
     def add_selection(self, name: str, *, value: Any, options: List[Any]) -> None:
         try:
@@ -190,7 +222,9 @@ class InteractiveViewer(ABC):
             self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.multiple_selection)
-    def add_multiple_selection(self, name: str, *, value: List[Any], options: List[Any]) -> None:
+    def add_multiple_selection(
+        self, name: str, *, value: List[Any], options: List[Any]
+    ) -> None:
         try:
             new_param = ParameterType.multiple_selection.value(name, value, options)
         except Exception as e:
@@ -198,70 +232,110 @@ class InteractiveViewer(ABC):
         else:
             self.parameters[name] = new_param
 
-    @validate_parameter_operation("add", ParameterType.boolean)
-    def add_boolean(self, name: str, *, value: bool) -> None:
-        try:
-            new_param = ParameterType.boolean.value(name, value)
-        except Exception as e:
-            raise ParameterAddError(name, "boolean", str(e)) from e
-        else:
-            self.parameters[name] = new_param
-
     @validate_parameter_operation("add", ParameterType.integer)
-    def add_integer(self, name: str, *, value: int, min_value: int, max_value: int) -> None:
+    def add_integer(
+        self,
+        name: str,
+        *,
+        value: Union[float, int],
+        min_value: Union[float, int],
+        max_value: Union[float, int],
+    ) -> None:
         try:
-            new_param = ParameterType.integer.value(name, value, min_value, max_value)
+            new_param = ParameterType.integer.value(
+                name,
+                value,
+                min_value,
+                max_value,
+            )
         except Exception as e:
-            raise ParameterAddError(name, "integer", str(e)) from e
+            raise ParameterAddError(name, "number", str(e)) from e
         else:
             self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.float)
-    def add_float(self, name: str, *, value: float, min_value: float, max_value: float, step: float = 0.1) -> None:
-        try:
-            new_param = ParameterType.float.value(name, value, min_value, max_value, step)
-        except Exception as e:
-            raise ParameterAddError(name, "float", str(e)) from e
-        else:
-            self.parameters[name] = new_param
-
-    @validate_parameter_operation("add", ParameterType.integer_pair)
-    def add_integer_pair(
+    def add_float(
         self,
         name: str,
         *,
-        value: Tuple[int, int],
-        min_value: int,
-        max_value: int,
-    ) -> None:
-        try:
-            new_param = ParameterType.integer_pair.value(name, value, min_value, max_value)
-        except Exception as e:
-            raise ParameterAddError(name, "integer_pair", str(e)) from e
-        else:
-            self.parameters[name] = new_param
-
-    @validate_parameter_operation("add", ParameterType.float_pair)
-    def add_float_pair(
-        self,
-        name: str,
-        *,
-        value: Tuple[float, float],
-        min_value: float,
-        max_value: float,
+        value: Union[float, int],
+        min_value: Union[float, int],
+        max_value: Union[float, int],
         step: float = 0.1,
     ) -> None:
         try:
-            new_param = ParameterType.float_pair.value(name, value, min_value, max_value, step)
+            new_param = ParameterType.float.value(
+                name,
+                value,
+                min_value,
+                max_value,
+                step,
+            )
         except Exception as e:
-            raise ParameterAddError(name, "float_pair", str(e)) from e
+            raise ParameterAddError(name, "number", str(e)) from e
+        else:
+            self.parameters[name] = new_param
+
+    @validate_parameter_operation("add", ParameterType.integer_range)
+    def add_integer_range(
+        self,
+        name: str,
+        *,
+        value: Tuple[Union[float, int], Union[float, int]],
+        min_value: Union[float, int],
+        max_value: Union[float, int],
+    ) -> None:
+        try:
+            new_param = ParameterType.integer_range.value(
+                name,
+                value,
+                min_value,
+                max_value,
+            )
+        except Exception as e:
+            raise ParameterAddError(name, "integer_range", str(e)) from e
+        else:
+            self.parameters[name] = new_param
+
+    @validate_parameter_operation("add", ParameterType.float_range)
+    def add_float_range(
+        self,
+        name: str,
+        *,
+        value: Tuple[Union[float, int], Union[float, int]],
+        min_value: Union[float, int],
+        max_value: Union[float, int],
+        step: float = 0.1,
+    ) -> None:
+        try:
+            new_param = ParameterType.float_range.value(
+                name,
+                value,
+                min_value,
+                max_value,
+                step,
+            )
+        except Exception as e:
+            raise ParameterAddError(name, "float_range", str(e)) from e
         else:
             self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.unbounded_integer)
-    def add_unbounded_integer(self, name: str, *, value: int, min_value: Optional[int] = None, max_value: Optional[int] = None) -> None:
+    def add_unbounded_integer(
+        self,
+        name: str,
+        *,
+        value: Union[float, int],
+        min_value: Optional[Union[float, int]] = None,
+        max_value: Optional[Union[float, int]] = None,
+    ) -> None:
         try:
-            new_param = ParameterType.unbounded_integer.value(name, value, min_value, max_value)
+            new_param = ParameterType.unbounded_integer.value(
+                name,
+                value,
+                min_value,
+                max_value,
+            )
         except Exception as e:
             raise ParameterAddError(name, "unbounded_integer", str(e)) from e
         else:
@@ -269,10 +343,22 @@ class InteractiveViewer(ABC):
 
     @validate_parameter_operation("add", ParameterType.unbounded_float)
     def add_unbounded_float(
-        self, name: str, *, value: float, min_value: Optional[float] = None, max_value: Optional[float] = None, step: Optional[float] = None
+        self,
+        name: str,
+        *,
+        value: Union[float, int],
+        min_value: Optional[Union[float, int]] = None,
+        max_value: Optional[Union[float, int]] = None,
+        step: float = 0.1,
     ) -> None:
         try:
-            new_param = ParameterType.unbounded_float.value(name, value, min_value, max_value, step)
+            new_param = ParameterType.unbounded_float.value(
+                name,
+                value,
+                min_value,
+                max_value,
+                step,
+            )
         except Exception as e:
             raise ParameterAddError(name, "unbounded_float", str(e)) from e
         else:
@@ -280,7 +366,19 @@ class InteractiveViewer(ABC):
 
     # -------------------- parameter update methods --------------------
     @validate_parameter_operation("update", ParameterType.text)
-    def update_text(self, name: str, *, value: Union[str, _NoUpdate] = _NO_UPDATE) -> None:
+    def update_text(
+        self, name: str, *, value: Union[str, _NoUpdate] = _NO_UPDATE
+    ) -> None:
+        updates = {}
+        if value is not _NO_UPDATE:
+            updates["value"] = value
+        if updates:
+            self.parameters[name].update(updates)
+
+    @validate_parameter_operation("update", ParameterType.boolean)
+    def update_boolean(
+        self, name: str, *, value: Union[bool, _NoUpdate] = _NO_UPDATE
+    ) -> None:
         updates = {}
         if value is not _NO_UPDATE:
             updates["value"] = value
@@ -288,7 +386,13 @@ class InteractiveViewer(ABC):
             self.parameters[name].update(updates)
 
     @validate_parameter_operation("update", ParameterType.selection)
-    def update_selection(self, name: str, *, value: Union[Any, _NoUpdate] = _NO_UPDATE, options: Union[List[Any], _NoUpdate] = _NO_UPDATE) -> None:
+    def update_selection(
+        self,
+        name: str,
+        *,
+        value: Union[Any, _NoUpdate] = _NO_UPDATE,
+        options: Union[List[Any], _NoUpdate] = _NO_UPDATE,
+    ) -> None:
         updates = {}
         if value is not _NO_UPDATE:
             updates["value"] = value
@@ -299,21 +403,17 @@ class InteractiveViewer(ABC):
 
     @validate_parameter_operation("update", ParameterType.multiple_selection)
     def update_multiple_selection(
-        self, name: str, *, value: Union[List[Any], _NoUpdate] = _NO_UPDATE, options: Union[List[Any], _NoUpdate] = _NO_UPDATE
+        self,
+        name: str,
+        *,
+        value: Union[List[Any], _NoUpdate] = _NO_UPDATE,
+        options: Union[List[Any], _NoUpdate] = _NO_UPDATE,
     ) -> None:
         updates = {}
         if value is not _NO_UPDATE:
             updates["value"] = value
         if options is not _NO_UPDATE:
             updates["options"] = options
-        if updates:
-            self.parameters[name].update(updates)
-
-    @validate_parameter_operation("update", ParameterType.boolean)
-    def update_boolean(self, name: str, *, value: Union[bool, _NoUpdate] = _NO_UPDATE) -> None:
-        updates = {}
-        if value is not _NO_UPDATE:
-            updates["value"] = value
         if updates:
             self.parameters[name].update(updates)
 
@@ -358,8 +458,8 @@ class InteractiveViewer(ABC):
         if updates:
             self.parameters[name].update(updates)
 
-    @validate_parameter_operation("update", ParameterType.integer_pair)
-    def update_integer_pair(
+    @validate_parameter_operation("update", ParameterType.integer_range)
+    def update_integer_range(
         self,
         name: str,
         *,
@@ -377,8 +477,8 @@ class InteractiveViewer(ABC):
         if updates:
             self.parameters[name].update(updates)
 
-    @validate_parameter_operation("update", ParameterType.float_pair)
-    def update_float_pair(
+    @validate_parameter_operation("update", ParameterType.float_range)
+    def update_float_range(
         self,
         name: str,
         *,
@@ -405,8 +505,8 @@ class InteractiveViewer(ABC):
         name: str,
         *,
         value: Union[int, _NoUpdate] = _NO_UPDATE,
-        min_value: Union[Optional[int], _NoUpdate] = _NO_UPDATE,
-        max_value: Union[Optional[int], _NoUpdate] = _NO_UPDATE,
+        min_value: Union[int, _NoUpdate] = _NO_UPDATE,
+        max_value: Union[int, _NoUpdate] = _NO_UPDATE,
     ) -> None:
         updates = {}
         if value is not _NO_UPDATE:

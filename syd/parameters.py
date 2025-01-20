@@ -2,28 +2,31 @@ from typing import List, Any, Tuple, Generic, TypeVar, Optional, Dict, Type
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from enum import Enum
-from copy import copy, deepcopy
+from copy import deepcopy
 from warnings import warn
 
 T = TypeVar("T")
 
 
+# Keep original Parameter class and exceptions unchanged
 class ParameterAddError(Exception):
-    """Raised when parameter creation fails due to invalid arguments or state."""
-
     def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
         self.parameter_name = parameter_name
         self.parameter_type = parameter_type
-        super().__init__(f"Failed to create {parameter_type} parameter '{parameter_name}'" + (f": {message}" if message else ""))
+        super().__init__(
+            f"Failed to create {parameter_type} parameter '{parameter_name}'"
+            + (f": {message}" if message else "")
+        )
 
 
 class ParameterUpdateError(Exception):
-    """Raised when parameter update fails due to invalid arguments or state."""
-
     def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
         self.parameter_name = parameter_name
         self.parameter_type = parameter_type
-        super().__init__(f"Failed to update {parameter_type} parameter '{parameter_name}'" + (f": {message}" if message else ""))
+        super().__init__(
+            f"Failed to update {parameter_type} parameter '{parameter_name}'"
+            + (f": {message}" if message else "")
+        )
 
 
 def get_parameter_attributes(param_class) -> List[str]:
@@ -43,7 +46,7 @@ def get_parameter_attributes(param_class) -> List[str]:
 
 @dataclass
 class Parameter(Generic[T], ABC):
-    """Abstract base class for parameters that should not be instantiated directly."""
+    """Base parameter class with safe update functionality."""
 
     name: str
     value: T
@@ -65,78 +68,48 @@ class Parameter(Generic[T], ABC):
         raise NotImplementedError
 
     def update(self, updates: Dict[str, Any]) -> None:
-        """Update parameter attributes while respecting validation rules.
-
-        Updates are performed atomically - either all updates succeed or none do.
-        The parameter state remains unchanged if any validation fails.
-
-        Args:
-            updates: Dictionary of attributes to update
-
-        Raises:
-            ValueError: If attempting to update 'name' or an invalid attribute
-            ParameterUpdateError: If any validation fails during the update
-        """
-        # Make a copy of self
+        """Update parameter attributes while respecting validation rules."""
         param_copy = deepcopy(self)
 
         try:
-            # Apply updates to copy using private method
             param_copy._unsafe_update(updates)
 
-            # If we get here, updates and validation succeeded on the copy
-            # Now transfer all non-private attributes using proper setters
             for key, value in vars(param_copy).items():
                 if not key.startswith("_"):
                     setattr(self, key, value)
-
-            # Handle value separately using property setter
             self.value = param_copy.value
 
         except Exception as e:
-            # Re-raise as ParameterUpdateError with context
             if isinstance(e, ValueError):
-                raise ParameterUpdateError(self.name, type(self).__name__, str(e)) from e
+                raise ParameterUpdateError(
+                    self.name, type(self).__name__, str(e)
+                ) from e
             else:
-                raise ParameterUpdateError(self.name, type(self).__name__, f"Update failed: {str(e)}") from e
+                raise ParameterUpdateError(
+                    self.name, type(self).__name__, f"Update failed: {str(e)}"
+                ) from e
 
     def _unsafe_update(self, updates: Dict[str, Any]) -> None:
-        """Internal method to apply updates without safety mechanisms.
-
-        This method performs the actual update logic but without the safety of doing it
-        on a copy first. It should only be called from the safe update() method. This
-        method will leave self in an inconsistent state if it fails.
-
-        Args:
-            updates: Dictionary of attributes to update
-
-        Raises:
-            ValueError: If attempting to update 'name' or an invalid attribute
-        """
-        # Validate the updates first
+        """Internal method to apply updates without safety mechanisms."""
         valid_attributes = get_parameter_attributes(type(self))
 
         for key, new_value in updates.items():
             if key == "name":
-                raise ValueError(f"Cannot update parameter name")
+                raise ValueError("Cannot update parameter name")
             elif key not in valid_attributes:
-                raise ValueError(f"Update failed, {key} is not a valid attribute for {self.name}")
+                raise ValueError(f"Update failed, {key} is not a valid attribute")
 
-        # Apply non-value updates first
         for key, new_value in updates.items():
             if key != "value":
                 setattr(self, key, new_value)
 
-        # Update value last to avoid validation errors in case
-        # the user changed options/bounds/etc
         if "value" in updates:
             self.value = updates["value"]
 
-        # Final validation of the complete state
         self._validate_update()
 
     def _validate_update(self) -> None:
-        """Optional method to validate the update after all attributes have been set."""
+        """Optional method to validate the complete state after an update."""
         pass
 
 
@@ -148,6 +121,16 @@ class TextParameter(Parameter[str]):
 
     def _validate(self, new_value: Any) -> str:
         return str(new_value)
+
+
+@dataclass(init=False)
+class BooleanParameter(Parameter[bool]):
+    def __init__(self, name: str, value: bool = True):
+        self.name = name
+        self._value = self._validate(value)
+
+    def _validate(self, new_value: Any) -> bool:
+        return bool(new_value)
 
 
 @dataclass(init=False)
@@ -166,9 +149,13 @@ class SelectionParameter(Parameter[Any]):
 
     def _validate_update(self) -> None:
         if not isinstance(self.options, (list, tuple)):
-            raise TypeError(f"Options for parameter {self.name} are not a list or tuple: {self.options}")
+            raise TypeError(
+                f"Options for parameter {self.name} are not a list or tuple: {self.options}"
+            )
         if self.value not in self.options:
-            warn(f"Value {self.value} not in options: {self.options}, setting to first option")
+            warn(
+                f"Value {self.value} not in options: {self.options}, setting to first option"
+            )
             self.value = self.options[0]
 
 
@@ -183,206 +170,252 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
 
     def _validate(self, new_value: Any) -> List[Any]:
         if not isinstance(new_value, (list, tuple)):
-            raise TypeError(f"Expected list or tuple, got {type(new_value)}")
-        if not all(val in self.options for val in new_value):
-            invalid = [val for val in new_value if val not in self.options]
+            raise TypeError(f"Value must be a list or tuple")
+        invalid = [val for val in new_value if val not in self.options]
+        if invalid:
             raise ValueError(f"Values {invalid} not in options: {self.options}")
         return list(new_value)
 
     def _validate_update(self) -> None:
+        if not isinstance(self.options, (list, tuple)):
+            raise TypeError(
+                f"Options for parameter {self.name} are not a list or tuple: {self.options}"
+            )
         if not isinstance(self.value, (list, tuple)):
-            warn(f"For parameter {self.name}, value {self.value} is not a list or tuple. Setting to empty list.")
+            warn(
+                f"For parameter {self.name}, value {self.value} is not a list or tuple. Setting to empty list."
+            )
             self.value = []
         if not all(val in self.options for val in self.value):
             invalid = [val for val in self.value if val not in self.options]
-            warn(f"For parameter {self.name}, value {self.value} contains invalid options: {invalid}. Setting to empty list.")
+            warn(
+                f"For parameter {self.name}, value {self.value} contains invalid options: {invalid}. Setting to empty list."
+            )
             self.value = []
 
 
 @dataclass(init=False)
-class BooleanParameter(Parameter[bool]):
-    def __init__(self, name: str, value: bool = True):
+class IntegerParameter(Parameter[int]):
+    min_value: int
+    max_value: int
+
+    def __init__(
+        self,
+        name: str,
+        value: int,
+        min_value: int,
+        max_value: int,
+    ):
         self.name = name
+        self.min_value = self._validate(min_value, compare_to_range=False)
+        self.max_value = self._validate(max_value, compare_to_range=False)
         self._value = self._validate(value)
 
-    def _validate(self, new_value: Any) -> bool:
-        return bool(new_value)
-
-
-@dataclass(init=False)
-class NumericParameter(Parameter[T], ABC):
-    min_value: T
-    max_value: T
-    _param_type: type = None  # Will be overridden by subclasses
-
-    def _validate_update(self) -> None:
-        self.min_value = self._validate(self.min_value, compare_to_range=False)
-        self.max_value = self._validate(self.max_value, compare_to_range=False)
-        self.value = self._validate(self.value)
-        if self.min_value > self.max_value:
-            warn(f"For parameter {self.name}, minimum value {self.min_value} is greater than maximum value {self.max_value}. Switching values.")
-            self.min_value, self.max_value = self.max_value, self.min_value
-
-    def _validate(self, new_value: Any, compare_to_range: bool = True) -> T:
+    def _validate(self, new_value: Any, compare_to_range: bool = True) -> int:
         try:
-            value = self._param_type(new_value)
-        except (TypeError, ValueError):
-            raise TypeError(f"Cannot convert {new_value} to {self._param_type.__name__}")
+            new_value = int(new_value)
+        except ValueError:
+            raise ValueError(f"Value {new_value} cannot be converted to int")
 
         if compare_to_range:
-            old_value = copy(value)
-            value = max(self.min_value, value)
-            value = min(self.max_value, value)
-            if value != old_value:
-                warn(f"For parameter {self.name}, value {old_value} is not in the range [{self.min_value}, {self.max_value}]. Clamping to {value}.")
+            if new_value < self.min_value:
+                warn(f"Value {new_value} below minimum {self.min_value}, clamping")
+                new_value = self.min_value
+            if new_value > self.max_value:
+                warn(f"Value {new_value} above maximum {self.max_value}, clamping")
+                new_value = self.max_value
+        return int(new_value)
 
-        return value
+    def _validate_update(self) -> None:
+        if self.min_value is None or self.max_value is None:
+            raise ParameterUpdateError(
+                self.name,
+                type(self).__name__,
+                "IntegerParameter must have both min_value and max_value bounds",
+            )
+        if self.min_value > self.max_value:
+            warn(f"Min value greater than max value, swapping")
+            self.min_value, self.max_value = self.max_value, self.min_value
+        self.value = self._validate(self.value)
 
 
 @dataclass(init=False)
-class IntegerParameter(NumericParameter[int]):
-    _param_type: type = int
-
-    def __init__(self, name: str, value: int, min_value: int, max_value: int):
-        self.name = name
-        self.min_value = self._validate(min_value, compare_to_range=False)
-        self.max_value = self._validate(max_value, compare_to_range=False)
-        self._value = self._validate(value)
-
-
-@dataclass(init=False)
-class FloatParameter(NumericParameter[float]):
+class FloatParameter(Parameter[float]):
+    min_value: float
+    max_value: float
     step: float
-    _param_type: type = float
 
-    def __init__(self, name: str, value: float, min_value: float, max_value: float, step: float = 0.1):
+    def __init__(
+        self,
+        name: str,
+        value: float,
+        min_value: float,
+        max_value: float,
+        step: float = 0.1,
+    ):
         self.name = name
-        self.min_value = self._validate(min_value, compare_to_range=False)
-        self.max_value = self._validate(max_value, compare_to_range=False)
         self.step = step
+        self.min_value = self._validate(min_value, compare_to_range=False)
+        self.max_value = self._validate(max_value, compare_to_range=False)
         self._value = self._validate(value)
 
-    def _validate(self, new_value: Any, compare_to_range: bool = True) -> T:
+    def _validate(self, new_value: Any, compare_to_range: bool = True) -> float:
         try:
-            value = self._param_type(new_value)
-        except (TypeError, ValueError):
-            raise TypeError(f"Cannot convert {new_value} to {self._param_type.__name__}")
+            new_value = float(new_value)
+        except ValueError:
+            raise ValueError(f"Value {new_value} cannot be converted to float")
+
+        # Round to the nearest step
+        new_value = round(new_value / self.step) * self.step
 
         if compare_to_range:
-            old_value = copy(value)
-            value = max(self.min_value, value)
-            value = min(self.max_value, value)
-            if value != old_value:
-                warn(f"For parameter {self.name}, value {old_value} is not in the range [{self.min_value}, {self.max_value}]. Clamping to {value}.")
-            old_value = copy(value)
-            value = round(value / self.step) * self.step
-            if value != old_value:
-                warn(f"For parameter {self.name}, value {old_value} is not a multiple of {self.step}. Rounding to {value}.")
+            if new_value < self.min_value:
+                warn(f"Value {new_value} below minimum {self.min_value}, clamping")
+                new_value = self.min_value
+            if new_value > self.max_value:
+                warn(f"Value {new_value} above maximum {self.max_value}, clamping")
+                new_value = self.max_value
 
-        return value
-
-
-@dataclass(init=False)
-class PairParameter(Parameter[Tuple[T, T]], ABC):
-    min_value: T
-    max_value: T
-    _param_type: type = None  # Will be overridden by subclasses
+        return float(new_value)
 
     def _validate_update(self) -> None:
-        self.min_value, self.max_value = self._validate((self.min_value, self.max_value), compare_to_range=False)
-        self.value = self._validate(self.value)
+        if self.min_value is None or self.max_value is None:
+            raise ParameterUpdateError(
+                self.name,
+                type(self).__name__,
+                "FloatParameter must have both min_value and max_value bounds",
+            )
         if self.min_value > self.max_value:
-            warn(f"For parameter {self.name}, minimum value {self.min_value} is greater than maximum value {self.max_value}. Switching values.")
+            warn(f"Min value greater than max value, swapping")
             self.min_value, self.max_value = self.max_value, self.min_value
-
-    def _validate(self, new_value: Any, compare_to_range: bool = True) -> Tuple[int, int]:
-        if not isinstance(new_value, (list, tuple)):
-            raise TypeError(f"Expected list or tuple, got {type(new_value)}")
-        try:
-            values = (self._param_type(new_value[0]), self._param_type(new_value[1]))
-        except (TypeError, ValueError):
-            raise TypeError(f"Cannot convert {new_value} to {self._param_type.__name__} pair")
-
-        if compare_to_range:
-            if values[0] > values[1]:
-                warn(f"For parameter {self.name}, values were not sorted. Swapping {values[0]} and {values[1]}.")
-                values = (values[1], values[0])
-            old_values = copy(values)
-            values = (max(self.min_value, values[0]), max(self.min_value, values[1]))
-            values = (min(self.max_value, values[0]), min(self.max_value, values[1]))
-            if values != old_values:
-                warn(
-                    f"For parameter {self.name}, values {old_values} are not in the range [{self.min_value}, {self.max_value}]. Clamping to {values}."
-                )
-        return values
+        self.value = self._validate(self.value)
 
 
 @dataclass(init=False)
-class IntegerPairParameter(PairParameter[int]):
-    _param_type: type = int
+class IntegerRangeParameter(Parameter[Tuple[int, int]]):
+    min_value: int
+    max_value: int
 
-    def __init__(self, name: str, value: Tuple[int, int], min_value: int, max_value: int):
+    def __init__(
+        self,
+        name: str,
+        value: Tuple[int, int],
+        min_value: int,
+        max_value: int,
+    ):
         self.name = name
-        self.min_value, self.max_value = self._validate((min_value, max_value), compare_to_range=False)
+        self.min_value = self._validate_single(min_value)
+        self.max_value = self._validate_single(max_value)
         self._value = self._validate(value)
 
+    def _validate_single(self, new_value: Any) -> int:
+        """Validate a single number value."""
+        try:
+            return int(new_value)
+        except ValueError:
+            raise ValueError(f"Value {new_value} cannot be converted to int")
+
+    def _validate(self, new_value: Any) -> Tuple[int, int]:
+        if not isinstance(new_value, (tuple, list)) or len(new_value) != 2:
+            raise ValueError("Value must be a tuple of (low, high)")
+
+        low = self._validate_single(new_value[0])
+        high = self._validate_single(new_value[1])
+
+        if low > high:
+            warn(f"Low value {low} greater than high value {high}, swapping")
+            low, high = high, low
+
+        if low < self.min_value:
+            warn(f"Low value {low} below minimum {self.min_value}, clamping")
+            low = self.min_value
+        if high > self.max_value:
+            warn(f"High value {high} above maximum {self.max_value}, clamping")
+            high = self.max_value
+
+        return (low, high)
+
+    def _validate_update(self) -> None:
+        if self.min_value is None or self.max_value is None:
+            raise ParameterUpdateError(
+                self.name,
+                type(self).__name__,
+                "IntegerRangeParameter must have both min_value and max_value bounds",
+            )
+        if self.min_value > self.max_value:
+            warn(f"Min value greater than max value, swapping")
+            self.min_value, self.max_value = self.max_value, self.min_value
+        self.value = self._validate(self.value)
+
 
 @dataclass(init=False)
-class FloatPairParameter(PairParameter[float]):
+class FloatRangeParameter(Parameter[Tuple[float, float]]):
+    min_value: float
+    max_value: float
     step: float
-    _param_type: type = float
 
     def __init__(
         self,
         name: str,
         value: Tuple[float, float],
-        min_value: float = None,
-        max_value: float = None,
+        min_value: float,
+        max_value: float,
         step: float = 0.1,
     ):
         self.name = name
-        self.min_value, self.max_value = self._validate((min_value, max_value), compare_to_range=False)
-        self._value = self._validate(value)
         self.step = step
+        self.min_value = self._validate_single(min_value)
+        self.max_value = self._validate_single(max_value)
+        self._value = self._validate(value)
 
+    def _validate_single(self, new_value: Any) -> float:
+        """Validate a single number value."""
+        try:
+            new_value = float(new_value)
+        except ValueError:
+            raise ValueError(f"Value {new_value} cannot be converted to float")
 
-@dataclass(init=False)
-class UnboundedNumericParameter(Parameter[T], ABC):
-    min_value: Optional[T]
-    max_value: Optional[T]
-    _param_type: type = None  # Will be overridden by subclasses
+        # Round to the nearest step
+        new_value = round(new_value / self.step) * self.step
+        return new_value
+
+    def _validate(self, new_value: Any) -> Tuple[float, float]:
+        if not isinstance(new_value, (tuple, list)) or len(new_value) != 2:
+            raise ValueError("Value must be a tuple of (low, high)")
+
+        low = self._validate_single(new_value[0])
+        high = self._validate_single(new_value[1])
+
+        if low > high:
+            warn(f"Low value {low} greater than high value {high}, swapping")
+            low, high = high, low
+
+        if low < self.min_value:
+            warn(f"Low value {low} below minimum {self.min_value}, clamping")
+            low = self.min_value
+        if high > self.max_value:
+            warn(f"High value {high} above maximum {self.max_value}, clamping")
+            high = self.max_value
+
+        return (low, high)
 
     def _validate_update(self) -> None:
-        if self.min_value is not None:
-            self.min_value = self._validate(self.min_value, compare_to_range=False)
-        if self.max_value is not None:
-            self.max_value = self._validate(self.max_value, compare_to_range=False)
-        self.value = self._validate(self.value)
-        if self.min_value is not None and self.max_value is not None and self.min_value > self.max_value:
-            warn(f"For parameter {self.name}, minimum value {self.min_value} is greater than maximum value {self.max_value}. Switching values.")
+        if self.min_value is None or self.max_value is None:
+            raise ParameterUpdateError(
+                self.name,
+                type(self).__name__,
+                "FloatRangeParameter must have both min_value and max_value bounds",
+            )
+        if self.min_value > self.max_value:
+            warn(f"Min value greater than max value, swapping")
             self.min_value, self.max_value = self.max_value, self.min_value
-
-    def _validate(self, new_value: Any, compare_to_range: bool = True) -> T:
-        try:
-            value = self._param_type(new_value)
-        except (TypeError, ValueError):
-            raise TypeError(f"Cannot convert {new_value} to {self._param_type.__name__}")
-
-        if compare_to_range:
-            old_value = copy(value)
-            if self.min_value is not None:
-                value = max(self.min_value, value)
-            if self.max_value is not None:
-                value = min(self.max_value, value)
-            if value != old_value:
-                warn(f"For parameter {self.name}, value {old_value} is not in the range [{self.min_value}, {self.max_value}]. Clamping to {value}.")
-
-        return value
+        self.value = self._validate(self.value)
 
 
 @dataclass(init=False)
-class UnboundedIntegerParameter(UnboundedNumericParameter[int]):
-    _param_type: type = int
+class UnboundedIntegerParameter(Parameter[int]):
+    min_value: Optional[int]
+    max_value: Optional[int]
 
     def __init__(
         self,
@@ -391,13 +424,50 @@ class UnboundedIntegerParameter(UnboundedNumericParameter[int]):
         min_value: Optional[int] = None,
         max_value: Optional[int] = None,
     ):
-        super().__init__(name, value, min_value, max_value)
+        self.name = name
+        self.min_value = (
+            self._validate(min_value, compare_to_range=False)
+            if min_value is not None
+            else None
+        )
+        self.max_value = (
+            self._validate(max_value, compare_to_range=False)
+            if max_value is not None
+            else None
+        )
+        self._value = self._validate(value)
+
+    def _validate(self, new_value: Any, compare_to_range: bool = True) -> int:
+        try:
+            new_value = int(new_value)
+        except ValueError:
+            raise ValueError(f"Value {new_value} cannot be converted to int")
+
+        if compare_to_range:
+            if self.min_value is not None and new_value < self.min_value:
+                warn(f"Value {new_value} below minimum {self.min_value}, clamping")
+                new_value = self.min_value
+            if self.max_value is not None and new_value > self.max_value:
+                warn(f"Value {new_value} above maximum {self.max_value}, clamping")
+                new_value = self.max_value
+        return int(new_value)
+
+    def _validate_update(self) -> None:
+        if (
+            self.min_value is not None
+            and self.max_value is not None
+            and self.min_value > self.max_value
+        ):
+            warn(f"Min value greater than max value, swapping")
+            self.min_value, self.max_value = self.max_value, self.min_value
+        self.value = self._validate(self.value)
 
 
 @dataclass(init=False)
-class UnboundedFloatParameter(UnboundedNumericParameter[float]):
-    step: Optional[float]  # None means no step constraint
-    _param_type: type = float
+class UnboundedFloatParameter(Parameter[float]):
+    min_value: Optional[float]
+    max_value: Optional[float]
+    step: float
 
     def __init__(
         self,
@@ -405,40 +475,62 @@ class UnboundedFloatParameter(UnboundedNumericParameter[float]):
         value: float,
         min_value: Optional[float] = None,
         max_value: Optional[float] = None,
-        step: Optional[float] = None,
+        step: float = 0.1,
     ):
-        super().__init__(name, value, min_value, max_value)
+        self.name = name
         self.step = step
+        self.min_value = (
+            self._validate(min_value, compare_to_range=False)
+            if min_value is not None
+            else None
+        )
+        self.max_value = (
+            self._validate(max_value, compare_to_range=False)
+            if max_value is not None
+            else None
+        )
+        self._value = self._validate(value)
 
-    def _validate(self, new_value: Any, compare_to_range: bool = True) -> T:
+    def _validate(self, new_value: Any, compare_to_range: bool = True) -> float:
         try:
-            value = self._param_type(new_value)
-        except (TypeError, ValueError):
-            raise TypeError(f"Cannot convert {new_value} to {self._param_type.__name__}")
+            new_value = float(new_value)
+        except ValueError:
+            raise ValueError(f"Value {new_value} cannot be converted to float")
 
-        if self.step is not None:
-            value = round(value / self.step) * self.step
+        # Round to the nearest step
+        new_value = round(new_value / self.step) * self.step
 
         if compare_to_range:
-            old_value = copy(value)
-            if self.min_value is not None:
-                value = max(self.min_value, value)
-            if self.max_value is not None:
-                value = min(self.max_value, value)
-            if value != old_value:
-                warn(f"For parameter {self.name}, value {old_value} is not in the range [{self.min_value}, {self.max_value}]. Clamping to {value}.")
+            if self.min_value is not None and new_value < self.min_value:
+                warn(f"Value {new_value} below minimum {self.min_value}, clamping")
+                new_value = self.min_value
+            if self.max_value is not None and new_value > self.max_value:
+                warn(f"Value {new_value} above maximum {self.max_value}, clamping")
+                new_value = self.max_value
 
-        return value
+        return float(new_value)
+
+    def _validate_update(self) -> None:
+        if (
+            self.min_value is not None
+            and self.max_value is not None
+            and self.min_value > self.max_value
+        ):
+            warn(f"Min value greater than max value, swapping")
+            self.min_value, self.max_value = self.max_value, self.min_value
+        self.value = self._validate(self.value)
 
 
 class ParameterType(Enum):
+    """Registry of all available parameter types."""
+
     text = TextParameter
+    boolean = BooleanParameter
     selection = SelectionParameter
     multiple_selection = MultipleSelectionParameter
-    boolean = BooleanParameter
     integer = IntegerParameter
     float = FloatParameter
-    integer_pair = IntegerPairParameter
-    float_pair = FloatPairParameter
+    integer_range = IntegerRangeParameter
+    float_range = FloatRangeParameter
     unbounded_integer = UnboundedIntegerParameter
     unbounded_float = UnboundedFloatParameter
