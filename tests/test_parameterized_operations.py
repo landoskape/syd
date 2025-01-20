@@ -44,6 +44,7 @@ PARAM_CONFIGS = {
         "bad_options": 123,
         "varied_value": [1, "2"],
         "varied_options": [1, "2", 3, "4"],
+        "excessive_values": ["a", "a", "b", "b", "c", "c"],
     },
     ParameterType.integer: {
         "basic_value": 1,
@@ -305,6 +306,23 @@ def test_selection_specific_operations(param_type):
         viewer.parameters[f"{param_type.name}_varied"].options
         == config["varied_options"]
     )
+
+    if param_type == ParameterType.multiple_selection:
+        update_method(
+            f"{param_type.name}_1",
+            value=config["excessive_values"],
+            options=config["options"],
+        )
+        assert viewer.parameters[f"{param_type.name}_1"].value == config["options"]
+
+    if param_type == ParameterType.multiple_selection:
+        update_method(
+            f"{param_type.name}_1",
+            value=config["excessive_values"],
+            options=config["options"] + config["options"],
+        )
+        assert viewer.parameters[f"{param_type.name}_1"].value == config["options"]
+        assert viewer.parameters[f"{param_type.name}_1"].options == config["options"]
 
 
 @pytest.mark.parametrize(
