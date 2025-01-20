@@ -1,5 +1,11 @@
 # syd
- A package to help you share your data!
+
+[![PyPI version](https://badge.fury.io/py/syd.svg)](https://badge.fury.io/py/syd)
+[![Tests](https://github.com/landoskape/syd/actions/workflows/tests.yml/badge.svg)](https://github.com/landoskape/syd/actions/workflows/tests.yml)
+[![Documentation Status](https://readthedocs.org/projects/shareyourdata/badge/?version=latest)](https://shareyourdata.readthedocs.io/en/latest/?badge=latest)
+[![codecov](https://codecov.io/gh/landoskape/syd/branch/main/graph/badge.svg)](https://codecov.io/gh/landoskape/syd)
+
+A package to help you share your data!
 
 Have you ever wanted to look through all your data really quickly interactively? Of course you have. Mo data mo problems, but only if you don't know what to do with it. And that starts with looking at your data. And that's why syd stands for show your data! 
 
