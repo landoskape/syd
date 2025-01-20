@@ -37,8 +37,12 @@ def test_all_methods_have_parameter_types():
 
     param_names = {param_type.name for param_type in ParameterType}
 
-    assert set(add_methods) == param_names, "Mismatch between add methods and parameter types"
-    assert set(update_methods) == param_names, "Mismatch between update methods and parameter types"
+    assert (
+        set(add_methods) == param_names
+    ), "Mismatch between add methods and parameter types"
+    assert (
+        set(update_methods) == param_names
+    ), "Mismatch between update methods and parameter types"
 
 
 @pytest.mark.parametrize("param_type", ParameterType)
@@ -63,7 +67,9 @@ def test_method_signatures_match_parameters(param_type):
     update_params = get_method_parameters(update_method)
 
     for attr_name in param_attrs:
-        assert attr_name in update_params, f"Missing {attr_name} in update_{param_type.name}"
+        assert (
+            attr_name in update_params
+        ), f"Missing {attr_name} in update_{param_type.name}"
 
 
 def test_no_extra_parameters():
@@ -77,9 +83,13 @@ def test_no_extra_parameters():
         # Check add method
         add_method = getattr(viewer, f"add_{param_type.name}")
         add_params = get_method_parameters(add_method)
-        assert set(add_params) <= set(param_attrs), f"Extra parameters in add_{param_type.name}"
+        assert set(add_params) <= set(
+            param_attrs
+        ), f"Extra parameters in add_{param_type.name}"
 
         # Check update method
         update_method = getattr(viewer, f"update_{param_type.name}")
         update_params = get_method_parameters(update_method)
-        assert set(update_params) <= set(param_attrs), f"Extra parameters in update_{param_type.name}"
+        assert set(update_params) <= set(
+            param_attrs
+        ), f"Extra parameters in update_{param_type.name}"
