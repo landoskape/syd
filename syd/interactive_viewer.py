@@ -103,8 +103,8 @@ def validate_parameter_operation(
                         parameter_type.name,
                         "Parameter not found - you can only update registered parameters!",
                     )
-                if type(self.parameters[name]) != parameter_type.value:
-                    msg = f"Parameter called {name} was found but is registered as a different parameter type ({type(self.parameters[name])})"
+                if not isinstance(self.parameters[name], parameter_type.value):
+                    msg = f"Parameter called {name} was found but is registered as a different parameter type ({type(self.parameters[name])}). Expecting {parameter_type.value}."
                     raise ParameterUpdateError(name, parameter_type.name, msg)
 
             try:
@@ -213,7 +213,7 @@ class InteractiveViewer(ABC):
             deployer = NotebookDeployment(self, **kwargs)
             deployer.deploy()
 
-            return deployer
+            return self
         else:
             raise ValueError(
                 f"Unsupported environment: {env}, only 'notebook' is supported right now."
