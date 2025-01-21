@@ -1189,7 +1189,7 @@ class UnboundedFloatParameter(Parameter[float]):
         self.value = self._validate(self.value)
 
 
-class Button:
+class ButtonAction:
     """A button with a programmable callback."""
 
     _is_button: bool = True
@@ -1228,3 +1228,7 @@ class ParameterType(Enum):
     float_range = FloatRangeParameter
     unbounded_integer = UnboundedIntegerParameter
     unbounded_float = UnboundedFloatParameter
+
+
+class ActionType(Enum):
+    button = ButtonAction

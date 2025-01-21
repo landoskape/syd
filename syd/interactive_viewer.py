@@ -6,10 +6,10 @@ from matplotlib.figure import Figure
 
 from .parameters import (
     ParameterType,
+    ActionType,
     Parameter,
     ParameterAddError,
     ParameterUpdateError,
-    Button,
 )
 
 
@@ -29,7 +29,7 @@ _NO_UPDATE = _NoUpdate()
 
 
 def validate_parameter_operation(
-    operation: str, parameter_type: ParameterType
+    operation: str, parameter_type: Union[ParameterType, ActionType]
 ) -> Callable:
     """
     Decorator that validates parameter operations for the InteractiveViewer class.
@@ -743,7 +743,7 @@ class InteractiveViewer(ABC):
         else:
             self.parameters[name] = new_param
 
-    @validate_parameter_operation("add", ParameterType.button)
+    @validate_parameter_operation("add", ActionType.button)
     def add_button(
         self,
         name: str,
@@ -779,7 +779,7 @@ class InteractiveViewer(ABC):
             def wrapped_callback(button):
                 callback(self.get_state())
 
-            new_param = Button(name, label, wrapped_callback)
+            new_param = ActionType.button.value(name, label, wrapped_callback)
         except Exception as e:
             raise ParameterAddError(name, "button", str(e)) from e
         else:
@@ -1229,7 +1229,7 @@ class InteractiveViewer(ABC):
         if updates:
             self.parameters[name].update(updates)
 
-    @validate_parameter_operation("update", ParameterType.button)
+    @validate_parameter_operation("update", ActionType.button)
     def update_button(
         self,
         name: str,
@@ -1241,7 +1241,7 @@ class InteractiveViewer(ABC):
         Update a button parameter's label and/or callback function.
 
         Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_button`.
-        See :class:`~syd.parameters.ButtonParameter` for details.
+        See :class:`~syd.parameters.ButtonAction` for details.
 
         Parameters
         ----------

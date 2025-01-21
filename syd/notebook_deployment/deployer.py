@@ -6,7 +6,7 @@ from IPython.display import display
 import matplotlib.pyplot as plt
 
 from ..interactive_viewer import InteractiveViewer
-from .widgets import BaseParameterWidget, create_parameter_widget
+from .widgets import BaseWidget, create_widget
 
 
 @contextmanager
@@ -62,7 +62,7 @@ class NotebookDeployment:
         self.continuous_update = continuous_update
 
         # Initialize containers
-        self.parameter_widgets: Dict[str, BaseParameterWidget] = {}
+        self.parameter_widgets: Dict[str, BaseWidget] = {}
         self.layout_widgets = self._create_layout_controls()
         self.plot_output = widgets.Output()
 
@@ -95,7 +95,7 @@ class NotebookDeployment:
     def _create_parameter_widgets(self) -> None:
         """Create widget instances for all parameters."""
         for name, param in self.viewer.parameters.items():
-            widget = create_parameter_widget(
+            widget = create_widget(
                 param,
                 continuous_update=self.continuous_update,
             )

@@ -14,14 +14,14 @@ from ..parameters import (
     FloatRangeParameter,
     UnboundedIntegerParameter,
     UnboundedFloatParameter,
-    ButtonParameter,
+    ButtonAction,
 )
 
 T = TypeVar("T", bound=Parameter[Any])
 W = TypeVar("W", bound=widgets.Widget)
 
 
-class BaseParameterWidget(Generic[T, W], ABC):
+class BaseWidget(Generic[T, W], ABC):
     """
     Abstract base class for all parameter widgets.
 
@@ -100,7 +100,7 @@ class BaseParameterWidget(Generic[T, W], ABC):
             self._widget.unobserve(**callback)
 
 
-class TextParameterWidget(BaseParameterWidget[TextParameter, widgets.Text]):
+class TextWidget(BaseWidget[TextParameter, widgets.Text]):
     """Widget for text parameters."""
 
     def _create_widget(
@@ -114,7 +114,7 @@ class TextParameterWidget(BaseParameterWidget[TextParameter, widgets.Text]):
         )
 
 
-class BooleanParameterWidget(BaseParameterWidget[BooleanParameter, widgets.Checkbox]):
+class BooleanWidget(BaseWidget[BooleanParameter, widgets.Checkbox]):
     """Widget for boolean parameters."""
 
     def _create_widget(
@@ -123,9 +123,7 @@ class BooleanParameterWidget(BaseParameterWidget[BooleanParameter, widgets.Check
         return widgets.Checkbox(value=parameter.value, description=parameter.name)
 
 
-class SelectionParameterWidget(
-    BaseParameterWidget[SelectionParameter, widgets.Dropdown]
-):
+class SelectionWidget(BaseWidget[SelectionParameter, widgets.Dropdown]):
     """Widget for single selection parameters."""
 
     def _create_widget(
@@ -153,8 +151,8 @@ class SelectionParameterWidget(
         self._widget.value = new_value
 
 
-class MultipleSelectionParameterWidget(
-    BaseParameterWidget[MultipleSelectionParameter, widgets.SelectMultiple]
+class MultipleSelectionWidget(
+    BaseWidget[MultipleSelectionParameter, widgets.SelectMultiple]
 ):
     """Widget for multiple selection parameters."""
 
@@ -186,7 +184,7 @@ class MultipleSelectionParameterWidget(
         self._widget.value = new_values
 
 
-class IntegerParameterWidget(BaseParameterWidget[IntegerParameter, widgets.IntSlider]):
+class IntegerWidget(BaseWidget[IntegerParameter, widgets.IntSlider]):
     """Widget for integer parameters."""
 
     def _create_widget(
@@ -218,7 +216,7 @@ class IntegerParameterWidget(BaseParameterWidget[IntegerParameter, widgets.IntSl
         self.value = max(parameter.min_value, min(parameter.max_value, current_value))
 
 
-class FloatParameterWidget(BaseParameterWidget[FloatParameter, widgets.FloatSlider]):
+class FloatWidget(BaseWidget[FloatParameter, widgets.FloatSlider]):
     """Widget for float parameters."""
 
     def _create_widget(
@@ -252,9 +250,7 @@ class FloatParameterWidget(BaseParameterWidget[FloatParameter, widgets.FloatSlid
         self.value = max(parameter.min_value, min(parameter.max_value, current_value))
 
 
-class IntegerRangeParameterWidget(
-    BaseParameterWidget[IntegerRangeParameter, widgets.IntRangeSlider]
-):
+class IntegerRangeWidget(BaseWidget[IntegerRangeParameter, widgets.IntRangeSlider]):
     """Widget for integer range parameters."""
 
     def _create_widget(
@@ -289,9 +285,7 @@ class IntegerRangeParameterWidget(
         self.value = (low, high)
 
 
-class FloatRangeParameterWidget(
-    BaseParameterWidget[FloatRangeParameter, widgets.FloatRangeSlider]
-):
+class FloatRangeWidget(BaseWidget[FloatRangeParameter, widgets.FloatRangeSlider]):
     """Widget for float range parameters."""
 
     def _create_widget(
@@ -328,8 +322,8 @@ class FloatRangeParameterWidget(
         self.value = (low, high)
 
 
-class UnboundedIntegerParameterWidget(
-    BaseParameterWidget[UnboundedIntegerParameter, widgets.BoundedIntText]
+class UnboundedIntegerWidget(
+    BaseWidget[UnboundedIntegerParameter, widgets.BoundedIntText]
 ):
     """Widget for unbounded integer parameters."""
 
@@ -359,8 +353,8 @@ class UnboundedIntegerParameterWidget(
             self._widget.max = parameter.max_value
 
 
-class UnboundedFloatParameterWidget(
-    BaseParameterWidget[UnboundedFloatParameter, widgets.BoundedFloatText]
+class UnboundedFloatWidget(
+    BaseWidget[UnboundedFloatParameter, widgets.BoundedFloatText]
 ):
     """Widget for unbounded float parameters."""
 
@@ -390,13 +384,13 @@ class UnboundedFloatParameterWidget(
         self._widget.step = parameter.step
 
 
-class ButtonParameterWidget(BaseParameterWidget[ButtonParameter, widgets.Button]):
+class ButtonWidget(BaseWidget[ButtonAction, widgets.Button]):
     """Widget for button parameters."""
 
     _is_button: bool = True
 
     def _create_widget(
-        self, parameter: ButtonParameter, continuous_update: bool
+        self, parameter: ButtonAction, continuous_update: bool
     ) -> widgets.Button:
         button = widgets.Button(
             description=parameter.label,
@@ -406,11 +400,11 @@ class ButtonParameterWidget(BaseParameterWidget[ButtonParameter, widgets.Button]
         button.on_click(parameter.callback)
         return button
 
-    def matches_parameter(self, parameter: ButtonParameter) -> bool:
+    def matches_parameter(self, parameter: ButtonAction) -> bool:
         """Check if the widget matches the parameter."""
         return self._widget.description == parameter.label
 
-    def extra_updates_from_parameter(self, parameter: ButtonParameter) -> None:
+    def extra_updates_from_parameter(self, parameter: ButtonAction) -> None:
         """Extra updates from the parameter."""
         self._widget.description = parameter.label
         # Update click handler
@@ -438,10 +432,10 @@ class ButtonParameterWidget(BaseParameterWidget[ButtonParameter, widgets.Button]
             self._widget.on_click(None)
 
 
-def create_parameter_widget(
-    parameter: Parameter[Any],
+def create_widget(
+    parameter: Union[Parameter[Any], ButtonAction],
     continuous_update: bool = False,
-) -> BaseParameterWidget[Parameter[Any], widgets.Widget]:
+) -> BaseWidget[Union[Parameter[Any], ButtonAction], widgets.Widget]:
     """Create and return the appropriate widget for the given parameter.
 
     Args:
@@ -449,17 +443,17 @@ def create_parameter_widget(
         continuous_update: Whether to update the widget value continuously during user interaction
     """
     widget_map = {
-        TextParameter: TextParameterWidget,
-        SelectionParameter: SelectionParameterWidget,
-        MultipleSelectionParameter: MultipleSelectionParameterWidget,
-        BooleanParameter: BooleanParameterWidget,
-        IntegerParameter: IntegerParameterWidget,
-        FloatParameter: FloatParameterWidget,
-        IntegerRangeParameter: IntegerRangeParameterWidget,
-        FloatRangeParameter: FloatRangeParameterWidget,
-        UnboundedIntegerParameter: UnboundedIntegerParameterWidget,
-        UnboundedFloatParameter: UnboundedFloatParameterWidget,
-        ButtonParameter: ButtonParameterWidget,
+        TextParameter: TextWidget,
+        SelectionParameter: SelectionWidget,
+        MultipleSelectionParameter: MultipleSelectionWidget,
+        BooleanParameter: BooleanWidget,
+        IntegerParameter: IntegerWidget,
+        FloatParameter: FloatWidget,
+        IntegerRangeParameter: IntegerRangeWidget,
+        FloatRangeParameter: FloatRangeWidget,
+        UnboundedIntegerParameter: UnboundedIntegerWidget,
+        UnboundedFloatParameter: UnboundedFloatWidget,
+        ButtonAction: ButtonWidget,
     }
 
     widget_class = widget_map.get(type(parameter))
