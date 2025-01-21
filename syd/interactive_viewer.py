@@ -208,7 +208,7 @@ class InteractiveViewer(ABC):
     def deploy(self, env: str = "notebook", **kwargs):
         """Deploy the app in a notebook or standalone environment"""
         if env == "notebook":
-            from .notebook_deploy import NotebookDeployment
+            from .notebook_deployment import NotebookDeployment
 
             deployer = NotebookDeployment(self, **kwargs)
             deployer.deploy()

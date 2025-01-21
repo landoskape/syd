@@ -7,13 +7,13 @@ import os, sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from syd.interactive_viewer import InteractiveViewer
-from syd.notebook_deploy.widgets import (
+from syd.notebook_deployment.widgets import (
     create_parameter_widget,
     TextParameterWidget,
     SelectionParameterWidget,
     BooleanParameterWidget,
 )
-from syd.notebook_deploy.deployer import NotebookDeployment, LayoutConfig
+from syd.notebook_deployment.deployer import NotebookDeployment, LayoutConfig
 
 
 @pytest.fixture
