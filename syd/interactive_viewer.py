@@ -1,7 +1,7 @@
 from typing import List, Any, Callable, Dict, Tuple, Union, Optional
 from functools import wraps
+import inspect
 from contextlib import contextmanager
-from abc import ABC, abstractmethod
 from matplotlib.figure import Figure
 
 from .parameters import (
@@ -123,7 +123,7 @@ def validate_parameter_operation(
     return decorator
 
 
-class InteractiveViewer(ABC):
+class InteractiveViewer:
     """
     Base class for creating interactive matplotlib figures with GUI controls.
 
@@ -185,13 +185,13 @@ class InteractiveViewer(ABC):
         """
         return {name: param.value for name, param in self.parameters.items()}
 
-    @abstractmethod
-    def plot(self, **kwargs) -> Figure:
+    def plot(self: "InteractiveViewer", state: Dict[str, Any]) -> Figure:
         """
         Create and return a matplotlib figure.
 
         This method must be implemented in your subclass. It should create a new
-        figure using the current parameter values from self.parameters.
+        figure using the current parameter values from state and anything else you
+        might want from the viewer class (usually called self).
 
         Returns
         -------
@@ -201,10 +201,17 @@ class InteractiveViewer(ABC):
         Notes
         -----
         - Create a new figure each time, don't reuse old ones
-        - Access parameter values using self.parameters['name'].value
+        - Access parameter values using state['param_name']
         - Return the figure object, don't call plt.show()
         """
-        raise NotImplementedError("Subclasses must implement the plot method")
+        raise NotImplementedError(
+            "You must use set_plot(your_plot_function) to set the plot method"
+            " or overwrite the bound method plot(state) before deploying!"
+        )
+
+    def set_plot(self, func: Callable) -> None:
+        """Set the plot method for the viewer"""
+        self.plot = self._prepare_function(func)
 
     def deploy(self, env: str = "notebook", **kwargs):
         """Deploy the app in a notebook or standalone environment"""
@@ -221,13 +228,76 @@ class InteractiveViewer(ABC):
             )
 
     @contextmanager
-    def deploy_app(self):
+    def _deploy_app(self):
         """Internal context manager to control app deployment state"""
         self._app_deployed = True
         try:
             yield
         finally:
             self._app_deployed = False
+
+    def _prepare_function(self, func):
+        """Checks the signature of a function and returns a new function with self included if necessary."""
+
+        params = list(inspect.signature(func).parameters.values())
+        bound_method = hasattr(func, "__self__") and func.__self__ is self
+        wrong_number_of_params = len(params) + bound_method != 2
+        non_positional_params = any(
+            param.kind
+            not in (
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                inspect.Parameter.POSITIONAL_ONLY,
+            )
+            for param in params
+        )
+        if wrong_number_of_params or non_positional_params:
+            func_name = func.__name__
+
+            if bound_method:
+                original_method = getattr(func.__self__.__class__, func.__name__)
+                func_sig = str(inspect.signature(original_method))
+
+                msg = (
+                    f"Your bound method '{func_name}{func_sig}' has an incorrect signature.\n"
+                    "Bound methods must have exactly one positional parameter in addition to self.\n"
+                    "The first parameter should be self -- it corresponds to the viewer.\n"
+                    "The second parameter should be state -- a dictionary of the current state of the viewer.\n"
+                    "\nYour method looks like this:\n"
+                    "class YourViewer(InteractiveViewer):\n"
+                    f"    def {func_name}{func_sig}:\n"
+                    "        ... your function code ...\n"
+                    "\nIt should look like this:\n"
+                    "class YourViewer(InteractiveViewer):\n"
+                    "    def func(self, state):\n"
+                    "        ... your function code ..."
+                )
+                raise ValueError(msg)
+            else:
+                func_sig = str(inspect.signature(func))
+
+                msg = (
+                    f"Your function '{func_name}{func_sig}' has an incorrect signature.\n"
+                    "External function must have exactly two positional parameters.\n"
+                    "The first parameter should be viewer -- it corresponds to the viewer.\n"
+                    "The second parameter should be state -- a dictionary of the current state of the viewer.\n"
+                    "\nYour function looks like this:\n"
+                    f"def {func_name}{func_sig}:\n"
+                    "    ... your function code ...\n"
+                    "\nIt should look like this:\n"
+                    f"def {func_name}(viewer, state):\n"
+                    "    ... your function code ..."
+                )
+                raise ValueError(msg)
+
+        # If not a bound method, wrap it to inject self when called with just the state
+        if bound_method:
+            return func
+
+        @wraps(func)
+        def func_with_self(*args, **kwargs):
+            return func(self, *args, **kwargs)
+
+        return func_with_self
 
     def perform_callbacks(self, name: str) -> bool:
         """Perform callbacks for all parameters that have changed"""
@@ -266,6 +336,8 @@ class InteractiveViewer(ABC):
         """
         if isinstance(parameter_name, str):
             parameter_name = [parameter_name]
+
+        callback = self._prepare_function(callback)
 
         for param_name in parameter_name:
             if param_name not in self.parameters:
@@ -775,11 +847,9 @@ class InteractiveViewer(ABC):
         """
         try:
 
-            # Wrap the callback to include state as an input argument
-            def wrapped_callback(button):
-                callback(self.get_state())
+            callback = self._prepare_function(callback)
 
-            new_param = ActionType.button.value(name, label, wrapped_callback)
+            new_param = ActionType.button.value(name, label, callback)
         except Exception as e:
             raise ParameterAddError(name, "button", str(e)) from e
         else:

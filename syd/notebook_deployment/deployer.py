@@ -106,9 +106,14 @@ class NotebookDeployment:
             # Store in widget dict
             self.parameter_widgets[name] = widget
 
-    def _handle_parameter_change(self, name: str) -> None:
-        """Handle changes to parameter widgets."""
+    def _handle_widget_engagement(self, name: str) -> None:
+        """Handle engagement with an interactive widget."""
         if self._updating:
+            print(
+                "Already updating -- there's a circular dependency!"
+                "This is probably caused by failing to disable callbacks for a parameter."
+                "It's a bug --- tell the developer on github issues please."
+            )
             return
 
         try:
@@ -121,9 +126,9 @@ class NotebookDeployment:
 
                 widget = self.parameter_widgets[name]
 
-                if hasattr(widget, "_is_button") and widget._is_button:
+                if widget._is_action:
                     parameter = self.viewer.parameters[name]
-                    parameter.callback(parameter)
+                    parameter.callback(self.viewer.get_state())
                 else:
                     self.viewer.set_parameter_value(name, widget.value)
 
@@ -135,6 +140,9 @@ class NotebookDeployment:
 
         finally:
             self._updating = False
+
+    def _handle_action(self, name: str) -> None:
+        """Handle actions for parameter widgets."""
 
     def _sync_widgets_with_state(self, exclude: Optional[str] = None) -> None:
         """Sync widget values with viewer state."""
@@ -234,7 +242,7 @@ class NotebookDeployment:
 
     def deploy(self) -> None:
         """Deploy the interactive viewer with proper state management."""
-        with self.viewer.deploy_app():
+        with self.viewer._deploy_app():
             # Create widgets
             self._create_parameter_widgets()
 
