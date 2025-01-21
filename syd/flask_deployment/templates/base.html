@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Interactive Viewer{% endblock %}</title>
+    {% for css in required_css %}
+    <link rel="stylesheet" href="{{ css }}">
+    {% endfor %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        :root {
+            --controls-width: {{ config.controls_width_percent }}%;
+            --plot-width: {{ 100 - config.controls_width_percent }}%;
+        }
+        {{ custom_styles | safe }}
+    </style>
+</head>
+<body>
+    {% block content %}{% endblock %}
+    
+    {% for js in required_js %}
+    <script src="{{ js }}"></script>
+    {% endfor %}
+    <script src="{{ url_for('static', filename='js/components.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
