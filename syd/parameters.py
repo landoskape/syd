@@ -1189,14 +1189,14 @@ class UnboundedFloatParameter(Parameter[float]):
         self.value = self._validate(self.value)
 
 
-class ButtonParameter(Parameter):
-    """A parameter that represents a clickable button."""
+class Button:
+    """A button with a programmable callback."""
 
     _is_button: bool = True
 
-    def __init__(self, name: str, label: str, callback: Callable[[], None]):
+    def __init__(self, name: str, label: str, callback: Callable):
         """
-        Initialize a button parameter.
+        Initialize a button.
 
         Args:
             name: Internal name of the parameter
@@ -1206,7 +1206,6 @@ class ButtonParameter(Parameter):
         self.name = name
         self.label = label
         self.callback = callback
-        self._value = None  # Buttons don't have a value in the traditional sense
 
     def update(self, updates: Dict[str, Any]) -> None:
         """Update the button's label and/or callback."""
@@ -1214,24 +1213,6 @@ class ButtonParameter(Parameter):
             self.label = updates["label"]
         if "callback" in updates:
             self.callback = updates["callback"]
-
-    @property
-    def value(self) -> None:
-        """Buttons don't have a value, always returns None."""
-        return self._value
-
-    @value.setter
-    def value(self, _: Any) -> None:
-        """Buttons don't store values."""
-        pass
-
-    def _validate_update(self) -> None:
-        """Buttons don't need validation."""
-        pass
-
-    def _validate(self, new_value: Any) -> None:
-        """Buttons don't need validation."""
-        pass
 
 
 class ParameterType(Enum):
@@ -1247,4 +1228,3 @@ class ParameterType(Enum):
     float_range = FloatRangeParameter
     unbounded_integer = UnboundedIntegerParameter
     unbounded_float = UnboundedFloatParameter
-    button = ButtonParameter

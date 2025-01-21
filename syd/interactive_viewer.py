@@ -9,6 +9,7 @@ from .parameters import (
     Parameter,
     ParameterAddError,
     ParameterUpdateError,
+    Button,
 )
 
 
@@ -778,7 +779,7 @@ class InteractiveViewer(ABC):
             def wrapped_callback(button):
                 callback(self.get_state())
 
-            new_param = ParameterType.button.value(name, label, wrapped_callback)
+            new_param = Button(name, label, wrapped_callback)
         except Exception as e:
             raise ParameterAddError(name, "button", str(e)) from e
         else:
