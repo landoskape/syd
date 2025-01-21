@@ -2,7 +2,9 @@ import pytest
 from syd.parameters import (
     ParameterAddError,
     ParameterUpdateError,
+    ParameterUpdateWarning,
     ParameterType,
+    ActionType,
 )
 from tests.support import MockViewer, check_no_change
 
@@ -88,6 +90,12 @@ PARAM_CONFIGS = {
         "convert_values": [("5.5", 5.5)],
         "clamping_values": [(-100, 0), (100, 10)],
     },
+    ActionType.button: {
+        "extra_kwargs": {
+            "label": "Click me",
+            "callback": lambda: print("Button clicked!"),
+        },
+    },
 }
 
 
@@ -143,7 +151,7 @@ def test_add_while_deployed(param_type):
     kwargs = config.get("extra_kwargs", {})
 
     with pytest.raises(RuntimeError):
-        with viewer.deploy_app():
+        with viewer._deploy_app():
             add_method(
                 f"{param_type.name}_deployed", value=config["basic_value"], **kwargs
             )
@@ -219,12 +227,12 @@ def test_value_clamping(param_type):
     kwargs = config.get("extra_kwargs", {})
 
     for i, (input_value, expected) in enumerate(clamping_values):
-        with pytest.warns(UserWarning):
+        with pytest.warns(ParameterUpdateWarning):
             add_method(f"{param_type.name}_clamp_{i}", value=input_value, **kwargs)
         assert viewer.parameters[f"{param_type.name}_clamp_{i}"].value == expected
 
     for i, (input_value, expected) in enumerate(clamping_values):
-        with pytest.warns(UserWarning):
+        with pytest.warns(ParameterUpdateWarning):
             update_method(f"{param_type.name}_clamp_{i}", value=input_value, **kwargs)
         assert viewer.parameters[f"{param_type.name}_clamp_{i}"].value == expected
 
@@ -258,7 +266,7 @@ def test_selection_specific_operations(param_type):
     )
 
     # Test that disjoint options convert the value to the first option
-    with pytest.warns(UserWarning):
+    with pytest.warns(ParameterUpdateWarning):
         update_method(f"{param_type.name}_1", options=config["disjoint_options"])
     assert (
         viewer.parameters[f"{param_type.name}_1"].value
@@ -352,17 +360,43 @@ def test_unbounded_specific_operations(param_type):
     assert viewer.parameters[f"{param_type.name}_1"].value == -1000
 
     # Test that you can add a min/max value and it clamps the current value
-    with pytest.warns(UserWarning):
+    with pytest.warns(ParameterUpdateWarning):
         update_method(f"{param_type.name}_1", min_value=0, max_value=10)
     assert viewer.parameters[f"{param_type.name}_1"].value == 0
     assert viewer.parameters[f"{param_type.name}_1"].min_value == 0
     assert viewer.parameters[f"{param_type.name}_1"].max_value == 10
 
     # Test that values are clamped within the min/max value
-    with pytest.warns(UserWarning):
+    with pytest.warns(ParameterUpdateWarning):
         update_method(f"{param_type.name}_1", value=15)
     assert viewer.parameters[f"{param_type.name}_1"].value == 10
 
-    with pytest.warns(UserWarning):
+    with pytest.warns(ParameterUpdateWarning):
         update_method(f"{param_type.name}_1", value=-5)
     assert viewer.parameters[f"{param_type.name}_1"].value == 0
+
+
+@pytest.mark.parametrize("param_type", ParameterType)
+def test_action_parameter(param_type):
+    viewer = MockViewer()
+    config = PARAM_CONFIGS[param_type]
+    add_method = getattr(viewer, f"add_{param_type.name}")
+    kwargs = config.get("extra_kwargs", {})
+    param_name = f"{param_type.name}_1"
+
+    add_method(param_name, value=config["basic_value"], **kwargs)
+    assert hasattr(viewer.parameters[param_name], "_is_action")
+    assert not viewer.parameters[param_name]._is_action
+
+
+@pytest.mark.parametrize("param_type", ActionType)
+def test_action_parameter(param_type):
+    viewer = MockViewer()
+    config = PARAM_CONFIGS[param_type]
+    add_method = getattr(viewer, f"add_{param_type.name}")
+    kwargs = config.get("extra_kwargs", {})
+    param_name = f"{param_type.name}_1"
+
+    add_method(param_name, **kwargs)
+    assert hasattr(viewer.parameters[param_name], "_is_action")
+    assert viewer.parameters[param_name]._is_action
