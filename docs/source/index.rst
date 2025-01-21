@@ -1,5 +1,5 @@
 Welcome to Syd's documentation!
-==============================
+===============================
 
 Syd is a Python library for creating interactive matplotlib visualizations with minimal boilerplate.
 Add GUI controls to your plots with just a few lines of code!
@@ -18,11 +18,28 @@ Add GUI controls to your plots with just a few lines of code!
    viewer = MyViewer()
    viewer.add_float('x', value=1.0, min_value=0, max_value=10)
 
+
+Installation
+============
+
+You can install Syd using pip:
+
+.. code-block:: bash
+
+   pip install syd
+
+Requirements
+------------
+
+- Python 3.7+
+- matplotlib
+- ipywidgets (for Jupyter notebook support) 
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   installation
    quickstart
    examples/index
    api/index 
