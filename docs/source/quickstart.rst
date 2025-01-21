@@ -10,7 +10,7 @@ Creating Your First Interactive Plot
 4. Register callbacks to update the plot when parameters change
 
 Here's a complete example. You can run the complete example 
-`here <https://github.com/sydpy/syd/blob/main/docs/examples/example_notebook.ipynb>`_ 
+`here <https://github.com/landoskape/syd/blob/main/docs/examples/example_notebook.ipynb>`_ 
 or run it yourself in colab:
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
