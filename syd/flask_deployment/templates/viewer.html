@@ -1,0 +1,97 @@
+# templates/viewer.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Viewer</title>
+    {% for css in required_css %}
+    <link rel="stylesheet" href="{{ css }}">
+    {% endfor %}
+    <style>
+        {{ custom_styles | safe }}
+        .controls {
+            {% if config.is_horizontal %}
+            width: {{ config.controls_width_percent }}%;
+            float: left;
+            padding-right: 20px;
+            {% endif %}
+        }
+        .plot-container {
+            {% if config.is_horizontal %}
+            width: {{ 100 - config.controls_width_percent }}%;
+            float: left;
+            {% endif %}
+        }
+        #plot {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="controls">
+                {{ components_html | safe }}
+            </div>
+            <div class="plot-container">
+                <img id="plot" src="{{ initial_plot }}">
+            </div>
+        </div>
+    </div>
+    
+    {% for js in required_js %}
+    <script src="{{ js }}"></script>
+    {% endfor %}
+    
+    <script>
+        function updateParameter(name, value) {
+            fetch('/update_parameter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({name, value})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+                // Update plot
+                document.getElementById('plot').src = data.plot;
+                // Apply any parameter updates
+                for (const [param, js] of Object.entries(data.updates)) {
+                    eval(js);
+                }
+            });
+        }
+        
+        function buttonClick(name) {
+            fetch('/button_click', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({name})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+                // Update plot
+                document.getElementById('plot').src = data.plot;
+                // Apply any parameter updates
+                for (const [param, js] of Object.entries(data.updates)) {
+                    eval(js);
+                }
+            });
+        }
+        
+        // Initialize components
+        {{ components_init | safe }}
+    </script>
+</body>
+</html>

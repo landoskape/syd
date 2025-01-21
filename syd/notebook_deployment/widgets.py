@@ -456,10 +456,22 @@ def create_widget(
         ButtonAction: ButtonWidget,
     }
 
+    # Try direct type lookup first
     widget_class = widget_map.get(type(parameter))
+
+    # If that fails, try matching by class name
+    if widget_class is None:
+        param_type_name = type(parameter).__name__
+        for key_class, value_class in widget_map.items():
+            if key_class.__name__ == param_type_name:
+                widget_class = value_class
+                break
+
     if widget_class is None:
         raise ValueError(
-            f"No widget implementation for parameter type: {type(parameter)}"
+            f"No widget implementation for parameter type: {type(parameter)}\n"
+            f"Parameter type name: {type(parameter).__name__}\n"
+            f"Available types: {[k.__name__ for k in widget_map.keys()]}"
         )
 
     return widget_class(parameter, continuous_update)

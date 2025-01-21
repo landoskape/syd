@@ -4,6 +4,8 @@ from contextlib import contextmanager
 import ipywidgets as widgets
 from IPython.display import display
 import matplotlib.pyplot as plt
+import warnings
+from ..parameters import ParameterUpdateWarning
 
 from ..interactive_viewer import InteractiveViewer
 from .widgets import BaseWidget, create_widget
@@ -26,7 +28,6 @@ class LayoutConfig:
     figure_width: float = 8.0
     figure_height: float = 6.0
     controls_width_percent: int = 30
-    continuous_update: bool = False
 
     def __post_init__(self):
         valid_positions = ["left", "top"]
@@ -51,6 +52,7 @@ class NotebookDeployment:
         viewer: InteractiveViewer,
         layout_config: Optional[LayoutConfig] = None,
         continuous_update: bool = False,
+        suppress_warnings: bool = False,
     ):
         if not isinstance(viewer, InteractiveViewer):  # type: ignore
             raise TypeError(
@@ -60,6 +62,7 @@ class NotebookDeployment:
         self.viewer = viewer
         self.config = layout_config or LayoutConfig()
         self.continuous_update = continuous_update
+        self.suppress_warnings = suppress_warnings
 
         # Initialize containers
         self.parameter_widgets: Dict[str, BaseWidget] = {}
@@ -110,19 +113,25 @@ class NotebookDeployment:
 
         try:
             self._updating = True
-            widget = self.parameter_widgets[name]
 
-            if hasattr(widget, "_is_button") and widget._is_button:
-                parameter = self.viewer.parameters[name]
-                parameter.callback(parameter)
-            else:
-                self.viewer.set_parameter_value(name, widget.value)
+            # Optionally suppress warnings during parameter updates
+            with warnings.catch_warnings():
+                if self.suppress_warnings:
+                    warnings.filterwarnings("ignore", category=ParameterUpdateWarning)
 
-            # Update any widgets that changed due to dependencies
-            self._sync_widgets_with_state(exclude=name)
+                widget = self.parameter_widgets[name]
 
-            # Update the plot
-            self._update_plot()
+                if hasattr(widget, "_is_button") and widget._is_button:
+                    parameter = self.viewer.parameters[name]
+                    parameter.callback(parameter)
+                else:
+                    self.viewer.set_parameter_value(name, widget.value)
+
+                # Update any widgets that changed due to dependencies
+                self._sync_widgets_with_state(exclude=name)
+
+                # Update the plot
+                self._update_plot()
 
         finally:
             self._updating = False

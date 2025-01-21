@@ -1,0 +1,39 @@
+.controls {
+    padding: 20px;
+}
+
+.controls.horizontal {
+    width: var(--controls-width);
+    float: left;
+    padding-right: 20px;
+}
+
+.plot-container {
+    padding: 20px;
+}
+
+.plot-container.horizontal {
+    width: var(--plot-width);
+    float: left;
+}
+
+#plot {
+    width: 100%;
+    height: auto;
+}
+
+.slider, .range-slider {
+    margin: 10px 0;
+}
+
+.value-display {
+    display: block;
+    text-align: center;
+    margin-top: 5px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}

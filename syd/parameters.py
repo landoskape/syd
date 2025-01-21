@@ -1,9 +1,21 @@
-from typing import List, Any, Tuple, Generic, TypeVar, Optional, Dict, Callable
+from typing import (
+    List,
+    Any,
+    Tuple,
+    Generic,
+    TypeVar,
+    Optional,
+    Dict,
+    Callable,
+    Union,
+    Sequence,
+)
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from enum import Enum
 from copy import deepcopy
 from warnings import warn
+import numpy as np
 
 T = TypeVar("T")
 
@@ -51,6 +63,29 @@ class ParameterUpdateError(Exception):
         self.parameter_type = parameter_type
         super().__init__(
             f"Failed to update {parameter_type} parameter '{parameter_name}'"
+            + (f": {message}" if message else "")
+        )
+
+
+class ParameterUpdateWarning(Warning):
+    """
+    Warning raised when there is a non-critical issue updating a parameter.
+
+    Parameters
+    ----------
+    parameter_name : str
+        Name of the parameter that had the warning
+    parameter_type : str
+        Type of the parameter
+    message : str, optional
+        Additional warning details
+    """
+
+    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
+        self.parameter_name = parameter_name
+        self.parameter_type = parameter_type
+        super().__init__(
+            f"Warning updating {parameter_type} parameter '{parameter_name}'"
             + (f": {message}" if message else "")
         )
 
@@ -324,8 +359,8 @@ class SelectionParameter(Parameter[Any]):
         The name of the parameter
     value : Any
         The initially selected value (must be one of the options)
-    options : list
-        List of valid choices that can be selected
+    options : sequence
+        List, tuple, or 1D numpy array of valid choices that can be selected
 
     Examples
     --------
@@ -336,14 +371,70 @@ class SelectionParameter(Parameter[Any]):
     >>> color.value
     'blue'
     >>> color.update({"value": "yellow"})  # This will raise an error
+    >>> # With numpy array
+    >>> import numpy as np
+    >>> numbers = SelectionParameter("number", 1, options=np.array([1, 2, 3]))
+    >>> numbers.value
+    1
     """
 
     options: List[Any]
 
-    def __init__(self, name: str, value: Any, options: List[Any]):
+    def __init__(self, name: str, value: Any, options: Union[Sequence, "np.ndarray"]):
         self.name = name
-        self.options = options
+        self.options = self._validate_options(options)
         self._value = self._validate(value)
+
+    def _validate_options(self, options: Union[Sequence, "np.ndarray"]) -> List[Any]:
+        """
+        Validate options and convert to list if necessary.
+
+        Parameters
+        ----------
+        options : sequence or numpy.ndarray
+            The options to validate
+
+        Returns
+        -------
+        list
+            Validated list of options
+
+        Raises
+        ------
+        TypeError
+            If options is not a list, tuple, or numpy array
+            If numpy array is not 1-dimensional
+        ValueError
+            If any option is not hashable
+        """
+        if isinstance(options, np.ndarray):
+            if options.ndim != 1:
+                raise TypeError(
+                    f"Options array for parameter {self.name} must be 1-dimensional, "
+                    f"got {options.ndim} dimensions"
+                )
+            # Convert to list, handling special dtypes
+            try:
+                options = options.tolist()
+            except Exception as e:
+                raise TypeError(
+                    f"Failed to convert numpy array to list for parameter {self.name}: {str(e)}"
+                )
+        elif not isinstance(options, (list, tuple)):
+            raise TypeError(
+                f"Options for parameter {self.name} must be a list, tuple, or numpy array"
+            )
+
+        # Verify all options are hashable (needed for comparison)
+        try:
+            for opt in options:
+                hash(opt)
+        except TypeError as e:
+            raise ValueError(
+                f"All options for parameter {self.name} must be hashable: {str(e)}"
+            )
+
+        return list(options)
 
     def _validate(self, new_value: Any) -> Any:
         """
@@ -372,13 +463,14 @@ class SelectionParameter(Parameter[Any]):
         Raises:
             TypeError: If options is not a list or tuple
         """
-        if not isinstance(self.options, (list, tuple)):
-            raise TypeError(
-                f"Options for parameter {self.name} are not a list or tuple: {self.options}"
-            )
+        self.options = self._validate_options(self.options)
         if self.value not in self.options:
             warn(
-                f"Value {self.value} not in options: {self.options}, setting to first option"
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Value {self.value} not in options: {self.options}, setting to first option",
+                )
             )
             self.value = self.options[0]
 
@@ -398,8 +490,8 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
         The name of the parameter
     value : list
         List of initially selected values (must all be from options)
-    options : list
-        List of valid choices that can be selected
+    options : sequence
+        List, tuple, or 1D numpy array of valid choices that can be selected
 
     Examples
     --------
@@ -408,17 +500,74 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
     ...     options=["cheese", "mushrooms", "pepperoni", "olives"])
     >>> toppings.value
     ['cheese', 'mushrooms']
-    >>> toppings.update({"value": ["cheese", "pepperoni"]})
-    >>> toppings.value
-    ['cheese', 'pepperoni']
+    >>> # With numpy array
+    >>> import numpy as np
+    >>> numbers = MultipleSelectionParameter("numbers",
+    ...     value=[1, 3],
+    ...     options=np.array([1, 2, 3, 4]))
+    >>> numbers.value
+    [1, 3]
     """
 
     options: List[Any]
 
-    def __init__(self, name: str, value: List[Any], options: List[Any]):
+    def __init__(
+        self, name: str, value: List[Any], options: Union[Sequence, "np.ndarray"]
+    ):
         self.name = name
-        self.options = options
+        self.options = self._validate_options(options)
         self._value = self._validate(value)
+
+    def _validate_options(self, options: Union[Sequence, np.ndarray]) -> List[Any]:
+        """
+        Validate options and convert to list if necessary.
+
+        Parameters
+        ----------
+        options : sequence or numpy.ndarray
+            The options to validate
+
+        Returns
+        -------
+        list
+            Validated list of options
+
+        Raises
+        ------
+        TypeError
+            If options is not a list, tuple, or numpy array
+            If numpy array is not 1-dimensional
+        ValueError
+            If any option is not hashable
+        """
+        if isinstance(options, np.ndarray):
+            if options.ndim != 1:
+                raise TypeError(
+                    f"Options array for parameter {self.name} must be 1-dimensional, "
+                    f"got {options.ndim} dimensions"
+                )
+            # Convert to list, handling special dtypes
+            try:
+                options = options.tolist()
+            except Exception as e:
+                raise TypeError(
+                    f"Failed to convert numpy array to list for parameter {self.name}: {str(e)}"
+                )
+        elif not isinstance(options, (list, tuple)):
+            raise TypeError(
+                f"Options for parameter {self.name} must be a list, tuple, or numpy array"
+            )
+
+        # Verify all options are hashable (needed for comparison)
+        try:
+            for opt in options:
+                hash(opt)
+        except TypeError as e:
+            raise ValueError(
+                f"All options for parameter {self.name} must be hashable: {str(e)}"
+            )
+
+        return list(options)
 
     def _validate(self, new_value: Any) -> List[Any]:
         """
@@ -446,19 +595,24 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
         return [x for x in self.options if x in new_value]
 
     def _validate_update(self) -> None:
-        if not isinstance(self.options, (list, tuple)):
-            raise TypeError(
-                f"Options for parameter {self.name} are not a list or tuple: {self.options}"
-            )
+        self.options = self._validate_options(self.options)
         if not isinstance(self.value, (list, tuple)):
             warn(
-                f"For parameter {self.name}, value {self.value} is not a list or tuple. Setting to empty list."
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"For parameter {self.name}, value {self.value} is not a list or tuple. Setting to empty list.",
+                )
             )
             self.value = []
         if not all(val in self.options for val in self.value):
             invalid = [val for val in self.value if val not in self.options]
             warn(
-                f"For parameter {self.name}, value {self.value} contains invalid options: {invalid}. Setting to empty list."
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"For parameter {self.name}, value {self.value} contains invalid options: {invalid}. Setting to empty list.",
+                )
             )
             self.value = []
         # Keep only unique values while preserving order based on self.options
@@ -535,10 +689,22 @@ class IntegerParameter(Parameter[int]):
 
         if compare_to_range:
             if new_value < self.min_value:
-                warn(f"Value {new_value} below minimum {self.min_value}, clamping")
+                warn(
+                    ParameterUpdateWarning(
+                        self.name,
+                        type(self).__name__,
+                        f"Value {new_value} below minimum {self.min_value}, clamping",
+                    )
+                )
                 new_value = self.min_value
             if new_value > self.max_value:
-                warn(f"Value {new_value} above maximum {self.max_value}, clamping")
+                warn(
+                    ParameterUpdateWarning(
+                        self.name,
+                        type(self).__name__,
+                        f"Value {new_value} above maximum {self.max_value}, clamping",
+                    )
+                )
                 new_value = self.max_value
         return int(new_value)
 
@@ -559,7 +725,13 @@ class IntegerParameter(Parameter[int]):
                 "IntegerParameter must have both min_value and max_value bounds",
             )
         if self.min_value > self.max_value:
-            warn(f"Min value greater than max value, swapping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Min value greater than max value, swapping",
+                )
+            )
             self.min_value, self.max_value = self.max_value, self.min_value
         self.value = self._validate(self.value)
 
@@ -651,10 +823,22 @@ class FloatParameter(Parameter[float]):
 
         if compare_to_range:
             if new_value < self.min_value:
-                warn(f"Value {new_value} below minimum {self.min_value}, clamping")
+                warn(
+                    ParameterUpdateWarning(
+                        self.name,
+                        type(self).__name__,
+                        f"Value {new_value} below minimum {self.min_value}, clamping",
+                    )
+                )
                 new_value = self.min_value
             if new_value > self.max_value:
-                warn(f"Value {new_value} above maximum {self.max_value}, clamping")
+                warn(
+                    ParameterUpdateWarning(
+                        self.name,
+                        type(self).__name__,
+                        f"Value {new_value} above maximum {self.max_value}, clamping",
+                    )
+                )
                 new_value = self.max_value
 
         return float(new_value)
@@ -676,7 +860,13 @@ class FloatParameter(Parameter[float]):
                 "FloatParameter must have both min_value and max_value bounds",
             )
         if self.min_value > self.max_value:
-            warn(f"Min value greater than max value, swapping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Min value greater than max value, swapping",
+                )
+            )
             self.min_value, self.max_value = self.max_value, self.min_value
         self.value = self._validate(self.value)
 
@@ -772,14 +962,32 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
         high = self._validate_single(new_value[1])
 
         if low > high:
-            warn(f"Low value {low} greater than high value {high}, swapping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Low value {low} greater than high value {high}, swapping",
+                )
+            )
             low, high = high, low
 
         if low < self.min_value:
-            warn(f"Low value {low} below minimum {self.min_value}, clamping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Low value {low} below minimum {self.min_value}, clamping",
+                )
+            )
             low = self.min_value
         if high > self.max_value:
-            warn(f"High value {high} above maximum {self.max_value}, clamping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"High value {high} above maximum {self.max_value}, clamping",
+                )
+            )
             high = self.max_value
 
         return (low, high)
@@ -801,7 +1009,13 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
                 "IntegerRangeParameter must have both min_value and max_value bounds",
             )
         if self.min_value > self.max_value:
-            warn(f"Min value greater than max value, swapping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Min value greater than max value, swapping",
+                )
+            )
             self.min_value, self.max_value = self.max_value, self.min_value
         self.value = self._validate(self.value)
 
@@ -913,14 +1127,32 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
         high = self._validate_single(new_value[1])
 
         if low > high:
-            warn(f"Low value {low} greater than high value {high}, swapping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Low value {low} greater than high value {high}, swapping",
+                )
+            )
             low, high = high, low
 
         if low < self.min_value:
-            warn(f"Low value {low} below minimum {self.min_value}, clamping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Low value {low} below minimum {self.min_value}, clamping",
+                )
+            )
             low = self.min_value
         if high > self.max_value:
-            warn(f"High value {high} above maximum {self.max_value}, clamping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"High value {high} above maximum {self.max_value}, clamping",
+                )
+            )
             high = self.max_value
 
         return (low, high)
@@ -942,7 +1174,13 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
                 "FloatRangeParameter must have both min_value and max_value bounds",
             )
         if self.min_value > self.max_value:
-            warn(f"Min value greater than max value, swapping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Min value greater than max value, swapping",
+                )
+            )
             self.min_value, self.max_value = self.max_value, self.min_value
         self.value = self._validate(self.value)
 
@@ -1033,10 +1271,22 @@ class UnboundedIntegerParameter(Parameter[int]):
 
         if compare_to_range:
             if self.min_value is not None and new_value < self.min_value:
-                warn(f"Value {new_value} below minimum {self.min_value}, clamping")
+                warn(
+                    ParameterUpdateWarning(
+                        self.name,
+                        type(self).__name__,
+                        f"Value {new_value} below minimum {self.min_value}, clamping",
+                    )
+                )
                 new_value = self.min_value
             if self.max_value is not None and new_value > self.max_value:
-                warn(f"Value {new_value} above maximum {self.max_value}, clamping")
+                warn(
+                    ParameterUpdateWarning(
+                        self.name,
+                        type(self).__name__,
+                        f"Value {new_value} above maximum {self.max_value}, clamping",
+                    )
+                )
                 new_value = self.max_value
         return int(new_value)
 
@@ -1055,7 +1305,13 @@ class UnboundedIntegerParameter(Parameter[int]):
             and self.max_value is not None
             and self.min_value > self.max_value
         ):
-            warn(f"Min value greater than max value, swapping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Min value greater than max value, swapping",
+                )
+            )
             self.min_value, self.max_value = self.max_value, self.min_value
         self.value = self._validate(self.value)
 
@@ -1161,10 +1417,22 @@ class UnboundedFloatParameter(Parameter[float]):
 
         if compare_to_range:
             if self.min_value is not None and new_value < self.min_value:
-                warn(f"Value {new_value} below minimum {self.min_value}, clamping")
+                warn(
+                    ParameterUpdateWarning(
+                        self.name,
+                        type(self).__name__,
+                        f"Value {new_value} below minimum {self.min_value}, clamping",
+                    )
+                )
                 new_value = self.min_value
             if self.max_value is not None and new_value > self.max_value:
-                warn(f"Value {new_value} above maximum {self.max_value}, clamping")
+                warn(
+                    ParameterUpdateWarning(
+                        self.name,
+                        type(self).__name__,
+                        f"Value {new_value} above maximum {self.max_value}, clamping",
+                    )
+                )
                 new_value = self.max_value
 
         return float(new_value)
@@ -1184,7 +1452,13 @@ class UnboundedFloatParameter(Parameter[float]):
             and self.max_value is not None
             and self.min_value > self.max_value
         ):
-            warn(f"Min value greater than max value, swapping")
+            warn(
+                ParameterUpdateWarning(
+                    self.name,
+                    type(self).__name__,
+                    f"Min value greater than max value, swapping",
+                )
+            )
             self.min_value, self.max_value = self.max_value, self.min_value
         self.value = self._validate(self.value)
 
