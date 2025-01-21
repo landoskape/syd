@@ -322,7 +322,7 @@ class FlaskDeployment:
 
     def deploy(self) -> None:
         """Deploy the interactive viewer as a web application."""
-        with self.viewer.deploy_app():
+        with self.viewer._deploy_app():
             # Create components
             self._create_components()
 

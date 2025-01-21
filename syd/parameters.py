@@ -141,6 +141,7 @@ class Parameter(Generic[T], ABC):
 
     name: str
     value: T
+    _is_action: bool = False
 
     @abstractmethod
     def __init__(self, name: str, value: T):
@@ -380,18 +381,18 @@ class SelectionParameter(Parameter[Any]):
 
     options: List[Any]
 
-    def __init__(self, name: str, value: Any, options: Union[Sequence, "np.ndarray"]):
+    def __init__(self, name: str, value: Any, options: Union[List, Tuple]):
         self.name = name
         self.options = self._validate_options(options)
         self._value = self._validate(value)
 
-    def _validate_options(self, options: Union[Sequence, "np.ndarray"]) -> List[Any]:
+    def _validate_options(self, options: Any) -> List[Any]:
         """
         Validate options and convert to list if necessary.
 
         Parameters
         ----------
-        options : sequence or numpy.ndarray
+        options : list or tuple
             The options to validate
 
         Returns
@@ -402,27 +403,13 @@ class SelectionParameter(Parameter[Any]):
         Raises
         ------
         TypeError
-            If options is not a list, tuple, or numpy array
-            If numpy array is not 1-dimensional
+            If options is not a list or tuple
         ValueError
             If any option is not hashable
         """
-        if isinstance(options, np.ndarray):
-            if options.ndim != 1:
-                raise TypeError(
-                    f"Options array for parameter {self.name} must be 1-dimensional, "
-                    f"got {options.ndim} dimensions"
-                )
-            # Convert to list, handling special dtypes
-            try:
-                options = options.tolist()
-            except Exception as e:
-                raise TypeError(
-                    f"Failed to convert numpy array to list for parameter {self.name}: {str(e)}"
-                )
-        elif not isinstance(options, (list, tuple)):
+        if not isinstance(options, (list, tuple)):
             raise TypeError(
-                f"Options for parameter {self.name} must be a list, tuple, or numpy array"
+                f"Options for parameter {self.name} must be a list or tuple"
             )
 
         # Verify all options are hashable (needed for comparison)
@@ -433,7 +420,6 @@ class SelectionParameter(Parameter[Any]):
             raise ValueError(
                 f"All options for parameter {self.name} must be hashable: {str(e)}"
             )
-
         return list(options)
 
     def _validate(self, new_value: Any) -> Any:
@@ -511,20 +497,18 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
 
     options: List[Any]
 
-    def __init__(
-        self, name: str, value: List[Any], options: Union[Sequence, "np.ndarray"]
-    ):
+    def __init__(self, name: str, value: List[Any], options: Union[List, Tuple]):
         self.name = name
         self.options = self._validate_options(options)
         self._value = self._validate(value)
 
-    def _validate_options(self, options: Union[Sequence, np.ndarray]) -> List[Any]:
+    def _validate_options(self, options: Any) -> List[Any]:
         """
         Validate options and convert to list if necessary.
 
         Parameters
         ----------
-        options : sequence or numpy.ndarray
+        options : list or tuple
             The options to validate
 
         Returns
@@ -535,27 +519,13 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
         Raises
         ------
         TypeError
-            If options is not a list, tuple, or numpy array
-            If numpy array is not 1-dimensional
+            If options is not a list or tuple
         ValueError
             If any option is not hashable
         """
-        if isinstance(options, np.ndarray):
-            if options.ndim != 1:
-                raise TypeError(
-                    f"Options array for parameter {self.name} must be 1-dimensional, "
-                    f"got {options.ndim} dimensions"
-                )
-            # Convert to list, handling special dtypes
-            try:
-                options = options.tolist()
-            except Exception as e:
-                raise TypeError(
-                    f"Failed to convert numpy array to list for parameter {self.name}: {str(e)}"
-                )
-        elif not isinstance(options, (list, tuple)):
+        if not isinstance(options, (list, tuple)):
             raise TypeError(
-                f"Options for parameter {self.name} must be a list, tuple, or numpy array"
+                f"Options for parameter {self.name} must be a list or tuple"
             )
 
         # Verify all options are hashable (needed for comparison)
@@ -566,7 +536,6 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
             raise ValueError(
                 f"All options for parameter {self.name} must be hashable: {str(e)}"
             )
-
         return list(options)
 
     def _validate(self, new_value: Any) -> List[Any]:
@@ -1466,7 +1435,7 @@ class UnboundedFloatParameter(Parameter[float]):
 class ButtonAction:
     """A button with a programmable callback."""
 
-    _is_button: bool = True
+    _is_action: bool = True
 
     def __init__(self, name: str, label: str, callback: Callable):
         """
