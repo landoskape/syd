@@ -22,9 +22,6 @@ class _NoUpdate:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __repr__(self):
-        return "NO_UPDATE"
-
 
 # Create the singleton instance
 _NO_UPDATE = _NoUpdate()
@@ -207,6 +204,20 @@ class InteractiveViewer(ABC):
         - Return the figure object, don't call plt.show()
         """
         raise NotImplementedError("Subclasses must implement the plot method")
+
+    def deploy(self, env: str = "notebook", **kwargs):
+        """Deploy the app in a notebook or standalone environment"""
+        if env == "notebook":
+            from .notebook_deploy import NotebookDeployment
+
+            deployer = NotebookDeployment(self, **kwargs)
+            deployer.deploy()
+
+            return deployer
+        else:
+            raise ValueError(
+                f"Unsupported environment: {env}, only 'notebook' is supported right now."
+            )
 
     @contextmanager
     def deploy_app(self):
@@ -731,6 +742,48 @@ class InteractiveViewer(ABC):
         else:
             self.parameters[name] = new_param
 
+    @validate_parameter_operation("add", ParameterType.button)
+    def add_button(
+        self,
+        name: str,
+        *,
+        label: str,
+        callback: Callable[[], None],
+    ) -> None:
+        """
+        Add a button parameter to the viewer.
+
+        Creates a clickable button in the GUI that triggers the provided callback function
+        when clicked. The button's display text can be different from its parameter name.
+        See :class:`~syd.parameters.ButtonParameter` for details.
+
+        Parameters
+        ----------
+        name : str
+            Name of the parameter (internal identifier)
+        label : str
+            Text to display on the button
+        callback : callable
+            Function to call when the button is clicked (takes no arguments)
+
+        Examples
+        --------
+        >>> def reset_plot():
+        ...     print("Resetting plot...")
+        >>> viewer.add_button('reset', label='Reset Plot', callback=reset_plot)
+        """
+        try:
+
+            # Wrap the callback to include state as an input argument
+            def wrapped_callback(button):
+                callback(self.get_state())
+
+            new_param = ParameterType.button.value(name, label, wrapped_callback)
+        except Exception as e:
+            raise ParameterAddError(name, "button", str(e)) from e
+        else:
+            self.parameters[name] = new_param
+
     # -------------------- parameter update methods --------------------
     @validate_parameter_operation("update", ParameterType.text)
     def update_text(
@@ -1172,5 +1225,44 @@ class InteractiveViewer(ABC):
             updates["max_value"] = max_value
         if step is not _NO_UPDATE:
             updates["step"] = step
+        if updates:
+            self.parameters[name].update(updates)
+
+    @validate_parameter_operation("update", ParameterType.button)
+    def update_button(
+        self,
+        name: str,
+        *,
+        label: Union[str, _NoUpdate] = _NO_UPDATE,
+        callback: Union[Callable[[], None], _NoUpdate] = _NO_UPDATE,
+    ) -> None:
+        """
+        Update a button parameter's label and/or callback function.
+
+        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_button`.
+        See :class:`~syd.parameters.ButtonParameter` for details.
+
+        Parameters
+        ----------
+        name : str
+            Name of the button parameter to update
+        label : str, optional
+            New text to display on the button (if not provided, no change)
+        callback : callable, optional
+            New function to call when clicked (if not provided, no change)
+
+        Examples
+        --------
+        >>> def new_callback():
+        ...     print("New action...")
+        >>> viewer.update_button('reset',
+        ...                     label='Clear Plot',
+        ...                     callback=new_callback)
+        """
+        updates = {}
+        if label is not _NO_UPDATE:
+            updates["label"] = label
+        if callback is not _NO_UPDATE:
+            updates["callback"] = callback
         if updates:
             self.parameters[name].update(updates)

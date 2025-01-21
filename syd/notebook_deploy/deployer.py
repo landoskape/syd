@@ -47,7 +47,10 @@ class NotebookDeployment:
     """
 
     def __init__(
-        self, viewer: InteractiveViewer, layout_config: Optional[LayoutConfig] = None
+        self,
+        viewer: InteractiveViewer,
+        layout_config: Optional[LayoutConfig] = None,
+        continuous_update: bool = False,
     ):
         if not isinstance(viewer, InteractiveViewer):  # type: ignore
             raise TypeError(
@@ -56,6 +59,7 @@ class NotebookDeployment:
 
         self.viewer = viewer
         self.config = layout_config or LayoutConfig()
+        self.continuous_update = continuous_update
 
         # Initialize containers
         self.parameter_widgets: Dict[str, BaseParameterWidget] = {}
@@ -91,7 +95,10 @@ class NotebookDeployment:
     def _create_parameter_widgets(self) -> None:
         """Create widget instances for all parameters."""
         for name, param in self.viewer.parameters.items():
-            widget = create_parameter_widget(param)
+            widget = create_parameter_widget(
+                param,
+                continuous_update=self.continuous_update,
+            )
 
             # Store in widget dict
             self.parameter_widgets[name] = widget
@@ -103,9 +110,13 @@ class NotebookDeployment:
 
         try:
             self._updating = True
-            # Get the widget value and update the parameter
             widget = self.parameter_widgets[name]
-            self.viewer.set_parameter_value(name, widget.value)
+
+            if hasattr(widget, "_is_button") and widget._is_button:
+                parameter = self.viewer.parameters[name]
+                parameter.callback(parameter)
+            else:
+                self.viewer.set_parameter_value(name, widget.value)
 
             # Update any widgets that changed due to dependencies
             self._sync_widgets_with_state(exclude=name)
