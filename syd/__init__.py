@@ -1,15 +1,11 @@
-from typing import Callable
+from typing import Callable, Optional
 from .interactive_viewer import InteractiveViewer
 
 __version__ = "0.1.5"
 
 
-class DefaultViewer(InteractiveViewer):
-    def plot(self, state):
-        pass
-
-
-def make_viewer(plot_func: Callable):
-    viewer = DefaultViewer()
-    viewer.plot = plot_func
+def make_viewer(plot_func: Optional[Callable] = None):
+    viewer = InteractiveViewer()
+    if plot_func is not None:
+        viewer.set_plot(plot_func)
     return viewer
