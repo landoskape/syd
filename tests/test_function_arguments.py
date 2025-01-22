@@ -47,6 +47,9 @@ def one_positional_and_one_kwarg(arg1, *, arg2):
 
 not_callable = "not callable"
 
+valid_lambda_function = lambda viewer, state: "correct"
+invalid_lambda_function = lambda: "incorrect"
+
 
 class MockViewer(InteractiveViewer):
     def correct_arguments_positional(self, state):
@@ -110,6 +113,7 @@ correct_kind_callable_pairs = {
     "correct_extra": ("external", correct_arguments_extra),
     "correct_partial_three_args": ("external", partial(three_arguments, arg3="make_arg3_a_kwarg")),
     "correct_partial_extra": ("external", partial(correct_arguments_extra, extra="wrap extra in a partial")),
+    "correct_lambda": ("external", valid_lambda_function),
     
     # Correct bound methods
     "correct_bound_positional": ("bound", instance.correct_arguments_positional),
@@ -138,6 +142,7 @@ incorrect_kind_callable_pairs = {
     "incorrect_partial_extra": ("external", partial(correct_arguments_kwargs, extra="wrap extra in a partial")),
     "incorrect_partial_arg1": ("external", partial(three_arguments, arg1="wrap arg1 in a partial... making all others kwarg-only")),
     "incorrect_not_callable": ("external", not_callable),
+    "incorrect_lambda": ("external", invalid_lambda_function),
     
     # Incorrect bound methods
     "incorrect_bound_class": ("bound", instance.two_arguments_class),
