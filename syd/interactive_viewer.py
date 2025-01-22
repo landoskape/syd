@@ -189,18 +189,20 @@ class InteractiveViewer:
         """Create and return a matplotlib figure.
 
         This is a placeholder. You must either:
+
         1. Call set_plot() with your plotting function
-           This will look like this:
-           >>> def plot(viewer, state):
-           >>>     ... generate figure, plot stuff ...
-           >>>     return fig
-           >>> viewer.set_plot(plot))
+        This will look like this:
+        >>> def plot(viewer, state):
+        >>>     ... generate figure, plot stuff ...
+        >>>     return fig
+        >>> viewer.set_plot(plot))
+
         2. Subclass InteractiveViewer and override this method
-           This will look like this:
-           >>> class YourViewer(InteractiveViewer):
-           >>>     def plot(self, state):
-           >>>         ... generate figure, plot stuff ...
-           >>>         return fig
+        This will look like this:
+        >>> class YourViewer(InteractiveViewer):
+        >>>     def plot(self, state):
+        >>>         ... generate figure, plot stuff ...
+        >>>         return fig
 
         Parameters
         ----------

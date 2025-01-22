@@ -1434,7 +1434,44 @@ class UnboundedFloatParameter(Parameter[float]):
 
 @dataclass(init=False)
 class ButtonAction(Parameter[None]):
-    """A button with a programmable callback."""
+    """
+    Parameter for creating clickable buttons with callbacks.
+
+    Creates a button in the GUI that executes a callback function when clicked.
+    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_button` and
+    :meth:`~syd.interactive_viewer.InteractiveViewer.update_button` for usage.
+
+    Parameters
+    ----------
+    name : str
+        The name of the parameter
+    label : str
+        Text to display on the button
+    callback : callable
+        Function to execute when the button is clicked
+
+    Examples
+    --------
+    >>> def print_hello():
+    ...     print("Hello!")
+    >>> button = ButtonAction("greeting", label="Say Hello", callback=print_hello)
+    >>> button.callback()  # Simulates clicking the button
+    Hello!
+    >>> # Update the button's label and callback
+    >>> def print_goodbye():
+    ...     print("Goodbye!")
+    >>> button.update({"label": "Say Goodbye", "callback": print_goodbye})
+    >>> button.callback()
+    Goodbye!
+
+    Notes
+    -----
+    Unlike other Parameter types, ButtonAction:
+    - Has no value (always None)
+    - Is marked as an action (_is_action = True)
+    - Executes code directly rather than storing state
+    - Cannot be updated through the value property
+    """
 
     label: str
     callback: Callable
