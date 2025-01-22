@@ -1,0 +1,530 @@
+import pytest
+from typing import Dict, Any
+from functools import partial
+
+import os, sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from syd import make_viewer
+from syd.interactive_viewer import InteractiveViewer
+from syd.parameters import ParameterUpdateError, ParameterAddError
+
+
+def correct_arguments_positional(viewer, state):
+    return "correct"
+
+
+def correct_arguments_kwargs(viewer=None, state=None):
+    return "correct"
+
+
+def correct_arguments_extra(viewer=None, state=None, extra=None):
+    return "correct"
+
+
+def no_arguments():
+    return "external function with no arguments is not allowed"
+
+
+def one_argument(arg1):
+    return "external function with one argument is not allowed"
+
+
+def three_arguments(arg1, arg2, arg3):
+    return "external function with three arguments is not allowed"
+
+
+def one_kwarg(arg1, *, arg2):
+    return "external function with one kwarg is not allowed"
+
+
+def two_kwargs(*, arg1, arg2):
+    return "external function with multiple kwargs is not allowed"
+
+
+def one_positional_and_one_kwarg(arg1, *, arg2):
+    return "external function with one positional and one kwarg is not allowed"
+
+
+class MockViewer(InteractiveViewer):
+    def correct_arguments_positional(self, state):
+        return "correct"
+
+    def correct_arguments_kwargs(self, state=None):
+        return "correct"
+
+    def correct_arguments_extra(self, state=None, extra=None):
+        return "correct"
+
+    def one_argument(self):
+        return "external function with one argument is not allowed"
+
+    def three_arguments(self, arg2, arg3):
+        return "external function with three arguments is not allowed"
+
+    def one_positional_and_one_kwarg(self, *, arg2):
+        return "external function with one positional and one kwarg is not allowed"
+
+    @staticmethod
+    def correct_arguments_positional_static(self, state):
+        return "correct"
+
+    @staticmethod
+    def correct_arguments_kwargs_static(self, state=None):
+        return "correct"
+
+    @staticmethod
+    def correct_arguments_extra_static(self, state=None, extra=None):
+        return "correct"
+
+    @staticmethod
+    def one_argument_static(self):
+        return "external function with one argument is not allowed"
+
+    @staticmethod
+    def three_arguments_static(self, arg2, arg3):
+        return "external function with three arguments is not allowed"
+
+    @staticmethod
+    def one_positional_and_one_kwarg_static(self, *, arg2):
+        return "external function with one positional and one kwarg is not allowed"
+
+    @classmethod
+    def two_arguments_class(cls, viewer, state):
+        return "no class method allowed"
+
+
+instance = MockViewer()
+
+# functions_to_test = dict(
+#     correct_external=[
+#         correct_arguments_positional,
+#         correct_arguments_kwargs,
+#         correct_arguments_extra,
+#         partial(three_arguments, arg3="make_arg3_a_kwarg"),
+#         partial(correct_arguments_extra, extra="wrap extra in a partial"),
+#     ],
+#     correct_bound=[
+#         instance.correct_arguments_positional,
+#         instance.correct_arguments_kwargs,
+#         instance.correct_arguments_extra,
+#         partial(instance.three_arguments, arg3="make_arg3_a_kwarg"),
+#         partial(instance.correct_arguments_extra, extra="wrap extra in a partial"),
+#         instance.correct_arguments_positional_static,
+#         instance.correct_arguments_kwargs_static,
+#         instance.correct_arguments_extra_static,
+#         partial(instance.three_arguments_static, arg3="make_arg3_a_kwarg"),
+#         partial(
+#             instance.correct_arguments_extra_static, extra="wrap extra in a partial"
+#         ),
+#     ],
+#     incorrect_external=[
+#         no_arguments,
+#         one_argument,
+#         three_arguments,
+#         one_kwarg,
+#         two_kwargs,
+#         one_positional_and_one_kwarg,
+#         partial(correct_arguments_positional, state="wrap state in a partial"),
+#         partial(correct_arguments_positional, viewer="wrap viewer in a partial"),
+#         partial(correct_arguments_kwargs, extra="wrap extra in a partial"),
+#         partial(
+#             three_arguments,
+#             arg1="wrap arg1 in a partial... making all others kwarg-only",
+#         ),
+#     ],
+#     incorrect_bound=[
+#         instance.two_arguments_class,
+#         instance.one_argument,
+#         instance.three_arguments,
+#         instance.one_positional_and_one_kwarg,
+#         instance.one_argument_static,
+#         instance.three_arguments_static,
+#         instance.one_positional_and_one_kwarg_static,
+#         partial(instance.correct_arguments_positional, state="wrap state in a partial"),
+#         partial(
+#             instance.correct_arguments_positional, viewer="wrap viewer in a partial"
+#         ),
+#         partial(instance.correct_arguments_kwargs, extra="wrap extra in a partial"),
+#         partial(
+#             instance.three_arguments,
+#             arg1="wrap arg1 in a partial... making all others kwarg-only",
+#         ),
+#         partial(
+#             instance.correct_arguments_positional_static,
+#             state="wrap state in a partial",
+#         ),
+#         partial(
+#             instance.correct_arguments_positional_static,
+#             viewer="wrap viewer in a partial",
+#         ),
+#         partial(
+#             instance.correct_arguments_kwargs_static, extra="wrap extra in a partial"
+#         ),
+#         partial(
+#             instance.three_arguments_static,
+#             arg1="wrap arg1 in a partial... making all others kwarg-only",
+#         ),
+#     ],
+# )
+
+# correct_external = functions_to_test["correct_external"]
+# correct_bound = functions_to_test["correct_bound"]
+
+# incorrect_external = functions_to_test["incorrect_external"]
+# incorrect_bound = functions_to_test["incorrect_bound"]
+
+# correct_tuples = [
+#     (kind, func)
+#     for kind, funcs in [("external", correct_external), ("bound", correct_bound)]
+#     for func in funcs
+# ]
+
+# incorrect_tuples = [
+#     (kind, func)
+#     for kind, funcs in [("external", incorrect_external), ("bound", incorrect_bound)]
+#     for func in funcs
+# ]
+
+
+# fmt: off
+correct_kind_callable_pairs = {
+    # Correct external functions
+    "correct_positional": ("external", correct_arguments_positional),
+    "correct_kwargs": ("external", correct_arguments_kwargs),
+    "correct_extra": ("external", correct_arguments_extra),
+    "correct_partial_three_args": ("external", partial(three_arguments, arg3="make_arg3_a_kwarg")),
+    "correct_partial_extra": ("external", partial(correct_arguments_extra, extra="wrap extra in a partial")),
+    
+    # Correct bound methods
+    "correct_bound_positional": ("bound", instance.correct_arguments_positional),
+    "correct_bound_kwargs": ("bound", instance.correct_arguments_kwargs),
+    "correct_bound_extra": ("bound", instance.correct_arguments_extra),
+    "correct_bound_partial_three": ("bound", partial(instance.three_arguments, arg3="make_arg3_a_kwarg")),
+    "correct_bound_partial_extra": ("bound", partial(instance.correct_arguments_extra, extra="wrap extra in a partial")),
+    "correct_bound_static_positional": ("bound", instance.correct_arguments_positional_static),
+    "correct_bound_static_kwargs": ("bound", instance.correct_arguments_kwargs_static),
+    "correct_bound_static_extra": ("bound", instance.correct_arguments_extra_static),
+    "correct_bound_static_partial_three": ("bound", partial(instance.three_arguments_static, arg3="make_arg3_a_kwarg")),
+    "correct_bound_static_partial_extra": ("bound", partial(instance.correct_arguments_extra_static, extra="wrap extra in a partial")),
+}
+
+incorrect_kind_callable_pairs = {
+    # Incorrect external functions
+    "incorrect_no_args": ("external", no_arguments),
+    "incorrect_one_arg": ("external", one_argument),
+    "incorrect_three_args": ("external", three_arguments),
+    "incorrect_one_kwarg": ("external", one_kwarg),
+    "incorrect_two_kwargs": ("external", two_kwargs),
+    "incorrect_pos_and_kwarg": ("external", one_positional_and_one_kwarg),
+    "incorrect_partial_state": ("external", partial(correct_arguments_positional, state="wrap state in a partial")),
+    "incorrect_partial_viewer": ("external", partial(correct_arguments_positional, viewer="wrap viewer in a partial")),
+    "incorrect_partial_extra": ("external", partial(correct_arguments_kwargs, extra="wrap extra in a partial")),
+    "incorrect_partial_arg1": ("external", partial(three_arguments, arg1="wrap arg1 in a partial... making all others kwarg-only")),
+    
+    # Incorrect bound methods
+    "incorrect_bound_class": ("bound", instance.two_arguments_class),
+    "incorrect_bound_one": ("bound", instance.one_argument),
+    "incorrect_bound_three": ("bound", instance.three_arguments),
+    "incorrect_bound_pos_kwarg": ("bound", instance.one_positional_and_one_kwarg),
+    "incorrect_bound_static_one": ("bound", instance.one_argument_static),
+    "incorrect_bound_static_three": ("bound", instance.three_arguments_static),
+    "incorrect_bound_static_pos_kwarg": ("bound", instance.one_positional_and_one_kwarg_static),
+    "incorrect_bound_partial_state": ("bound", partial(instance.correct_arguments_positional, state="wrap state in a partial")),
+    "incorrect_bound_partial_viewer": ("bound", partial(instance.correct_arguments_positional, viewer="wrap viewer in a partial")),
+    "incorrect_bound_partial_extra": ("bound", partial(instance.correct_arguments_kwargs, extra="wrap extra in a partial")),
+    "incorrect_bound_partial_arg1": ("bound", partial(instance.three_arguments, arg1="wrap arg1 in a partial... making all others kwarg-only")),
+    "incorrect_bound_static_partial_state": ("bound", partial(instance.correct_arguments_positional_static, state="wrap state in a partial")),
+    "incorrect_bound_static_partial_viewer": ("bound", partial(instance.correct_arguments_positional_static, viewer="wrap viewer in a partial")),
+    "incorrect_bound_static_partial_extra": ("bound", partial(instance.correct_arguments_kwargs_static, extra="wrap extra in a partial")),
+    "incorrect_bound_static_partial_arg1": ("bound", partial(instance.three_arguments_static, arg1="wrap arg1 in a partial... making all others kwarg-only"))
+}
+# fmt: on
+
+
+@pytest.mark.parametrize(
+    "name,kind,func",
+    [(name, kind, func) for name, (kind, func) in correct_kind_callable_pairs.items()],
+)
+def test_make_viewer_with_valid_callable(name, kind, func):
+    # Test adding an external function in the make_viewer call
+    if kind == "external":
+        try:
+            viewer = make_viewer(func)
+        except Exception as e:
+            msg = f"make_viewer should accept a function with two positional arguments: {e}"
+            assert False, msg
+
+        msg = "viewer.plot should be called with just one positional argument and self implied"
+        assert viewer.plot(viewer.get_state()), msg
+
+
+@pytest.mark.parametrize(
+    "name,kind,func",
+    [(name, kind, func) for name, (kind, func) in correct_kind_callable_pairs.items()],
+)
+def test_set_plot_with_valid_callable(name, kind, func):
+    # Test adding an external function with set_plot
+    try:
+        if kind == "external":
+            viewer = make_viewer()
+        else:
+            viewer = instance
+        viewer.set_plot(func)
+    except Exception as e:
+        msg = f"set_plot should accept a function with two positional arguments: {e}"
+        assert False, msg
+
+    msg = "viewer.plot should be called with just one positional argument and self implied"
+    assert viewer.plot(viewer.get_state()), msg
+
+
+@pytest.mark.parametrize(
+    "name,kind,func",
+    [
+        (name, kind, func)
+        for name, (kind, func) in incorrect_kind_callable_pairs.items()
+    ],
+)
+def test_make_viewer_with_invalid_callable(name, kind, func):
+    # Test invalid configurations
+    if kind == "external":
+        try:
+            viewer = make_viewer(func)
+        except Exception as e:
+            pass  # Exception expected
+        else:
+            msg = f"make_viewer should not accept a function with two positional arguments: {e}"
+            assert False, msg
+
+        try:
+            print(viewer)
+        except NameError:
+            pass  # NameError expected
+        else:
+            msg = "viewer should not be created if the plot function is invalid"
+            assert False, msg
+
+
+@pytest.mark.parametrize(
+    "name,kind,func",
+    [
+        (name, kind, func)
+        for name, (kind, func) in incorrect_kind_callable_pairs.items()
+    ],
+)
+def test_set_plot_with_invalid_callable(name, kind, func):
+    def valid_plot(viewer, state):
+        return "correct"
+
+    if kind == "external":
+        viewer = make_viewer()
+    else:
+        viewer = instance
+    viewer.set_plot(valid_plot)
+    try:
+        viewer.set_plot(func)
+    except Exception as e:
+        pass  # Exception expected
+    else:
+        msg = f"make_viewer should not accept a function with two positional arguments: {e}"
+        assert False, msg
+
+    msg = "Setting plot with an invalid function should not overwrite existing plot"
+    assert viewer.plot(viewer.get_state()) == "correct", msg
+
+    viewer = make_viewer()
+    with pytest.raises(ValueError):
+        viewer.set_plot(func)
+    try:
+        viewer.plot(viewer.get_state())
+    except NotImplementedError:
+        pass  # NotImplementedError expected
+    else:
+        msg = "viewer.plot should raise NotImplementedError if no plot function is set"
+        assert False, msg
+
+
+# def test_button_callbacks():
+
+#     # Test valid configurations
+#     for kind, correct in correct_tuples:
+#         # Test adding an external function with set_plot
+#         try:
+#             if kind == "external":
+#                 viewer = make_viewer()
+#             else:
+#                 viewer = instance
+#             viewer.add_button(str(correct), label="test", callback=correct)
+#         except Exception as e:
+#             msg = f"add_button should accept a function with two positional arguments: {e}"
+#             assert False, msg
+
+#         msg = "viewer.plot should be called with just one positional argument and self implied"
+#         assert viewer.parameters[str(correct)].callback(viewer.get_state()), msg
+
+#     # Test invalid configurations
+#     for kind, incorrect in incorrect_tuples:
+#         viewer = make_viewer()
+#         try:
+#             viewer.add_button(str(incorrect), label="test", callback=incorrect)
+#         except Exception as e:
+#             pass  # Exception expected
+#         else:
+#             msg = f"make_viewer should not accept a function with two positional arguments: {e}"
+#             assert False, msg
+
+#         def good_callback(arg1, arg2):
+#             return "good_callback"
+
+#         viewer = make_viewer()
+#         viewer.add_button(str(incorrect), label="test", callback=good_callback)
+#         with pytest.raises(ParameterUpdateError):
+#             viewer.update_button(str(incorrect), callback=incorrect)
+#         callback_return = viewer.parameters[str(incorrect)].callback(viewer.get_state())
+#         msg = "Failing to update the callback should not change the original callback"
+#         assert callback_return == "good_callback", msg
+
+
+# def test_on_change_callbacks():
+#     for kind, correct in correct_tuples:
+#         try:
+#             if kind == "external":
+#                 viewer = make_viewer()
+#             else:
+#                 viewer = instance
+#             viewer.add_text(str(correct), value="test")
+#             viewer.on_change(str(correct), correct)
+#         except Exception as e:
+#             msg = (
+#                 f"on_change should accept a function with two positional arguments: {e}"
+#             )
+#             assert False, msg
+
+#         try:
+#             viewer.perform_callbacks(str(correct))
+#         except Exception as e:
+#             msg = f"Callbacks should not fail when performed with valid functions!"
+#             assert False, msg
+
+#     # Test invalid configurations
+#     for kind, incorrect in incorrect_tuples:
+#         viewer = make_viewer()
+#         try:
+#             viewer.add_text(str(correct), value="test")
+#             viewer.on_change(str(correct), incorrect)
+#         except Exception as e:
+#             pass  # Exception expected
+#         else:
+#             msg = f"on_change should not accept a function with two positional arguments: {e}"
+#             assert False, msg
+
+#         msg = "Callbacks should not be added when they are not valid"
+#         assert str(correct) not in viewer.callbacks, msg
+
+
+@pytest.mark.parametrize(
+    "name,kind,func",
+    [(name, kind, func) for name, (kind, func) in correct_kind_callable_pairs.items()],
+)
+def test_add_button_with_valid_callback(name, kind, func):
+    param_name = str(func) + "testing_add_button"
+    try:
+        if kind == "external":
+            viewer = make_viewer()
+        else:
+            viewer = instance
+        viewer.add_button(param_name, label="test", callback=func)
+    except Exception as e:
+        msg = f"add_button should accept a function with two positional arguments: {e}"
+        assert False, msg
+
+    msg = "Button callback should be called with just one positional argument and self implied"
+    assert viewer.parameters[param_name].callback(viewer.get_state()), msg
+
+
+@pytest.mark.parametrize(
+    "name,kind,func",
+    [
+        (name, kind, func)
+        for name, (kind, func) in incorrect_kind_callable_pairs.items()
+    ],
+)
+def test_add_button_with_invalid_callback(name, kind, func):
+    param_name = str(func) + "testing_add_button"
+    if kind == "external":
+        viewer = make_viewer()
+    else:
+        viewer = instance
+
+    try:
+        viewer.add_button(param_name, label="test", callback=func)
+    except Exception as e:
+        pass  # Exception expected
+    else:
+        msg = "add_button should not accept invalid callback functions"
+        assert False, msg
+
+    def good_callback(viewer, state):
+        return "good_callback"
+
+    # Test that update_button maintains existing valid callback when given invalid one
+    viewer.add_button(param_name, label="test", callback=good_callback)
+    with pytest.raises(ParameterUpdateError):
+        viewer.update_button(param_name, callback=func)
+
+    callback_return = viewer.parameters[param_name].callback(viewer.get_state())
+    msg = "Failing to update the callback should not change the original callback"
+    assert callback_return == "good_callback", msg
+
+
+@pytest.mark.parametrize(
+    "name,kind,func",
+    [(name, kind, func) for name, (kind, func) in correct_kind_callable_pairs.items()],
+)
+def test_on_change_with_valid_callback(name, kind, func):
+    param_name = str(func) + "testing_on_change"
+    try:
+        if kind == "external":
+            viewer = make_viewer()
+        else:
+            viewer = instance
+        viewer.add_text(param_name, value="test")
+        viewer.on_change(param_name, func)
+    except Exception as e:
+        msg = f"on_change should accept a function with two positional arguments: {e}"
+        assert False, msg
+
+    try:
+        viewer.perform_callbacks(param_name)
+    except Exception as e:
+        msg = "Callbacks should not fail when performed with valid functions!"
+        assert False, msg
+
+
+@pytest.mark.parametrize(
+    "name,kind,func",
+    [
+        (name, kind, func)
+        for name, (kind, func) in incorrect_kind_callable_pairs.items()
+    ],
+)
+def test_on_change_with_invalid_callback(name, kind, func):
+    param_name = str(func) + "testing_on_change"
+    if kind == "external":
+        viewer = make_viewer()
+    else:
+        viewer = instance
+
+    try:
+        viewer.add_text(param_name, value="test")
+        viewer.on_change(param_name, func)
+    except Exception as e:
+        pass  # Exception expected
+    else:
+        msg = "on_change should not accept invalid callback functions"
+        assert False, msg
+
+    msg = "Callbacks should not be added when they are not valid"
+    assert str(func) not in viewer.callbacks, msg

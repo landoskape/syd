@@ -1,5 +1,5 @@
 from typing import List, Any, Callable, Dict, Tuple, Union, Optional
-from functools import wraps
+from functools import wraps, partial
 import inspect
 from contextlib import contextmanager
 from matplotlib.figure import Figure
@@ -185,13 +185,27 @@ class InteractiveViewer:
         """
         return {name: param.value for name, param in self.parameters.items()}
 
-    def plot(self: "InteractiveViewer", state: Dict[str, Any]) -> Figure:
-        """
-        Create and return a matplotlib figure.
+    def plot(self, state: Dict[str, Any]) -> Figure:
+        """Create and return a matplotlib figure.
 
-        This method must be implemented in your subclass. It should create a new
-        figure using the current parameter values from state and anything else you
-        might want from the viewer class (usually called self).
+        This is a placeholder. You must either:
+        1. Call set_plot() with your plotting function
+           This will look like this:
+           >>> def plot(viewer, state):
+           >>>     ... generate figure, plot stuff ...
+           >>>     return fig
+           >>> viewer.set_plot(plot))
+        2. Subclass InteractiveViewer and override this method
+           This will look like this:
+           >>> class YourViewer(InteractiveViewer):
+           >>>     def plot(self, state):
+           >>>         ... generate figure, plot stuff ...
+           >>>         return fig
+
+        Parameters
+        ----------
+        state : dict
+            Current parameter values
 
         Returns
         -------
@@ -202,16 +216,18 @@ class InteractiveViewer:
         -----
         - Create a new figure each time, don't reuse old ones
         - Access parameter values using state['param_name']
-        - Return the figure object, don't call plt.show()
+        - Access your viewer class using self (or viewer for the set_plot() method)
+        - Return the figure object, don't call plt.show()!
         """
         raise NotImplementedError(
-            "You must use set_plot(your_plot_function) to set the plot method"
-            " or overwrite the bound method plot(state) before deploying!"
+            "Plot method not implemented. Either subclass "
+            "InteractiveViewer and override plot(), or use "
+            "set_plot() to provide a plotting function."
         )
 
     def set_plot(self, func: Callable) -> None:
         """Set the plot method for the viewer"""
-        self.plot = self._prepare_function(func)
+        self.plot = self._prepare_function(func, context="Setting plot:")
 
     def deploy(self, env: str = "notebook", **kwargs):
         """Deploy the app in a notebook or standalone environment"""
@@ -236,28 +252,97 @@ class InteractiveViewer:
         finally:
             self._app_deployed = False
 
-    def _prepare_function(self, func):
-        """Checks the signature of a function and returns a new function with self included if necessary."""
+    def _prepare_function(
+        self,
+        func: Callable,
+        context: Optional[str] = "",
+    ) -> Callable:
+        # Check if func is Callable
+        if not callable(func):
+            raise ValueError(f"Function {func} is not callable")
 
-        params = list(inspect.signature(func).parameters.values())
-        bound_method = hasattr(func, "__self__") and func.__self__ is self
-        wrong_number_of_params = len(params) + bound_method != 2
-        non_positional_params = any(
-            param.kind
-            not in (
+        # Handle partial functions
+        if isinstance(func, partial):
+            # Create new partial with self as first arg if not already there
+            get_self = (
+                lambda func: hasattr(func.func, "__self__") and func.func.__self__
+            )
+            get_name = lambda func: func.func.__name__
+        else:
+            get_self = lambda func: hasattr(func, "__self__") and func.__self__
+            get_name = lambda func: func.__name__
+
+        # Check if it's a bound method to another instance other than this one
+        if get_self(func) and get_self(func) is not self:
+            raise ValueError(
+                context + "Bound methods to other instances are not supported."
+            )
+
+        # Check if it's a class method
+        class_method = get_self(func) is self.__class__
+        if class_method:
+            raise ValueError(context + "Class methods are not supported.")
+
+        # Get function signature
+        try:
+            params = list(inspect.signature(func).parameters.values())
+        except ValueError:
+            # Handle built-ins or other objects without signatures
+            raise ValueError(context + f"Cannot inspect function signature for {func}")
+
+        # Look through params and check if there are two positional parameters (including self for bound methods)
+        bound_method = get_self(func) is self
+        positional_params = 0 + bound_method
+        optional_part = ""
+        for param in params:
+            # Check if it's a positional parameter. If it is, count it.
+            # As long as we have less than 2 positional parameters, we're good.
+            # When we already have 2 positional parameters, we need to make sure any other positional parameters have defaults.
+            if param.kind in (
                 inspect.Parameter.POSITIONAL_OR_KEYWORD,
                 inspect.Parameter.POSITIONAL_ONLY,
-            )
-            for param in params
-        )
-        if wrong_number_of_params or non_positional_params:
-            func_name = func.__name__
+            ):
+                if positional_params < 2:
+                    positional_params += 1
+                else:
+                    if param.default == inspect.Parameter.empty:
+                        positional_params += 1
+                    else:
+                        optional_part += f", {param.name}={param.default!r}"
+            elif param.kind == inspect.Parameter.VAR_KEYWORD:
+                optional_part += f", **{param.name}"
+            elif param.kind == inspect.Parameter.KEYWORD_ONLY:
+                optional_part += (
+                    f", {param.name}={param.default!r}"
+                    if param.default != inspect.Parameter.empty
+                    else f", {param.name}"
+                )
+
+        if positional_params != 2:
+            func_name = get_name(func)
+            if isinstance(func, partial):
+                func_sig = str(inspect.signature(func))
+                if bound_method:
+                    func_sig = "(" + "self, " + func_sig[1:]
+                msg = (
+                    context
+                    + "\n"
+                    + f"Your partial function '{func_name}' has an incorrect signature.\n"
+                    "Partial functions must have exactly two positional parameters.\n"
+                    "The first parameter should be self -- it corresponds to the viewer.\n"
+                    "The second parameter should be state -- a dictionary of the current state of the viewer.\n"
+                    "\nYour partial function effectivelylooks like this:\n"
+                    f"def {func_name}{func_sig}:\n"
+                    "    ... your function code ..."
+                )
+                raise ValueError(msg)
 
             if bound_method:
-                original_method = getattr(func.__self__.__class__, func.__name__)
+                original_method = getattr(get_self(func).__class__, get_name(func))
                 func_sig = str(inspect.signature(original_method))
 
                 msg = (
+                    context + "\n"
                     f"Your bound method '{func_name}{func_sig}' has an incorrect signature.\n"
                     "Bound methods must have exactly one positional parameter in addition to self.\n"
                     "The first parameter should be self -- it corresponds to the viewer.\n"
@@ -268,7 +353,7 @@ class InteractiveViewer:
                     "        ... your function code ...\n"
                     "\nIt should look like this:\n"
                     "class YourViewer(InteractiveViewer):\n"
-                    "    def func(self, state):\n"
+                    f"    def {func_name}(self, state{optional_part}):\n"
                     "        ... your function code ..."
                 )
                 raise ValueError(msg)
@@ -276,15 +361,16 @@ class InteractiveViewer:
                 func_sig = str(inspect.signature(func))
 
                 msg = (
+                    context + "\n"
                     f"Your function '{func_name}{func_sig}' has an incorrect signature.\n"
-                    "External function must have exactly two positional parameters.\n"
+                    "External functions must have exactly two positional parameters.\n"
                     "The first parameter should be viewer -- it corresponds to the viewer.\n"
                     "The second parameter should be state -- a dictionary of the current state of the viewer.\n"
                     "\nYour function looks like this:\n"
                     f"def {func_name}{func_sig}:\n"
                     "    ... your function code ...\n"
                     "\nIt should look like this:\n"
-                    f"def {func_name}(viewer, state):\n"
+                    f"def {func_name}(viewer, state{optional_part}):\n"
                     "    ... your function code ..."
                 )
                 raise ValueError(msg)
@@ -337,7 +423,10 @@ class InteractiveViewer:
         if isinstance(parameter_name, str):
             parameter_name = [parameter_name]
 
-        callback = self._prepare_function(callback)
+        callback = self._prepare_function(
+            callback,
+            context="Setting on_change callback:",
+        )
 
         for param_name in parameter_name:
             if param_name not in self.parameters:
@@ -847,7 +936,10 @@ class InteractiveViewer:
         """
         try:
 
-            callback = self._prepare_function(callback)
+            callback = self._prepare_function(
+                callback,
+                context="Setting button callback:",
+            )
 
             new_param = ActionType.button.value(name, label, callback)
         except Exception as e:
@@ -1334,6 +1426,10 @@ class InteractiveViewer:
         if label is not _NO_UPDATE:
             updates["label"] = label
         if callback is not _NO_UPDATE:
+            callback = self._prepare_function(
+                callback,
+                context="Updating button callback:",
+            )
             updates["callback"] = callback
         if updates:
             self.parameters[name].update(updates)
