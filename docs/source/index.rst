@@ -41,5 +41,4 @@ Requirements
    :caption: Contents:
 
    quickstart
-   examples/index
    api/index 
