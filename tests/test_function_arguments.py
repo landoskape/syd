@@ -1,14 +1,8 @@
 import pytest
-from typing import Dict, Any
 from functools import partial
-
-import os, sys
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from syd import make_viewer
 from syd.interactive_viewer import InteractiveViewer
-from syd.parameters import ParameterUpdateError, ParameterAddError
+from syd.parameters import ParameterUpdateError
 
 
 def correct_arguments_positional(viewer, state):
@@ -96,97 +90,6 @@ class MockViewer(InteractiveViewer):
 
 
 instance = MockViewer()
-
-# functions_to_test = dict(
-#     correct_external=[
-#         correct_arguments_positional,
-#         correct_arguments_kwargs,
-#         correct_arguments_extra,
-#         partial(three_arguments, arg3="make_arg3_a_kwarg"),
-#         partial(correct_arguments_extra, extra="wrap extra in a partial"),
-#     ],
-#     correct_bound=[
-#         instance.correct_arguments_positional,
-#         instance.correct_arguments_kwargs,
-#         instance.correct_arguments_extra,
-#         partial(instance.three_arguments, arg3="make_arg3_a_kwarg"),
-#         partial(instance.correct_arguments_extra, extra="wrap extra in a partial"),
-#         instance.correct_arguments_positional_static,
-#         instance.correct_arguments_kwargs_static,
-#         instance.correct_arguments_extra_static,
-#         partial(instance.three_arguments_static, arg3="make_arg3_a_kwarg"),
-#         partial(
-#             instance.correct_arguments_extra_static, extra="wrap extra in a partial"
-#         ),
-#     ],
-#     incorrect_external=[
-#         no_arguments,
-#         one_argument,
-#         three_arguments,
-#         one_kwarg,
-#         two_kwargs,
-#         one_positional_and_one_kwarg,
-#         partial(correct_arguments_positional, state="wrap state in a partial"),
-#         partial(correct_arguments_positional, viewer="wrap viewer in a partial"),
-#         partial(correct_arguments_kwargs, extra="wrap extra in a partial"),
-#         partial(
-#             three_arguments,
-#             arg1="wrap arg1 in a partial... making all others kwarg-only",
-#         ),
-#     ],
-#     incorrect_bound=[
-#         instance.two_arguments_class,
-#         instance.one_argument,
-#         instance.three_arguments,
-#         instance.one_positional_and_one_kwarg,
-#         instance.one_argument_static,
-#         instance.three_arguments_static,
-#         instance.one_positional_and_one_kwarg_static,
-#         partial(instance.correct_arguments_positional, state="wrap state in a partial"),
-#         partial(
-#             instance.correct_arguments_positional, viewer="wrap viewer in a partial"
-#         ),
-#         partial(instance.correct_arguments_kwargs, extra="wrap extra in a partial"),
-#         partial(
-#             instance.three_arguments,
-#             arg1="wrap arg1 in a partial... making all others kwarg-only",
-#         ),
-#         partial(
-#             instance.correct_arguments_positional_static,
-#             state="wrap state in a partial",
-#         ),
-#         partial(
-#             instance.correct_arguments_positional_static,
-#             viewer="wrap viewer in a partial",
-#         ),
-#         partial(
-#             instance.correct_arguments_kwargs_static, extra="wrap extra in a partial"
-#         ),
-#         partial(
-#             instance.three_arguments_static,
-#             arg1="wrap arg1 in a partial... making all others kwarg-only",
-#         ),
-#     ],
-# )
-
-# correct_external = functions_to_test["correct_external"]
-# correct_bound = functions_to_test["correct_bound"]
-
-# incorrect_external = functions_to_test["incorrect_external"]
-# incorrect_bound = functions_to_test["incorrect_bound"]
-
-# correct_tuples = [
-#     (kind, func)
-#     for kind, funcs in [("external", correct_external), ("bound", correct_bound)]
-#     for func in funcs
-# ]
-
-# incorrect_tuples = [
-#     (kind, func)
-#     for kind, funcs in [("external", incorrect_external), ("bound", incorrect_bound)]
-#     for func in funcs
-# ]
-
 
 # fmt: off
 correct_kind_callable_pairs = {
@@ -344,84 +247,6 @@ def test_set_plot_with_invalid_callable(name, kind, func):
     else:
         msg = "viewer.plot should raise NotImplementedError if no plot function is set"
         assert False, msg
-
-
-# def test_button_callbacks():
-
-#     # Test valid configurations
-#     for kind, correct in correct_tuples:
-#         # Test adding an external function with set_plot
-#         try:
-#             if kind == "external":
-#                 viewer = make_viewer()
-#             else:
-#                 viewer = instance
-#             viewer.add_button(str(correct), label="test", callback=correct)
-#         except Exception as e:
-#             msg = f"add_button should accept a function with two positional arguments: {e}"
-#             assert False, msg
-
-#         msg = "viewer.plot should be called with just one positional argument and self implied"
-#         assert viewer.parameters[str(correct)].callback(viewer.get_state()), msg
-
-#     # Test invalid configurations
-#     for kind, incorrect in incorrect_tuples:
-#         viewer = make_viewer()
-#         try:
-#             viewer.add_button(str(incorrect), label="test", callback=incorrect)
-#         except Exception as e:
-#             pass  # Exception expected
-#         else:
-#             msg = f"make_viewer should not accept a function with two positional arguments: {e}"
-#             assert False, msg
-
-#         def good_callback(arg1, arg2):
-#             return "good_callback"
-
-#         viewer = make_viewer()
-#         viewer.add_button(str(incorrect), label="test", callback=good_callback)
-#         with pytest.raises(ParameterUpdateError):
-#             viewer.update_button(str(incorrect), callback=incorrect)
-#         callback_return = viewer.parameters[str(incorrect)].callback(viewer.get_state())
-#         msg = "Failing to update the callback should not change the original callback"
-#         assert callback_return == "good_callback", msg
-
-
-# def test_on_change_callbacks():
-#     for kind, correct in correct_tuples:
-#         try:
-#             if kind == "external":
-#                 viewer = make_viewer()
-#             else:
-#                 viewer = instance
-#             viewer.add_text(str(correct), value="test")
-#             viewer.on_change(str(correct), correct)
-#         except Exception as e:
-#             msg = (
-#                 f"on_change should accept a function with two positional arguments: {e}"
-#             )
-#             assert False, msg
-
-#         try:
-#             viewer.perform_callbacks(str(correct))
-#         except Exception as e:
-#             msg = f"Callbacks should not fail when performed with valid functions!"
-#             assert False, msg
-
-#     # Test invalid configurations
-#     for kind, incorrect in incorrect_tuples:
-#         viewer = make_viewer()
-#         try:
-#             viewer.add_text(str(correct), value="test")
-#             viewer.on_change(str(correct), incorrect)
-#         except Exception as e:
-#             pass  # Exception expected
-#         else:
-#             msg = f"on_change should not accept a function with two positional arguments: {e}"
-#             assert False, msg
-
-#         msg = "Callbacks should not be added when they are not valid"
-#         assert str(correct) not in viewer.callbacks, msg
 
 
 @pytest.mark.parametrize(

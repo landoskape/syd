@@ -2,10 +2,6 @@ import pytest
 from unittest.mock import Mock, patch
 import ipywidgets as widgets
 from matplotlib.figure import Figure
-
-import os, sys
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from syd.interactive_viewer import InteractiveViewer
 from syd.notebook_deployment.widgets import (
     create_widget,
