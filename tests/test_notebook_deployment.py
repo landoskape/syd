@@ -8,10 +8,10 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from syd.interactive_viewer import InteractiveViewer
 from syd.notebook_deployment.widgets import (
-    create_parameter_widget,
-    TextParameterWidget,
-    SelectionParameterWidget,
-    BooleanParameterWidget,
+    create_widget,
+    TextWidget,
+    SelectionWidget,
+    BooleanWidget,
 )
 from syd.notebook_deployment.deployer import NotebookDeployment, LayoutConfig
 
@@ -36,41 +36,41 @@ def basic_parameters():
 class TestWidgetCreation:
     def test_text_widget_creation(self, basic_parameters):
         param = basic_parameters.parameters["text_param"]
-        widget = create_parameter_widget(param)
+        widget = create_widget(param)
 
-        assert isinstance(widget, TextParameterWidget)
+        assert isinstance(widget, TextWidget)
         assert isinstance(widget.widget, widgets.Text)
         assert widget.value == "test"
         assert widget.widget.description == "text_param"
 
     def test_selection_widget_creation(self, basic_parameters):
         param = basic_parameters.parameters["select_param"]
-        widget = create_parameter_widget(param)
+        widget = create_widget(param)
 
-        assert isinstance(widget, SelectionParameterWidget)
+        assert isinstance(widget, SelectionWidget)
         assert isinstance(widget.widget, widgets.Dropdown)
         assert widget.value == "A"
         assert list(widget.widget.options) == ["A", "B", "C"]
 
     def test_boolean_widget_creation(self, basic_parameters):
         param = basic_parameters.parameters["bool_param"]
-        widget = create_parameter_widget(param)
+        widget = create_widget(param)
 
-        assert isinstance(widget, BooleanParameterWidget)
+        assert isinstance(widget, BooleanWidget)
         assert isinstance(widget.widget, widgets.Checkbox)
         assert widget.value is True
 
     def test_widget_creation_validation(self, basic_parameters):
         # Test creation with invalid parameter
         with pytest.raises(ValueError):
-            create_parameter_widget(Mock())
+            create_widget(Mock())
 
 
 # Widget Update Tests
 class TestWidgetUpdates:
     def test_widget_value_update(self, basic_parameters):
         param = basic_parameters.parameters["text_param"]
-        widget = create_parameter_widget(param)
+        widget = create_widget(param)
 
         widget.value = "new value"
         assert widget.value == "new value"
@@ -82,7 +82,7 @@ class TestWidgetUpdates:
 
     def test_selection_widget_options_update(self, basic_parameters):
         param = basic_parameters.parameters["select_param"]
-        widget = create_parameter_widget(param)
+        widget = create_widget(param)
 
         # Update options through parameter
         new_options = ["X", "Y", "Z"]
@@ -94,7 +94,7 @@ class TestWidgetUpdates:
 
     def test_parameter_validation_during_update(self, basic_parameters):
         param = basic_parameters.parameters["int_param"]
-        widget = create_parameter_widget(param)
+        widget = create_widget(param)
 
         # Test value clamping
         widget.value = 15  # Above max_value
@@ -108,7 +108,7 @@ class TestWidgetUpdates:
 class TestWidgetCallbacks:
     def test_widget_callback_registration(self, basic_parameters):
         param = basic_parameters.parameters["int_param"]
-        widget = create_parameter_widget(param)
+        widget = create_widget(param)
 
         callback = Mock()
         widget.observe(callback)
@@ -123,7 +123,7 @@ class TestWidgetCallbacks:
 
     def test_callback_disable_reenable(self, basic_parameters):
         param = basic_parameters.parameters["int_param"]
-        widget = create_parameter_widget(param)
+        widget = create_widget(param)
 
         callback = Mock()
         widget.observe(callback)
@@ -138,7 +138,7 @@ class TestWidgetCallbacks:
 
     def test_multiple_callbacks(self, basic_parameters):
         param = basic_parameters.parameters["int_param"]
-        widget = create_parameter_widget(param)
+        widget = create_widget(param)
 
         callback1 = Mock()
         callback2 = Mock()
@@ -167,5 +167,5 @@ class TestNotebookDeployment:
 
         with patch.object(deployment, "_update_plot") as mock_update_plot:
             with patch.object(deployment, "_sync_widgets_with_state"):
-                deployment._handle_parameter_change("text_param")
+                deployment._handle_widget_engagement("text_param")
                 mock_update_plot.assert_called_once()

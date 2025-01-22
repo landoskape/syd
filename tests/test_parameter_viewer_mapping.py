@@ -1,7 +1,7 @@
 import pytest
 from typing import List
 from inspect import signature
-from syd.parameters import ParameterType, get_parameter_attributes
+from syd.parameters import ParameterType, ActionType, get_parameter_attributes
 from tests.support import MockViewer
 
 
@@ -35,7 +35,9 @@ def test_all_methods_have_parameter_types():
     add_methods = [m[4:] for m in methods if m.startswith("add_")]
     update_methods = [m[7:] for m in methods if m.startswith("update_")]
 
-    param_names = {param_type.name for param_type in ParameterType}
+    param_names = {param_type.name for param_type in ParameterType} | {
+        action_type.name for action_type in ActionType
+    }
 
     assert (
         set(add_methods) == param_names

@@ -9,6 +9,10 @@ from syd.parameters import (
 from tests.support import MockViewer, check_no_change
 
 
+def valid_button_callback(viewer, state):
+    pass
+
+
 # Test configurations for different parameter types
 PARAM_CONFIGS = {
     ParameterType.text: {
@@ -93,7 +97,7 @@ PARAM_CONFIGS = {
     ActionType.button: {
         "extra_kwargs": {
             "label": "Click me",
-            "callback": lambda: print("Button clicked!"),
+            "callback": valid_button_callback,
         },
     },
 }
