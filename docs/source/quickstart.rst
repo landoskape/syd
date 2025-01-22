@@ -1,15 +1,15 @@
 Quick Start Guide
-===============
+=================
 
 Creating Your First Interactive Plot
----------------------------------
+------------------------------------
 
 1. Create a viewer class that inherits from ``InteractiveViewer``
 2. Implement the ``plot()`` method to create your visualization
 3. Add parameters to control your plot
 4. Register callbacks to update the plot when parameters change
 
-Here's a complete example. You can run the complete example 
+Here's a complete example. You can view the complete example 
 `here <https://github.com/landoskape/syd/blob/main/docs/examples/example_notebook.ipynb>`_ 
 or run it yourself in colab:
 
@@ -79,7 +79,7 @@ or run it yourself in colab:
 
 
 Available Parameter Types
------------------------
+-------------------------
 
 - Text input (``add_text``)
 - Checkboxes (``add_boolean``)

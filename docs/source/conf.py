@@ -13,6 +13,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.autosummary",
 ]
 
 html_theme_options = {

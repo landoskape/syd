@@ -1,10 +1,10 @@
 Interactive Viewer
-================
+==================
 
 .. currentmodule:: syd.interactive_viewer
 
 InteractiveViewer
----------------
+-----------------
 
 .. autoclass:: InteractiveViewer
    :members:

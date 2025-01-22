@@ -1,17 +1,17 @@
 Parameters
-=========
+==========
 
 .. currentmodule:: syd.parameters
 
 Base Classes
------------
+------------
 
 .. autoclass:: Parameter
    :members:
    :special-members: __init__
 
 Parameter Types
--------------
+---------------
 
 .. autoclass:: TextParameter
    :members:
@@ -30,7 +30,7 @@ Parameter Types
    :show-inheritance:
 
 Numeric Parameters
-----------------
+------------------
 
 .. autoclass:: IntegerParameter
    :members:
@@ -56,8 +56,15 @@ Numeric Parameters
    :members:
    :show-inheritance:
 
+Action Parameters
+-----------------
+
+.. autoclass:: ButtonAction
+   :members:
+   :show-inheritance:
+
 Exceptions
----------
+----------
 
 .. autoexception:: ParameterAddError
    :members:
