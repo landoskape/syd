@@ -103,6 +103,9 @@ PARAM_CONFIGS = {
     },
 }
 
+all_params = list(ParameterType) + list(ActionType)
+all_pairs = list(combinations(all_params, 2))
+
 
 @pytest.mark.parametrize("param_type", ParameterType)
 def test_invalid_parameter_name(param_type):
@@ -419,8 +422,24 @@ def test_on_change_no_parameter():
     assert "not_a_parameter" not in viewer.callbacks, msg
 
 
-all_params = list(ParameterType) + list(ActionType)
-all_pairs = list(combinations(all_params, 2))
+@pytest.mark.parametrize("param_type", ParameterType)
+def test_setting_parameter_values(param_type):
+    viewer = MockViewer()
+    config = PARAM_CONFIGS[param_type]
+    add_method = getattr(viewer, f"add_{param_type.name}")
+    kwargs = config.get("extra_kwargs", {})
+    param_name = f"{param_type.name}_1"
+
+    add_method(param_name, value=config["basic_value"], **kwargs)
+    assert viewer.parameters[param_name].value == config["basic_value"]
+
+    viewer.set_parameter_value(param_name, config["updated_value"])
+    assert viewer.parameters[param_name].value == config["updated_value"]
+
+    with pytest.raises(ValueError):
+        viewer.set_parameter_value(
+            param_name + "_wontfindthis", config["updated_value"]
+        )
 
 
 @pytest.mark.parametrize("param_type1, param_type2", all_pairs)
@@ -444,13 +463,19 @@ def test_parameter_type_compatibility(param_type1, param_type2):
     viewer = MockViewer()
     add_method1 = getattr(viewer, f"add_{param_type1.name}")
     add_method2 = getattr(viewer, f"add_{param_type2.name}")
+    update_method2 = getattr(viewer, f"update_{param_type2.name}")
     add_method1(param_name, **kwargs1)
     with pytest.raises(ParameterAddError):
         add_method2(param_name, **kwargs2)
+    with pytest.raises(ParameterUpdateError):
+        update_method2(param_name, **kwargs2)
 
     viewer = MockViewer()
     add_method1 = getattr(viewer, f"add_{param_type1.name}")
+    update_method1 = getattr(viewer, f"update_{param_type1.name}")
     add_method2 = getattr(viewer, f"add_{param_type2.name}")
     add_method2(param_name, **kwargs2)
     with pytest.raises(ParameterAddError):
         add_method1(param_name, **kwargs1)
+    with pytest.raises(ParameterUpdateError):
+        update_method1(param_name, **kwargs1)

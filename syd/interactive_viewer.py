@@ -272,16 +272,16 @@ class InteractiveViewer:
             get_self = lambda func: hasattr(func, "__self__") and func.__self__
             get_name = lambda func: func.__name__
 
+        # Check if it's a class method
+        class_method = get_self(func) is self.__class__
+        if class_method:
+            raise ValueError(context + "Class methods are not supported.")
+
         # Check if it's a bound method to another instance other than this one
         if get_self(func) and get_self(func) is not self:
             raise ValueError(
                 context + "Bound methods to other instances are not supported."
             )
-
-        # Check if it's a class method
-        class_method = get_self(func) is self.__class__
-        if class_method:
-            raise ValueError(context + "Class methods are not supported.")
 
         # Get function signature
         try:
