@@ -10,7 +10,7 @@ from typing import (
     Union,
     Sequence,
 )
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from enum import Enum
 from copy import deepcopy
@@ -1432,10 +1432,14 @@ class UnboundedFloatParameter(Parameter[float]):
         self.value = self._validate(self.value)
 
 
-class ButtonAction:
+@dataclass(init=False)
+class ButtonAction(Parameter[None]):
     """A button with a programmable callback."""
 
-    _is_action: bool = True
+    label: str
+    callback: Callable
+    value: None = field(default=None, repr=False)
+    _is_action: bool = field(default=True, repr=False)
 
     def __init__(self, name: str, label: str, callback: Callable):
         """
@@ -1449,13 +1453,28 @@ class ButtonAction:
         self.name = name
         self.label = label
         self.callback = callback
+        self._value = None
 
-    def update(self, updates: Dict[str, Any]) -> None:
-        """Update the button's label and/or callback."""
-        if "label" in updates:
-            self.label = updates["label"]
-        if "callback" in updates:
-            self.callback = updates["callback"]
+    def _validate(self, new_value: Any) -> None:
+        """Validate the button's value."""
+        return None
+
+    def _validate_update(self) -> None:
+        """Validate the button's value after updates."""
+        if not callable(self.callback):
+            raise ParameterUpdateError(
+                self.name,
+                type(self).__name__,
+                f"Callback {self.callback} is not callable",
+            )
+        try:
+            str(self.label)
+        except Exception:
+            raise ParameterUpdateError(
+                self.name,
+                type(self).__name__,
+                f"Label {self.label} doesn't have a string representation",
+            )
 
 
 class ParameterType(Enum):
