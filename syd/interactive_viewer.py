@@ -65,14 +65,14 @@ def validate_parameter_operation(
                 "Incorrect use of validate_parameter_operation decorator. Must be called with 'add' or 'update' as the first argument."
             )
 
+        # Validate operation matches method name (add/update)
+        if not func.__name__.startswith(operation):
+            raise ValueError(
+                f"Invalid operation type specified ({operation}) for method {func.__name__}"
+            )
+
         @wraps(func)
         def wrapper(self: "InteractiveViewer", name: Any, *args, **kwargs):
-            # Validate operation matches method name (add/update)
-            if not func.__name__.startswith(operation):
-                raise ValueError(
-                    f"Invalid operation type specified ({operation}) for method {func.__name__}"
-                )
-
             # Validate parameter name is a string
             if not isinstance(name, str):
                 if operation == "add":

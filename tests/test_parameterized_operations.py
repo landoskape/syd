@@ -1,4 +1,5 @@
 import pytest
+from itertools import combinations
 from syd.parameters import (
     ParameterAddError,
     ParameterUpdateError,
@@ -381,7 +382,7 @@ def test_unbounded_specific_operations(param_type):
 
 
 @pytest.mark.parametrize("param_type", ParameterType)
-def test_action_parameter(param_type):
+def test_not_action_parameter(param_type):
     viewer = MockViewer()
     config = PARAM_CONFIGS[param_type]
     add_method = getattr(viewer, f"add_{param_type.name}")
@@ -394,7 +395,7 @@ def test_action_parameter(param_type):
 
 
 @pytest.mark.parametrize("param_type", ActionType)
-def test_action_parameter(param_type):
+def test_is_action_parameter(param_type):
     viewer = MockViewer()
     config = PARAM_CONFIGS[param_type]
     add_method = getattr(viewer, f"add_{param_type.name}")
@@ -404,3 +405,52 @@ def test_action_parameter(param_type):
     add_method(param_name, **kwargs)
     assert hasattr(viewer.parameters[param_name], "_is_action")
     assert viewer.parameters[param_name]._is_action
+
+
+def test_on_change_no_parameter():
+    def valid_callable(viewer, state):
+        pass
+
+    viewer = MockViewer()
+    with pytest.raises(ValueError):
+        viewer.on_change("not_a_parameter", valid_callable)
+
+    msg = "Callback should not be added when parameter doesn't exist"
+    assert "not_a_parameter" not in viewer.callbacks, msg
+
+
+all_params = list(ParameterType) + list(ActionType)
+all_pairs = list(combinations(all_params, 2))
+
+
+@pytest.mark.parametrize("param_type1, param_type2", all_pairs)
+def test_parameter_type_compatibility(param_type1, param_type2):
+    param_name = "parameter_name"
+    config1 = PARAM_CONFIGS[param_type1]
+    config2 = PARAM_CONFIGS[param_type2]
+
+    kwargs1 = {}
+    kwargs2 = {}
+    if "basic_value" in config1:
+        kwargs1["value"] = config1["basic_value"]
+    if "basic_value" in config2:
+        kwargs2["value"] = config2["basic_value"]
+
+    if "extra_kwargs" in config1:
+        kwargs1.update(config1["extra_kwargs"])
+    if "extra_kwargs" in config2:
+        kwargs2.update(config2["extra_kwargs"])
+
+    viewer = MockViewer()
+    add_method1 = getattr(viewer, f"add_{param_type1.name}")
+    add_method2 = getattr(viewer, f"add_{param_type2.name}")
+    add_method1(param_name, **kwargs1)
+    with pytest.raises(ParameterAddError):
+        add_method2(param_name, **kwargs2)
+
+    viewer = MockViewer()
+    add_method1 = getattr(viewer, f"add_{param_type1.name}")
+    add_method2 = getattr(viewer, f"add_{param_type2.name}")
+    add_method2(param_name, **kwargs2)
+    with pytest.raises(ParameterAddError):
+        add_method1(param_name, **kwargs1)

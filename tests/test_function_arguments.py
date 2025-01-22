@@ -13,6 +13,10 @@ def correct_arguments_kwargs(viewer=None, state=None):
     return "correct"
 
 
+def correct_arguments_kwargs_extra(viewer=None, state=None, **kwargs):
+    return "correct"
+
+
 def correct_arguments_extra(viewer=None, state=None, extra=None):
     return "correct"
 
@@ -41,11 +45,17 @@ def one_positional_and_one_kwarg(arg1, *, arg2):
     return "external function with one positional and one kwarg is not allowed"
 
 
+not_callable = "not callable"
+
+
 class MockViewer(InteractiveViewer):
     def correct_arguments_positional(self, state):
         return "correct"
 
     def correct_arguments_kwargs(self, state=None):
+        return "correct"
+
+    def correct_arguments_kwargs_extra(self, state=None, **kwargs):
         return "correct"
 
     def correct_arguments_extra(self, state=None, extra=None):
@@ -96,6 +106,7 @@ correct_kind_callable_pairs = {
     # Correct external functions
     "correct_positional": ("external", correct_arguments_positional),
     "correct_kwargs": ("external", correct_arguments_kwargs),
+    "correct_kwargs_extra": ("external", correct_arguments_kwargs_extra),
     "correct_extra": ("external", correct_arguments_extra),
     "correct_partial_three_args": ("external", partial(three_arguments, arg3="make_arg3_a_kwarg")),
     "correct_partial_extra": ("external", partial(correct_arguments_extra, extra="wrap extra in a partial")),
@@ -103,6 +114,7 @@ correct_kind_callable_pairs = {
     # Correct bound methods
     "correct_bound_positional": ("bound", instance.correct_arguments_positional),
     "correct_bound_kwargs": ("bound", instance.correct_arguments_kwargs),
+    "correct_bound_kwargs_extra": ("bound", instance.correct_arguments_kwargs_extra),
     "correct_bound_extra": ("bound", instance.correct_arguments_extra),
     "correct_bound_partial_three": ("bound", partial(instance.three_arguments, arg3="make_arg3_a_kwarg")),
     "correct_bound_partial_extra": ("bound", partial(instance.correct_arguments_extra, extra="wrap extra in a partial")),
@@ -125,6 +137,7 @@ incorrect_kind_callable_pairs = {
     "incorrect_partial_viewer": ("external", partial(correct_arguments_positional, viewer="wrap viewer in a partial")),
     "incorrect_partial_extra": ("external", partial(correct_arguments_kwargs, extra="wrap extra in a partial")),
     "incorrect_partial_arg1": ("external", partial(three_arguments, arg1="wrap arg1 in a partial... making all others kwarg-only")),
+    "incorrect_not_callable": ("external", not_callable),
     
     # Incorrect bound methods
     "incorrect_bound_class": ("bound", instance.two_arguments_class),
