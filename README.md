@@ -23,26 +23,32 @@ pip install syd
 
 ## Quick Start
 Right now the only way to use it is in a jupyter notebook. More deployments coming soon!
+This is an example of a sine wave viewer which is about as simple as it gets. 
 ```python
 # In a notebook! 
-from syd import InteractiveViewer
 import matplotlib.pyplot as plt
 import numpy as np
-class WaveViewer(InteractiveViewer):
-    def __init__(self):
-        self.add_float('amplitude', value=1.0, min_value=0, max_value=2)
-        self.add_float('frequency', value=1.0, min_value=0.1, max_value=5)
-
-    def plot(self, state):
-        fig, ax = plt.subplots()
-        x = np.linspace(0, 10, 1000)
-        y = state['amplitude'] * np.sin(state['frequency'] * x)
-        ax.plot(x, y)
-        return fig
-
-viewer = WaveViewer()
-viewer.deploy()
+from syd import make_viewer
+def plot(viewer, state):
+    fig, ax = plt.subplots()
+    x = np.linspace(0, 10, 1000)
+    y = state['amplitude'] * np.sin(state['frequency'] * x)
+    ax.plot(x, y)
+    return fig
+        
+viewer = make_viewer()
+viewer.set_plot(plot)
+viewer.add_float('amplitude', value=1.0, min_value=0, max_value=2)
+viewer.add_float('frequency', value=1.0, min_value=0.1, max_value=5)
+viewer.deploy(continuous=True)
 ```
+
+We have several examples of more complex viewers in the [examples](examples) folder. A good one
+to start with is the [first example](examples/first_example.ipynb) because this has detailed 
+explanations of how to use the core elements of SYD. To see what the exact same viewer looks like
+when written as a class, see the [subclass example](examples/subclass_example.ipynb). This format
+is pretty useful when you want complex functionality - for example if you want to add extra
+supporting methods for processing data and updating parameters that require more complex logic.
 
 ## Documentation
 

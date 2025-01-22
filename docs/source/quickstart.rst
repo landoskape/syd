@@ -71,7 +71,7 @@ or run it yourself in colab:
         
 
     viewer = SimpleWaveformViewer()
-    viewer.deploy(continuous_update=True)
+    viewer.deploy(continuous=True)
 
 .. image:: ../examples/assets/simple_waveform_viewer.png
    :alt: Simple Waveform Viewer

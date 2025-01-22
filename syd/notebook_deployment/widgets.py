@@ -33,14 +33,14 @@ class BaseWidget(Generic[T, W], ABC):
     _callbacks: List[Dict[str, Union[Callable, Union[str, List[str]]]]]
     _is_action: bool = False
 
-    def __init__(self, parameter: T, continuous_update: bool = False):
-        self._widget = self._create_widget(parameter, continuous_update)
+    def __init__(self, parameter: T, continuous: bool = False):
+        self._widget = self._create_widget(parameter, continuous)
         self._updating = False  # Flag to prevent circular updates
         # List of callbacks to remember for quick disabling/enabling
         self._callbacks = []
 
     @abstractmethod
-    def _create_widget(self, parameter: T, continuous_update: bool) -> W:
+    def _create_widget(self, parameter: T, continuous: bool) -> W:
         """Create and return the appropriate ipywidget."""
         pass
 
@@ -105,12 +105,12 @@ class TextWidget(BaseWidget[TextParameter, widgets.Text]):
     """Widget for text parameters."""
 
     def _create_widget(
-        self, parameter: TextParameter, continuous_update: bool
+        self, parameter: TextParameter, continuous: bool
     ) -> widgets.Text:
         return widgets.Text(
             value=parameter.value,
             description=parameter.name,
-            continuous_update=continuous_update,
+            continuous=continuous,
             layout=widgets.Layout(width="95%"),
         )
 
@@ -119,7 +119,7 @@ class BooleanWidget(BaseWidget[BooleanParameter, widgets.Checkbox]):
     """Widget for boolean parameters."""
 
     def _create_widget(
-        self, parameter: BooleanParameter, continuous_update: bool
+        self, parameter: BooleanParameter, continuous: bool
     ) -> widgets.Checkbox:
         return widgets.Checkbox(value=parameter.value, description=parameter.name)
 
@@ -128,7 +128,7 @@ class SelectionWidget(BaseWidget[SelectionParameter, widgets.Dropdown]):
     """Widget for single selection parameters."""
 
     def _create_widget(
-        self, parameter: SelectionParameter, continuous_update: bool
+        self, parameter: SelectionParameter, continuous: bool
     ) -> widgets.Dropdown:
         return widgets.Dropdown(
             value=parameter.value,
@@ -158,7 +158,7 @@ class MultipleSelectionWidget(
     """Widget for multiple selection parameters."""
 
     def _create_widget(
-        self, parameter: MultipleSelectionParameter, continuous_update: bool
+        self, parameter: MultipleSelectionParameter, continuous: bool
     ) -> widgets.SelectMultiple:
         return widgets.SelectMultiple(
             value=parameter.value,
@@ -189,14 +189,14 @@ class IntegerWidget(BaseWidget[IntegerParameter, widgets.IntSlider]):
     """Widget for integer parameters."""
 
     def _create_widget(
-        self, parameter: IntegerParameter, continuous_update: bool
+        self, parameter: IntegerParameter, continuous: bool
     ) -> widgets.IntSlider:
         return widgets.IntSlider(
             value=parameter.value,
             min=parameter.min_value,
             max=parameter.max_value,
             description=parameter.name,
-            continuous_update=continuous_update,
+            continuous=continuous,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
@@ -221,7 +221,7 @@ class FloatWidget(BaseWidget[FloatParameter, widgets.FloatSlider]):
     """Widget for float parameters."""
 
     def _create_widget(
-        self, parameter: FloatParameter, continuous_update: bool
+        self, parameter: FloatParameter, continuous: bool
     ) -> widgets.FloatSlider:
         return widgets.FloatSlider(
             value=parameter.value,
@@ -229,7 +229,7 @@ class FloatWidget(BaseWidget[FloatParameter, widgets.FloatSlider]):
             max=parameter.max_value,
             step=parameter.step,
             description=parameter.name,
-            continuous_update=continuous_update,
+            continuous=continuous,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
@@ -255,14 +255,14 @@ class IntegerRangeWidget(BaseWidget[IntegerRangeParameter, widgets.IntRangeSlide
     """Widget for integer range parameters."""
 
     def _create_widget(
-        self, parameter: IntegerRangeParameter, continuous_update: bool
+        self, parameter: IntegerRangeParameter, continuous: bool
     ) -> widgets.IntRangeSlider:
         return widgets.IntRangeSlider(
             value=parameter.value,
             min=parameter.min_value,
             max=parameter.max_value,
             description=parameter.name,
-            continuous_update=continuous_update,
+            continuous=continuous,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
@@ -290,7 +290,7 @@ class FloatRangeWidget(BaseWidget[FloatRangeParameter, widgets.FloatRangeSlider]
     """Widget for float range parameters."""
 
     def _create_widget(
-        self, parameter: FloatRangeParameter, continuous_update: bool
+        self, parameter: FloatRangeParameter, continuous: bool
     ) -> widgets.FloatRangeSlider:
         return widgets.FloatRangeSlider(
             value=parameter.value,
@@ -298,7 +298,7 @@ class FloatRangeWidget(BaseWidget[FloatRangeParameter, widgets.FloatRangeSlider]
             max=parameter.max_value,
             step=parameter.step,
             description=parameter.name,
-            continuous_update=continuous_update,
+            continuous=continuous,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
         )
@@ -329,7 +329,7 @@ class UnboundedIntegerWidget(
     """Widget for unbounded integer parameters."""
 
     def _create_widget(
-        self, parameter: UnboundedIntegerParameter, continuous_update: bool
+        self, parameter: UnboundedIntegerParameter, continuous: bool
     ) -> widgets.BoundedIntText:
         return widgets.BoundedIntText(
             value=parameter.value,
@@ -360,7 +360,7 @@ class UnboundedFloatWidget(
     """Widget for unbounded float parameters."""
 
     def _create_widget(
-        self, parameter: UnboundedFloatParameter, continuous_update: bool
+        self, parameter: UnboundedFloatParameter, continuous: bool
     ) -> widgets.BoundedFloatText:
         return widgets.BoundedFloatText(
             value=parameter.value,
@@ -391,7 +391,7 @@ class ButtonWidget(BaseWidget[ButtonAction, widgets.Button]):
     _is_action: bool = True
 
     def _create_widget(
-        self, parameter: ButtonAction, continuous_update: bool
+        self, parameter: ButtonAction, continuous: bool
     ) -> widgets.Button:
         button = widgets.Button(
             description=parameter.label,
@@ -435,13 +435,13 @@ class ButtonWidget(BaseWidget[ButtonAction, widgets.Button]):
 
 def create_widget(
     parameter: Union[Parameter[Any], ButtonAction],
-    continuous_update: bool = False,
+    continuous: bool = False,
 ) -> BaseWidget[Union[Parameter[Any], ButtonAction], widgets.Widget]:
     """Create and return the appropriate widget for the given parameter.
 
     Args:
         parameter: The parameter to create a widget for
-        continuous_update: Whether to update the widget value continuously during user interaction
+        continuous: Whether to update the widget value continuously during user interaction
     """
     widget_map = {
         TextParameter: TextWidget,
@@ -475,4 +475,4 @@ def create_widget(
             f"Available types: {[k.__name__ for k in widget_map.keys()]}"
         )
 
-    return widget_class(parameter, continuous_update)
+    return widget_class(parameter, continuous)

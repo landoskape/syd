@@ -51,7 +51,7 @@ class NotebookDeployment:
         self,
         viewer: InteractiveViewer,
         layout_config: Optional[LayoutConfig] = None,
-        continuous_update: bool = False,
+        continuous: bool = False,
         suppress_warnings: bool = False,
     ):
         if not isinstance(viewer, InteractiveViewer):  # type: ignore
@@ -61,7 +61,7 @@ class NotebookDeployment:
 
         self.viewer = viewer
         self.config = layout_config or LayoutConfig()
-        self.continuous_update = continuous_update
+        self.continuous = continuous
         self.suppress_warnings = suppress_warnings
 
         # Initialize containers
@@ -85,7 +85,7 @@ class NotebookDeployment:
                 min=20,
                 max=80,
                 description="Controls Width %",
-                continuous_update=True,
+                continuous=True,
                 layout=widgets.Layout(width="95%"),
                 style={"description_width": "initial"},
             )
@@ -100,7 +100,7 @@ class NotebookDeployment:
         for name, param in self.viewer.parameters.items():
             widget = create_widget(
                 param,
-                continuous_update=self.continuous_update,
+                continuous=self.continuous,
             )
 
             # Store in widget dict
@@ -198,7 +198,7 @@ class NotebookDeployment:
 
         # Set up parameter widgets with their observe callbacks
         for name, widget in self.parameter_widgets.items():
-            widget.observe(lambda change, n=name: self._handle_parameter_change(n))
+            widget.observe(lambda change, n=name: self._handle_widget_engagement(n))
 
         # Create parameter controls section
         param_box = widgets.VBox(
