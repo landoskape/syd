@@ -2,8 +2,10 @@
 
 [![PyPI version](https://badge.fury.io/py/syd.svg)](https://badge.fury.io/py/syd)
 [![Tests](https://github.com/landoskape/syd/actions/workflows/tests.yml/badge.svg)](https://github.com/landoskape/syd/actions/workflows/tests.yml)
-[![Documentation Status](https://readthedocs.org/projects/shareyourdata/badge/?version=latest)](https://shareyourdata.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/shareyourdata/badge/?version=stable)](https://shareyourdata.readthedocs.io/en/stable/?badge=stable)
 [![codecov](https://codecov.io/gh/landoskape/syd/branch/main/graph/badge.svg)](https://codecov.io/gh/landoskape/syd)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 
 A package to help you share your data!
 
@@ -66,6 +68,6 @@ Contributions are welcome! Here's how you can help:
 4. Run the tests (`pytest`)
 5. Commit your changes (`git commit -m 'Add amazing feature'`)
 6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+7. Open a Pull Request online
 
 Please make sure to update tests as appropriate and adhere to the existing coding style.
