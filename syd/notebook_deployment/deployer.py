@@ -78,7 +78,10 @@ class NotebookDeployment:
     def __init__(
         self,
         viewer: InteractiveViewer,
-        layout_config: Optional[LayoutConfig] = None,
+        controls_position: str = "left",
+        figure_width: float = 8.0,
+        figure_height: float = 6.0,
+        controls_width_percent: int = 30,
         continuous: bool = False,
         suppress_warnings: bool = False,
     ):
@@ -88,7 +91,12 @@ class NotebookDeployment:
             )
 
         self.viewer = viewer
-        self.config = layout_config or LayoutConfig()
+        self.config = LayoutConfig(
+            controls_position=controls_position,
+            figure_width=figure_width,
+            figure_height=figure_height,
+            controls_width_percent=controls_width_percent,
+        )
         self.continuous = continuous
         self.suppress_warnings = suppress_warnings
 
