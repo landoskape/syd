@@ -274,16 +274,10 @@ class InteractiveViewer:
             get_self = lambda func: hasattr(func, "__self__") and func.__self__
             get_name = lambda func: func.__name__
 
-        # Check if it's a class method
-        class_method = get_self(func) is self.__class__
-        if class_method:
-            raise ValueError(context + "Class methods are not supported.")
-
-        # Check if it's a bound method to another instance other than this one
-        if get_self(func) and get_self(func) is not self:
-            raise ValueError(
-                context + "Bound methods to other instances are not supported."
-            )
+        # # Check if it's a class method of this class
+        # class_method = get_self(func) is self.__class__
+        # if class_method:
+        #     raise ValueError(context + "Class methods are not supported.")
 
         # Get function signature
         try:
@@ -361,7 +355,13 @@ class InteractiveViewer:
                 raise ValueError(msg)
             else:
                 func_sig = str(inspect.signature(func))
-
+                bound_elsewhere = get_self(func) and get_self(func) is not self
+                if bound_elsewhere:
+                    func_name = f"self.{func_name}"
+                    func_sig = f"(self, {func_sig[1:]})"
+                    add_self = True
+                else:
+                    add_self = False
                 msg = (
                     context + "\n"
                     f"Your function '{func_name}{func_sig}' has an incorrect signature.\n"
@@ -372,7 +372,7 @@ class InteractiveViewer:
                     f"def {func_name}{func_sig}:\n"
                     "    ... your function code ...\n"
                     "\nIt should look like this:\n"
-                    f"def {func_name}(viewer, state{optional_part}):\n"
+                    f"def {func_name}({'self, ' if add_self else ''}viewer, state{optional_part}):\n"
                     "    ... your function code ..."
                 )
                 raise ValueError(msg)

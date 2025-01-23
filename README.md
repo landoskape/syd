@@ -85,3 +85,4 @@ Please make sure to update tests as appropriate and adhere to the existing codin
   - Also probably make it dependent on whether the deployer is in continuous mode or not
   - Potentially make the wait_time dynamic depending on how fast the plot method is and how
   - frequently the no comm messages show up... (if we can catch them)
+- Consider the class method "of this class" function permissions.... (and write tests...)
