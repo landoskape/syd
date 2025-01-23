@@ -284,8 +284,8 @@ class NotebookDeployment:
             self._create_parameter_widgets()
 
             # Create and display layout
-            layout = self._create_layout()
-            display(layout)
+            self.layout = self._create_layout()
+            display(self.layout)
 
             # Create initial plot
             self._update_plot()
