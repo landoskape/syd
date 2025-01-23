@@ -99,7 +99,11 @@ class MockViewer(InteractiveViewer):
 
     @classmethod
     def two_arguments_class(cls, viewer, state):
-        return "no class method allowed"
+        return "this is okay"
+
+    @classmethod
+    def one_argument_class(cls, viewer):
+        return "not two additional arguments"
 
 
 instance = MockViewer()
@@ -127,6 +131,11 @@ correct_kind_callable_pairs = {
     "correct_bound_static_extra": ("bound", instance.correct_arguments_extra_static),
     "correct_bound_static_partial_three": ("bound", partial(instance.three_arguments_static, arg3="make_arg3_a_kwarg")),
     "correct_bound_static_partial_extra": ("bound", partial(instance.correct_arguments_extra_static, extra="wrap extra in a partial")),
+
+    "correct_bound_class": ("bound", instance.two_arguments_class),
+
+    # Use the external kind for these so we just use them directly from a distinct instance
+    "correct_bound_other": ("external", instance.three_arguments),
 }
 
 incorrect_kind_callable_pairs = {
@@ -145,9 +154,7 @@ incorrect_kind_callable_pairs = {
     "incorrect_lambda": ("external", invalid_lambda_function),
     
     # Incorrect bound methods
-    "incorrect_bound_class": ("bound", instance.two_arguments_class),
     "incorrect_bound_one": ("bound", instance.one_argument),
-    "incorrect_bound_three": ("bound", instance.three_arguments),
     "incorrect_bound_pos_kwarg": ("bound", instance.one_positional_and_one_kwarg),
     "incorrect_bound_static_one": ("bound", instance.one_argument_static),
     "incorrect_bound_static_three": ("bound", instance.three_arguments_static),
@@ -159,7 +166,11 @@ incorrect_kind_callable_pairs = {
     "incorrect_bound_static_partial_state": ("bound", partial(instance.correct_arguments_positional_static, state="wrap state in a partial")),
     "incorrect_bound_static_partial_viewer": ("bound", partial(instance.correct_arguments_positional_static, viewer="wrap viewer in a partial")),
     "incorrect_bound_static_partial_extra": ("bound", partial(instance.correct_arguments_kwargs_static, extra="wrap extra in a partial")),
-    "incorrect_bound_static_partial_arg1": ("bound", partial(instance.three_arguments_static, arg1="wrap arg1 in a partial... making all others kwarg-only"))
+    "incorrect_bound_static_partial_arg1": ("bound", partial(instance.three_arguments_static, arg1="wrap arg1 in a partial... making all others kwarg-only")),
+    "incorrect_bound_class": ("bound", instance.one_argument_class),
+
+    # Use the external kind for these so we just use them directly from a distinct instance
+    "incorrect_bound_other_static": ("external", instance.three_arguments_static),
 }
 # fmt: on
 
