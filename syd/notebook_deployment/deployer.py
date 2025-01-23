@@ -23,6 +23,11 @@ def _plot_context():
         plt.ion()
 
 
+# TODO:
+# Probably make this dependent on whether the user is in %matplotlib widget mode or not
+# Also probably make it dependent on whether the deployer is in continuous mode or not
+# Potentially make the wait_time dynamic depending on how fast the plot method is and how
+# frequently the no comm messages show up... (if we can catch them)
 def debounce(wait_time):
     """
     Decorator to prevent a function from being called more than once every wait_time seconds.
