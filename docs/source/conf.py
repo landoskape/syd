@@ -14,6 +14,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
+    "sphinx_copybutton",
 ]
 
 html_theme_options = {
