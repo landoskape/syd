@@ -1,12 +1,15 @@
-from typing import Dict, Any, Optional, cast
+from typing import Dict, Any, Optional
+import warnings
+from functools import wraps
 from dataclasses import dataclass
 from contextlib import contextmanager
+from time import time
+
 import ipywidgets as widgets
 from IPython.display import display
 import matplotlib.pyplot as plt
-import warnings
-from ..parameters import ParameterUpdateWarning
 
+from ..parameters import ParameterUpdateWarning
 from ..interactive_viewer import InteractiveViewer
 from .widgets import BaseWidget, create_widget
 
@@ -18,6 +21,26 @@ def _plot_context():
         yield
     finally:
         plt.ion()
+
+
+def debounce(wait_time):
+    """
+    Decorator to prevent a function from being called more than once every wait_time seconds.
+    """
+
+    def decorator(fn):
+        last_called = [0.0]  # Using list to maintain state in closure
+
+        @wraps(fn)
+        def debounced(*args, **kwargs):
+            current_time = time()
+            if current_time - last_called[0] >= wait_time:
+                fn(*args, **kwargs)
+                last_called[0] = current_time
+
+        return debounced
+
+    return decorator
 
 
 @dataclass
@@ -106,6 +129,7 @@ class NotebookDeployment:
             # Store in widget dict
             self.parameter_widgets[name] = widget
 
+    @debounce(0.2)
     def _handle_widget_engagement(self, name: str) -> None:
         """Handle engagement with an interactive widget."""
         if self._updating:
