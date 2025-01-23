@@ -9,7 +9,7 @@ Creating Your First Interactive Plot
 3. Add parameters to control your plot
 4. Register callbacks to update the plot when parameters change
 
-Here's a complete example. You can view the complete example 
+Here's a complete example. You can view the complete example
 `here <https://github.com/landoskape/syd/blob/main/docs/examples/example_notebook.ipynb>`_ 
 or run it yourself in colab:
 
