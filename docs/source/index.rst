@@ -6,17 +6,20 @@ Add GUI controls to your plots with just a few lines of code!
 
 .. code-block:: python
 
-   from syd import InteractiveViewer
+   from syd import make_viewer
    import matplotlib.pyplot as plt
+   import numpy as np
 
-   class MyViewer(InteractiveViewer):
-       def plot(self, state):
-           fig = plt.figure()
-           plt.plot([0, state['x']])
-           return fig
+   def plot(viewer, state):
+      x = np.linspace(0, 2*np.pi, 100)
+      y = np.sin(x * state["frequency"])
+      fig = plt.figure()
+      plt.plot(x, y)
+      return fig
 
-   viewer = MyViewer()
-   viewer.add_float('x', value=1.0, min_value=0, max_value=10)
+   viewer = make_viewer(plot)
+   viewer.add_float('frequency', value=1.0, min_value=0, max_value=3.0)
+   viewer.deploy(continuous=True)
 
 
 Installation
