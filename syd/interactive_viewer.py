@@ -112,9 +112,9 @@ def validate_parameter_operation(
                 return func(self, name, *args, **kwargs)
             except Exception as e:
                 if operation == "add":
-                    raise ParameterAddError(name, parameter_type.name, str(e)) from e
+                    raise ParameterAddError(name, parameter_type.name, str(e))
                 elif operation == "update":
-                    raise ParameterUpdateError(name, parameter_type.name, str(e)) from e
+                    raise ParameterUpdateError(name, parameter_type.name, str(e))
                 else:
                     raise e
 
@@ -632,7 +632,7 @@ class InteractiveViewer:
                 max_value,
             )
         except Exception as e:
-            raise ParameterAddError(name, "number", str(e)) from e
+            raise ParameterAddError(name, "number", str(e))
         else:
             self.parameters[name] = new_param
 

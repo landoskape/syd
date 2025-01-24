@@ -725,7 +725,7 @@ class FloatParameter(Parameter[float]):
     max_value : float
         Maximum allowed value
     step : float, optional
-        Size of each increment (default is 0.1)
+        Size of each increment (default is 0.001)
 
     Examples
     --------
@@ -758,7 +758,7 @@ class FloatParameter(Parameter[float]):
         value: float,
         min_value: float,
         max_value: float,
-        step: float = 0.1,
+        step: float = 0.001,
     ):
         self.name = name
         self.step = step
@@ -1009,7 +1009,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     max_value : float
         Maximum allowed value for both low and high
     step : float, optional
-        Size of each increment (default is 0.1)
+        Size of each increment (default is 0.001)
 
     Examples
     --------
@@ -1042,7 +1042,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
         value: Tuple[float, float],
         min_value: float,
         max_value: float,
-        step: float = 0.1,
+        step: float = 0.001,
     ):
         self.name = name
         self.step = step
