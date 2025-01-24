@@ -323,18 +323,14 @@ class FloatRangeWidget(BaseWidget[FloatRangeParameter, widgets.FloatRangeSlider]
         self.value = (low, high)
 
 
-class UnboundedIntegerWidget(
-    BaseWidget[UnboundedIntegerParameter, widgets.BoundedIntText]
-):
+class UnboundedIntegerWidget(BaseWidget[UnboundedIntegerParameter, widgets.IntText]):
     """Widget for unbounded integer parameters."""
 
     def _create_widget(
         self, parameter: UnboundedIntegerParameter, continuous: bool
-    ) -> widgets.BoundedIntText:
-        return widgets.BoundedIntText(
+    ) -> widgets.IntText:
+        return widgets.IntText(
             value=parameter.value,
-            min=parameter.min_value,
-            max=parameter.max_value,
             description=parameter.name,
             layout=widgets.Layout(width="95%"),
             style={"description_width": "initial"},
@@ -348,24 +344,17 @@ class UnboundedIntegerWidget(
         self, parameter: UnboundedIntegerParameter
     ) -> None:
         """Extra updates from the parameter."""
-        if parameter.min_value is not None:
-            self._widget.min = parameter.min_value
-        if parameter.max_value is not None:
-            self._widget.max = parameter.max_value
+        pass
 
 
-class UnboundedFloatWidget(
-    BaseWidget[UnboundedFloatParameter, widgets.BoundedFloatText]
-):
+class UnboundedFloatWidget(BaseWidget[UnboundedFloatParameter, widgets.FloatText]):
     """Widget for unbounded float parameters."""
 
     def _create_widget(
         self, parameter: UnboundedFloatParameter, continuous: bool
-    ) -> widgets.BoundedFloatText:
-        return widgets.BoundedFloatText(
+    ) -> widgets.FloatText:
+        return widgets.FloatText(
             value=parameter.value,
-            min=parameter.min_value,
-            max=parameter.max_value,
             step=parameter.step,
             description=parameter.name,
             layout=widgets.Layout(width="95%"),
@@ -378,10 +367,6 @@ class UnboundedFloatWidget(
 
     def extra_updates_from_parameter(self, parameter: UnboundedFloatParameter) -> None:
         """Extra updates from the parameter."""
-        if parameter.min_value is not None:
-            self._widget.min = parameter.min_value
-        if parameter.max_value is not None:
-            self._widget.max = parameter.max_value
         self._widget.step = parameter.step
 
 
