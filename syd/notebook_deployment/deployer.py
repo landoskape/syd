@@ -254,7 +254,9 @@ class NotebookDeployment:
                     else "100%"
                 ),
                 padding="10px",
-                overflow_y="auto",
+                overflow_y="scroll",
+                border="1px solid #e5e7eb",
+                border_radius="4px 4px 0px 0px",
             ),
         )
 
