@@ -86,3 +86,4 @@ Please make sure to update tests as appropriate and adhere to the existing codin
   - Potentially make the wait_time dynamic depending on how fast the plot method is and how
   - frequently the no comm messages show up... (if we can catch them)
 - Consider the class method "of this class" function permissions.... (and write tests...)
+- Consider adding a step to the integer parameter...
