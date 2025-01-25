@@ -44,4 +44,6 @@ Requirements
    :caption: Contents:
 
    quickstart
-   api/index 
+   components
+   tutorial
+   api/index

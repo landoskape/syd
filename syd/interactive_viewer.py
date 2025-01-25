@@ -112,9 +112,9 @@ def validate_parameter_operation(
                 return func(self, name, *args, **kwargs)
             except Exception as e:
                 if operation == "add":
-                    raise ParameterAddError(name, parameter_type.name, str(e)) from e
+                    raise ParameterAddError(name, parameter_type.name, str(e))
                 elif operation == "update":
-                    raise ParameterUpdateError(name, parameter_type.name, str(e)) from e
+                    raise ParameterUpdateError(name, parameter_type.name, str(e))
                 else:
                     raise e
 
@@ -632,7 +632,7 @@ class InteractiveViewer:
                 max_value,
             )
         except Exception as e:
-            raise ParameterAddError(name, "number", str(e)) from e
+            raise ParameterAddError(name, "number", str(e))
         else:
             self.parameters[name] = new_param
 
@@ -803,15 +803,12 @@ class InteractiveViewer:
         name: str,
         *,
         value: Union[float, int],
-        min_value: Optional[Union[float, int]] = None,
-        max_value: Optional[Union[float, int]] = None,
     ) -> None:
         """
         Add an unbounded integer parameter to the viewer.
 
         Creates a text input box in the GUI for entering whole numbers. Unlike
-        add_integer(), this allows very large numbers and optionally no minimum
-        or maximum bounds.
+        add_integer(), this allows very large numbers without bounds.
         See :class:`~syd.parameters.UnboundedIntegerParameter` for details.
 
         Parameters
@@ -820,29 +817,17 @@ class InteractiveViewer:
             Name of the parameter (used as label in GUI)
         value : int
             Initial value
-        min_value : int, optional
-            Minimum allowed value (or None for no minimum)
-        max_value : int, optional
-            Maximum allowed value (or None for no maximum)
 
         Examples
         --------
-        >>> viewer.add_unbounded_integer('population',
-        ...                             value=1000000,
-        ...                             min_value=0)  # No maximum
+        >>> viewer.add_unbounded_integer('population', value=1000000)
         >>> viewer.get_state()['population']
         1000000
-        >>> # Values below minimum will be clamped
-        >>> viewer.update_unbounded_integer('population', value=-5)
-        >>> viewer.get_state()['population']
-        0
         """
         try:
             new_param = ParameterType.unbounded_integer.value(
                 name,
                 value,
-                min_value,
-                max_value,
             )
         except Exception as e:
             raise ParameterAddError(name, "unbounded_integer", str(e)) from e
@@ -855,16 +840,14 @@ class InteractiveViewer:
         name: str,
         *,
         value: Union[float, int],
-        min_value: Optional[Union[float, int]] = None,
-        max_value: Optional[Union[float, int]] = None,
         step: Optional[float] = None,
     ) -> None:
         """
         Add an unbounded decimal number parameter to the viewer.
 
         Creates a text input box in the GUI for entering numbers. Unlike add_float(),
-        this allows very large or precise numbers and optionally no minimum or
-        maximum bounds. Values can optionally be rounded to a step size.
+        this allows very large or precise numbers without bounds. Values can optionally
+        be rounded to a step size.
         See :class:`~syd.parameters.UnboundedFloatParameter` for details.
 
         Parameters
@@ -873,19 +856,12 @@ class InteractiveViewer:
             Name of the parameter (used as label in GUI)
         value : float
             Initial value
-        min_value : float, optional
-            Minimum allowed value (or None for no minimum)
-        max_value : float, optional
-            Maximum allowed value (or None for no maximum)
         step : float, optional
             Size of each increment (or None for no rounding)
 
         Examples
         --------
-        >>> viewer.add_unbounded_float('wavelength',
-        ...                           value=550e-9,  # Nanometers
-        ...                           min_value=0.0,
-        ...                           step=1e-9)  # Round to nearest nanometer
+        >>> viewer.add_unbounded_float('wavelength', value=550e-9, step=1e-9)
         >>> viewer.get_state()['wavelength']
         5.5e-07
         >>> # Values will be rounded if step is provided
@@ -897,8 +873,6 @@ class InteractiveViewer:
             new_param = ParameterType.unbounded_float.value(
                 name,
                 value,
-                min_value,
-                max_value,
                 step,
             )
         except Exception as e:
@@ -1295,8 +1269,6 @@ class InteractiveViewer:
         name: str,
         *,
         value: Union[int, _NoUpdate] = _NO_UPDATE,
-        min_value: Union[Optional[int], _NoUpdate] = _NO_UPDATE,
-        max_value: Union[Optional[int], _NoUpdate] = _NO_UPDATE,
     ) -> None:
         """
         Update an unbounded integer parameter's value and/or bounds.
@@ -1309,31 +1281,17 @@ class InteractiveViewer:
         name : str
             Name of the unbounded integer parameter to update
         value : int, optional
-            New value (will be clamped to any bounds) (if not provided, no change)
-        min_value : int or None, optional
-            New minimum value, or None for no minimum (if not provided, no change)
-        max_value : int or None, optional
-            New maximum value, or None for no maximum (if not provided, no change)
+            New value (if not provided, no change)
 
         Examples
         --------
-        >>> viewer.add_unbounded_integer('population',
-        ...                             value=1000000,
-        ...                             min_value=0)  # No maximum
+        >>> viewer.add_unbounded_integer('population', value=1000000)
         >>> # Update just the value
         >>> viewer.update_unbounded_integer('population', value=2000000)
-        >>> # Add a maximum bound (current value will be clamped if needed)
-        >>> viewer.update_unbounded_integer('population', max_value=1500000)
-        >>> # Remove the minimum bound
-        >>> viewer.update_unbounded_integer('population', min_value=None)
         """
         updates = {}
         if value is not _NO_UPDATE:
             updates["value"] = value
-        if min_value is not _NO_UPDATE:
-            updates["min_value"] = min_value
-        if max_value is not _NO_UPDATE:
-            updates["max_value"] = max_value
         if updates:
             self.parameters[name].update(updates)
 
@@ -1343,8 +1301,6 @@ class InteractiveViewer:
         name: str,
         *,
         value: Union[float, _NoUpdate] = _NO_UPDATE,
-        min_value: Union[Optional[float], _NoUpdate] = _NO_UPDATE,
-        max_value: Union[Optional[float], _NoUpdate] = _NO_UPDATE,
         step: Union[Optional[float], _NoUpdate] = _NO_UPDATE,
     ) -> None:
         """
@@ -1359,35 +1315,22 @@ class InteractiveViewer:
             Name of the unbounded float parameter to update
         value : float, optional
             New value (will be rounded if step is set) (if not provided, no change)
-        min_value : float or None, optional
-            New minimum value, or None for no minimum (if not provided, no change)
-        max_value : float or None, optional
-            New maximum value, or None for no maximum (if not provided, no change)
         step : float or None, optional
             New step size for rounding, or None for no rounding (if not provided, no change)
 
         Examples
         --------
-        >>> viewer.add_unbounded_float('wavelength',
-        ...                           value=550e-9,  # Nanometers
-        ...                           min_value=0.0,
-        ...                           step=1e-9)
+        >>> viewer.add_unbounded_float('wavelength', value=550e-9, step=1e-9)
         >>> # Update value (will be rounded if step is set)
-        >>> viewer.update_unbounded_float('wavelength', value=632.8e-9)  # HeNe laser
-        >>> # Change step size and add maximum
-        >>> viewer.update_unbounded_float('wavelength',
-        ...                              step=0.1e-9,  # Finer control
-        ...                              max_value=1000e-9)  # Infrared limit
+        >>> viewer.update_unbounded_float('wavelength', value=632.8e-9)
+        >>> # Change step size
+        >>> viewer.update_unbounded_float('wavelength', step=0.1e-9)
         >>> # Remove step size (allow any precision)
         >>> viewer.update_unbounded_float('wavelength', step=None)
         """
         updates = {}
         if value is not _NO_UPDATE:
             updates["value"] = value
-        if min_value is not _NO_UPDATE:
-            updates["min_value"] = min_value
-        if max_value is not _NO_UPDATE:
-            updates["max_value"] = max_value
         if step is not _NO_UPDATE:
             updates["step"] = step
         if updates:

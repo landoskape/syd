@@ -84,16 +84,14 @@ PARAM_CONFIGS = {
     ParameterType.unbounded_integer: {
         "basic_value": 1,
         "updated_value": 2,
-        "extra_kwargs": {"min_value": 0, "max_value": 10},
+        "extra_kwargs": {},
         "convert_values": [("5", 5)],
-        "clamping_values": [(-100, 0), (100, 10)],
     },
     ParameterType.unbounded_float: {
         "basic_value": 1.5,
         "updated_value": 2.5,
-        "extra_kwargs": {"min_value": 0, "max_value": 10},
+        "extra_kwargs": {"step": 0.1},
         "convert_values": [("5.5", 5.5)],
-        "clamping_values": [(-100, 0), (100, 10)],
     },
     ActionType.button: {
         "extra_kwargs": {
@@ -355,33 +353,12 @@ def test_unbounded_specific_operations(param_type):
     add_method(f"{param_type.name}_1", value=config["basic_value"], **kwargs)
     assert viewer.parameters[f"{param_type.name}_1"].value == config["basic_value"]
 
-    # Test that you can remove a min/max value
-    update_method(f"{param_type.name}_1", min_value=None, max_value=None)
-    assert viewer.parameters[f"{param_type.name}_1"].min_value is None
-    assert viewer.parameters[f"{param_type.name}_1"].max_value is None
-
     # Test that large values aren't clamped with no bound
     update_method(f"{param_type.name}_1", value=1000)
     assert viewer.parameters[f"{param_type.name}_1"].value == 1000
 
     update_method(f"{param_type.name}_1", value=-1000)
     assert viewer.parameters[f"{param_type.name}_1"].value == -1000
-
-    # Test that you can add a min/max value and it clamps the current value
-    with pytest.warns(ParameterUpdateWarning):
-        update_method(f"{param_type.name}_1", min_value=0, max_value=10)
-    assert viewer.parameters[f"{param_type.name}_1"].value == 0
-    assert viewer.parameters[f"{param_type.name}_1"].min_value == 0
-    assert viewer.parameters[f"{param_type.name}_1"].max_value == 10
-
-    # Test that values are clamped within the min/max value
-    with pytest.warns(ParameterUpdateWarning):
-        update_method(f"{param_type.name}_1", value=15)
-    assert viewer.parameters[f"{param_type.name}_1"].value == 10
-
-    with pytest.warns(ParameterUpdateWarning):
-        update_method(f"{param_type.name}_1", value=-5)
-    assert viewer.parameters[f"{param_type.name}_1"].value == 0
 
 
 @pytest.mark.parametrize("param_type", ParameterType)

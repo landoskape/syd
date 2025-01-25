@@ -1,91 +1,108 @@
 Quick Start Guide
 =================
 
+This page will show you the basics of how to make an interactive plot with SYD. It's a
+pretty simple example, but it's a good starting point. We'll make a simple sine wave
+plot where we can control the frequency, amplitude, and color of the wave. 
+
 Creating Your First Interactive Plot
 ------------------------------------
 
-1. Create a viewer class that inherits from ``InteractiveViewer``
-2. Implement the ``plot()`` method to create your visualization
-3. Add parameters to control your plot
-4. Register callbacks to update the plot when parameters change
+1. **Create a viewer class.**
 
-Here's a complete example. You can view the complete example
-`here <https://github.com/landoskape/syd/blob/main/docs/examples/example_notebook.ipynb>`_ 
-or run it yourself in colab:
+This returns a viewer object that you can use to add interactive components to your
+plot and then deploy it. 
 
-.. image:: https://colab.research.google.com/assets/colab-badge.svg
-   :target: https://colab.research.google.com/github/landoskape/syd/blob/main/docs/examples/example_notebook.ipynb
-   :alt: Open In Colab
+.. code-block:: python
+    
+    from syd import make_viewer
+    import matplotlib.pyplot as plt
+    import numpy as np
 
+    viewer = make_viewer()
+
+2. **Add a plotting method to the viewer.**
+
+This method will be called whenever the viewer is deployed or when a parameter is
+changed. Some notes: 
+
+- All plot methods have to take two arguments: ``viewer`` and ``state``. The 
+  viewer is the viewer object that you created in the previous step. The state is a 
+  dictionary that contains the current values of all the parameters in the viewer. Most
+  of the time you'll only ever need to use the state input. 
+
+- The plot method should create and return a matplotlib figure. SYD will handle what to
+  do with it - you just need to create it. Don't call ``plt.show()``!
 
 .. code-block:: python
 
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from syd import InteractiveViewer
+    def plot(viewer, state):
+        """Plot the waveform based on current parameters."""
+        t = np.linspace(0, 2*np.pi, 1000)
+        y = np.sin(state["frequency"] * t) * state["amplitude"]
+        fig = plt.figure()
+        ax = plt.gca()
+        ax.plot(t, y, color=state["color"])
+        return fig
 
-    class SimpleWaveformViewer(InteractiveViewer):
-        """A simple example viewer that shows an interactive waveform."""
-        
-        def __init__(self):            
-            # Add parameters
-            self.add_float("frequency", value=1.0, min_value=0.1, max_value=5.0)
-            self.add_float("sine_amplitude", value=1.0, min_value=0.1, max_value=2.0)
-            self.add_float("square_amplitude", value=1.0, min_value=0.1, max_value=2.0)
-            self.add_float("sawtooth_amplitude", value=1.0, min_value=0.1, max_value=2.0)
-            self.add_selection("sine_color", value="red", options=["red", "blue", "green"])
-            self.add_selection("square_color", value="blue", options=["red", "blue", "green"])
-            self.add_selection("sawtooth_color", value="green", options=["red", "blue", "green"])
-            self.add_multiple_selection("waveform_type", value=["sine", "square", "sawtooth"], options=["sine", "square", "sawtooth"])
-            self.add_boolean("show_legend", value=True)
-            self.add_boolean("show_grid", value=True)
+    viewer.set_plot(plot)
 
-        def plot(self, state):
-            """Plot the waveform based on current parameters."""
-            t = np.linspace(0, 2*np.pi, 1000)
+    # Note: you can also add the plot when you make the viewer with:
+    # viewer = make_viewer(plot=plot)
 
-            ymin = float("inf")
-            ymax = float("-inf")
+3. **Add parameters to control your plot.**
 
-            fig, ax = plt.subplots()
-            if "sine" in state["waveform_type"]:    
-                ax.plot(t, state["sine_amplitude"] * np.sin(state["frequency"] * t), color=state["sine_color"], label="Sine")
-                ymin = min(ymin, -state["sine_amplitude"])
-                ymax = max(ymax, state["sine_amplitude"])
-            if "square" in state["waveform_type"]:
-                ax.plot(t, state["square_amplitude"] * np.sign(np.sin(state["frequency"] * t)), color=state["square_color"], label="Square")
-                ymin = min(ymin, -state["square_amplitude"])
-                ymax = max(ymax, state["square_amplitude"])
-            if "sawtooth" in state["waveform_type"]:
-                ax.plot(t, state["sawtooth_amplitude"] * (t % (2*np.pi/state["frequency"])) * (state["frequency"] / 2 / np.pi), color=state["sawtooth_color"], label="Sawtooth")
-                ymin = min(ymin, -state["sawtooth_amplitude"])
-                ymax = max(ymax, state["sawtooth_amplitude"])
+These parameters will be converted into interactive components that you can control
+manually to change the plot. SYD will automatically use the right component depending
+on the type of parameter you pass in. In this example, we're using two float sliders
+and a dropdown menu. 
 
-            ax.set_xlabel("Time")
-            ax.set_ylabel("Amplitude")
-            ax.grid(state["show_grid"])
-            ax.set_ylim(ymin*1.1, ymax*1.1)
-            if state["show_legend"]:
-                ax.legend()
-            return fig
-        
+- Each parameter requires a name (here it's ``'frequency'``, ``'amplitude'``, and ``'color'``).
+- The ``value`` argument is the initial value of the parameter -- it's required.
+- Each parameter type might have it's own additional arguments, most of them are required.
 
-    viewer = SimpleWaveformViewer()
-    viewer.deploy(continuous=True)
+.. code-block:: python
 
-.. image:: ../examples/assets/simple_waveform_viewer.png
-   :alt: Simple Waveform Viewer
+    viewer.add_float("frequency", value=1.0, min_value=0.1, max_value=5.0)
+    viewer.add_float("amplitude", value=1.0, min_value=0.1, max_value=2.0)
+    viewer.add_selection("color", value="red", options=["red", "blue", "green"])
+
+4. **Deploy the viewer!**
+
+Right now, the only way to deploy the viewer is within a jupyter notebook (or colab).
+Soon we'll provide support for standalone applications and deployment to a web browser
+that you can share from within your local network. Bug us on github if you want this 
+sooner!
+
+.. code-block:: python
+
+    viewer.deploy()
+
+.. image:: ../assets/viewer_screenshots/1-simple_example.png
+   :alt: Quick Start Example
    :align: center
 
 
-Available Parameter Types
--------------------------
+You can check out the above example in a notebook `here <https://github.com/landoskape/syd/blob/main/examples/1-simple_example.ipynb>`_ 
+or run it yourself in colab:
 
-- Text input (``add_text``)
-- Checkboxes (``add_boolean``)
-- Dropdown menus (``add_selection``)
-- Multi-select menus (``add_multiple_selection``)
-- Integer sliders (``add_integer``)
-- Float sliders (``add_float``)
-- Range sliders (``add_integer_range``, ``add_float_range``)
-- Unbounded numeric inputs (``add_unbounded_integer``, ``add_unbounded_float``) 
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/github/landoskape/syd/blob/main/examples/1-simple_example.ipynb
+   :alt: Open In Colab
+
+
+Learn More About How to Use SYD
+--------------------------------
+There's a lot more you can do with SYD. To learn more, check out the following sections:
+
+:doc:`components`
+
+Learn about the different types of parameters you can use to create your interactive plots.
+
+:doc:`tutorial`
+
+Learn how to create more complex interactive plots with SYD.
+
+:doc:`api/index`
+
+Learn about the SYD API and how to use it to create your own custom components.

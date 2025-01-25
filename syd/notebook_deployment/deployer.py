@@ -52,13 +52,13 @@ def debounce(wait_time):
 class LayoutConfig:
     """Configuration for the viewer layout."""
 
-    controls_position: str = "left"  # Options are: 'left', 'top'
+    controls_position: str = "left"  # Options are: 'left', 'top', 'right', 'bottom'
     figure_width: float = 8.0
     figure_height: float = 6.0
     controls_width_percent: int = 30
 
     def __post_init__(self):
-        valid_positions = ["left", "top"]
+        valid_positions = ["left", "top", "right", "bottom"]
         if self.controls_position not in valid_positions:
             raise ValueError(
                 f"Invalid controls position: {self.controls_position}. Must be one of {valid_positions}"
@@ -66,7 +66,7 @@ class LayoutConfig:
 
     @property
     def is_horizontal(self) -> bool:
-        return self.controls_position == "left"
+        return self.controls_position == "left" or self.controls_position == "right"
 
 
 class NotebookDeployment:
@@ -226,13 +226,6 @@ class NotebookDeployment:
 
     def _create_layout(self) -> widgets.Widget:
         """Create the main layout combining controls and plot."""
-        # Create layout controls section
-        layout_box = widgets.VBox(
-            [widgets.HTML("<b>Layout Controls</b>")]
-            + list(self.layout_widgets.values()),
-            layout=widgets.Layout(margin="10px 0px"),
-        )
-
         # Set up parameter widgets with their observe callbacks
         for name, widget in self.parameter_widgets.items():
             widget.observe(lambda change, n=name: self._handle_widget_engagement(n))
@@ -245,8 +238,19 @@ class NotebookDeployment:
         )
 
         # Combine all controls
+        if self.config.is_horizontal:
+            # Create layout controls section if horizontal (might include for vertical later when we have more permanent controls...)
+            layout_box = widgets.VBox(
+                [widgets.HTML("<b>Layout Controls</b>")]
+                + list(self.layout_widgets.values()),
+                layout=widgets.Layout(margin="10px 0px"),
+            )
+            widgets_elements = [param_box, layout_box]
+        else:
+            widgets_elements = [param_box]
+
         self.widgets_container = widgets.VBox(
-            [param_box, layout_box],
+            widgets_elements,
             layout=widgets.Layout(
                 width=(
                     f"{self.config.controls_width_percent}%"
@@ -254,7 +258,9 @@ class NotebookDeployment:
                     else "100%"
                 ),
                 padding="10px",
-                overflow_y="auto",
+                overflow_y="scroll",
+                border="1px solid #e5e7eb",
+                border_radius="4px 4px 0px 0px",
             ),
         )
 
@@ -274,6 +280,10 @@ class NotebookDeployment:
         # Create final layout based on configuration
         if self.config.controls_position == "left":
             return widgets.HBox([self.widgets_container, self.plot_container])
+        elif self.config.controls_position == "right":
+            return widgets.HBox([self.plot_container, self.widgets_container])
+        elif self.config.controls_position == "bottom":
+            return widgets.VBox([self.plot_container, self.widgets_container])
         else:
             return widgets.VBox([self.widgets_container, self.plot_container])
 

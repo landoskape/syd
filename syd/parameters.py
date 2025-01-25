@@ -725,7 +725,7 @@ class FloatParameter(Parameter[float]):
     max_value : float
         Maximum allowed value
     step : float, optional
-        Size of each increment (default is 0.1)
+        Size of each increment (default is 0.001)
 
     Examples
     --------
@@ -758,7 +758,7 @@ class FloatParameter(Parameter[float]):
         value: float,
         min_value: float,
         max_value: float,
-        step: float = 0.1,
+        step: float = 0.001,
     ):
         self.name = name
         self.step = step
@@ -1009,7 +1009,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     max_value : float
         Maximum allowed value for both low and high
     step : float, optional
-        Size of each increment (default is 0.1)
+        Size of each increment (default is 0.001)
 
     Examples
     --------
@@ -1042,7 +1042,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
         value: Tuple[float, float],
         min_value: float,
         max_value: float,
-        step: float = 0.1,
+        step: float = 0.001,
     ):
         self.name = name
         self.step = step
@@ -1169,19 +1169,12 @@ class UnboundedIntegerParameter(Parameter[int]):
         The name of the parameter
     value : int
         Initial value
-    min_value : int, optional
-        Minimum allowed value (or None for no minimum)
-    max_value : int, optional
-        Maximum allowed value (or None for no maximum)
 
     Examples
     --------
-    >>> count = UnboundedIntegerParameter("count", value=10, min_value=0)
+    >>> count = UnboundedIntegerParameter("count", value=10)
     >>> count.value
     10
-    >>> count.update({"value": -5})  # Will be clamped to min_value
-    >>> count.value
-    0
     >>> count.update({"value": 1000000})  # No maximum, so this is allowed
     >>> count.value
     1000000
@@ -1189,43 +1182,24 @@ class UnboundedIntegerParameter(Parameter[int]):
     Notes
     -----
     Use this instead of IntegerParameter when you:
-    - Don't know a reasonable maximum value
-    - Only want to enforce a minimum or maximum, but not both
+    - Don't have any reason to bound the value
     - Need to allow very large numbers that would be impractical with a slider
     """
-
-    min_value: Optional[int]
-    max_value: Optional[int]
 
     def __init__(
         self,
         name: str,
         value: int,
-        min_value: Optional[int] = None,
-        max_value: Optional[int] = None,
     ):
         self.name = name
-        self.min_value = (
-            self._validate(min_value, compare_to_range=False)
-            if min_value is not None
-            else None
-        )
-        self.max_value = (
-            self._validate(max_value, compare_to_range=False)
-            if max_value is not None
-            else None
-        )
         self._value = self._validate(value)
 
-    def _validate(self, new_value: Any, compare_to_range: bool = True) -> int:
+    def _validate(self, new_value: Any) -> int:
         """
-        Validate and convert value to integer, optionally checking bounds.
-
-        Handles None min/max values by skipping those bound checks.
+        Validate and convert value to integer.
 
         Args:
             new_value: Value to validate
-            compare_to_range: If True, clamps value to any defined min/max bounds
 
         Returns:
             Validated integer value
@@ -1238,50 +1212,15 @@ class UnboundedIntegerParameter(Parameter[int]):
         except ValueError:
             raise ValueError(f"Value {new_value} cannot be converted to int")
 
-        if compare_to_range:
-            if self.min_value is not None and new_value < self.min_value:
-                warn(
-                    ParameterUpdateWarning(
-                        self.name,
-                        type(self).__name__,
-                        f"Value {new_value} below minimum {self.min_value}, clamping",
-                    )
-                )
-                new_value = self.min_value
-            if self.max_value is not None and new_value > self.max_value:
-                warn(
-                    ParameterUpdateWarning(
-                        self.name,
-                        type(self).__name__,
-                        f"Value {new_value} above maximum {self.max_value}, clamping",
-                    )
-                )
-                new_value = self.max_value
         return int(new_value)
 
     def _validate_update(self) -> None:
         """
         Validate complete parameter state after updates.
 
-        Ensures min_value <= max_value, swapping if needed.
-        Re-validates current value against potentially updated bounds.
-
         Raises:
             ParameterUpdateError: If bounds are invalid (e.g. None when required)
         """
-        if (
-            self.min_value is not None
-            and self.max_value is not None
-            and self.min_value > self.max_value
-        ):
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Min value greater than max value, swapping",
-                )
-            )
-            self.min_value, self.max_value = self.max_value, self.min_value
         self.value = self._validate(self.value)
 
 
@@ -1300,21 +1239,14 @@ class UnboundedFloatParameter(Parameter[float]):
         The name of the parameter
     value : float
         Initial value
-    min_value : float, optional
-        Minimum allowed value (or None for no minimum)
-    max_value : float, optional
-        Maximum allowed value (or None for no maximum)
     step : float, optional
         Size of each increment (default is None, meaning no rounding)
 
     Examples
     --------
-    >>> price = UnboundedFloatParameter("price", value=19.99, min_value=0.0, step=0.01)
+    >>> price = UnboundedFloatParameter("price", value=19.99)
     >>> price.value
     19.99
-    >>> price.update({"value": -5.0})  # Will be clamped to min_value
-    >>> price.value
-    0.0
     >>> price.update({"value": 19.987})  # Will be rounded to step
     >>> price.value
     19.99
@@ -1323,7 +1255,6 @@ class UnboundedFloatParameter(Parameter[float]):
     -----
     Use this instead of FloatParameter when you:
     - Don't know a reasonable maximum value
-    - Only want to enforce a minimum or maximum, but not both
     - Need to allow very large or precise numbers that would be impractical with a slider
 
     If step is provided, values will be rounded:
@@ -1332,42 +1263,25 @@ class UnboundedFloatParameter(Parameter[float]):
     - step=5.0 rounds to 0.0, 5.0, 10.0, etc.
     """
 
-    min_value: Optional[float]
-    max_value: Optional[float]
-    step: float
+    step: Optional[float]
 
     def __init__(
         self,
         name: str,
         value: float,
-        min_value: Optional[float] = None,
-        max_value: Optional[float] = None,
         step: Optional[float] = None,
     ):
         self.name = name
         self.step = step
-        self.min_value = (
-            self._validate(min_value, compare_to_range=False)
-            if min_value is not None
-            else None
-        )
-        self.max_value = (
-            self._validate(max_value, compare_to_range=False)
-            if max_value is not None
-            else None
-        )
         self._value = self._validate(value)
 
-    def _validate(self, new_value: Any, compare_to_range: bool = True) -> float:
+    def _validate(self, new_value: Any) -> float:
         """
-        Validate and convert value to float, optionally checking bounds.
-
-        Handles None min/max values by skipping those bound checks.
+        Validate and convert value to float.
         Only rounds to step if step is not None.
 
         Args:
             new_value: Value to validate
-            compare_to_range: If True, clamps value to any defined min/max bounds
 
         Returns:
             Validated and potentially rounded float value
@@ -1384,26 +1298,6 @@ class UnboundedFloatParameter(Parameter[float]):
         if self.step is not None:
             new_value = round(new_value / self.step) * self.step
 
-        if compare_to_range:
-            if self.min_value is not None and new_value < self.min_value:
-                warn(
-                    ParameterUpdateWarning(
-                        self.name,
-                        type(self).__name__,
-                        f"Value {new_value} below minimum {self.min_value}, clamping",
-                    )
-                )
-                new_value = self.min_value
-            if self.max_value is not None and new_value > self.max_value:
-                warn(
-                    ParameterUpdateWarning(
-                        self.name,
-                        type(self).__name__,
-                        f"Value {new_value} above maximum {self.max_value}, clamping",
-                    )
-                )
-                new_value = self.max_value
-
         return float(new_value)
 
     def _validate_update(self) -> None:
@@ -1416,19 +1310,6 @@ class UnboundedFloatParameter(Parameter[float]):
         Raises:
             ParameterUpdateError: If bounds are invalid (e.g. None when required)
         """
-        if (
-            self.min_value is not None
-            and self.max_value is not None
-            and self.min_value > self.max_value
-        ):
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Min value greater than max value, swapping",
-                )
-            )
-            self.min_value, self.max_value = self.max_value, self.min_value
         self.value = self._validate(self.value)
 
 
