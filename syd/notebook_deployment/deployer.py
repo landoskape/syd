@@ -230,12 +230,13 @@ class NotebookDeployment:
         state = self.viewer.get_state()
 
         with _plot_context():
-            new_fig = self.viewer.plot(state)
+            self._current_figure = self.viewer.plot(state)
             if self.backend_type == "inline":
-                self._current_figure = new_fig
-                plt.close(new_fig)
+                pass  # self._current_figure = new_fig
+                # plt.close(new_fig)
             if self.backend_type == "widget":
-                self._current_figure = new_fig
+                pass  # plt.close(new_fig)
+                # self._current_figure = new_fig
         self._redraw_plot()
 
     def _redraw_plot(self) -> None:
