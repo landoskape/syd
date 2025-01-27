@@ -88,3 +88,8 @@ Please make sure to update tests as appropriate and adhere to the existing codin
 - Consider the class method "of this class" function permissions.... (and write tests...)
 - Think about whether there's alternatives to creating new figures each time...
 - Consider adding a step to the integer parameter...
+- Idea!
+  - Instead of requiring users to include fig=? ax=? arguments to their plot function, we can instead
+    make them optional and have the ``recycle_figure: bool = False`` flag be part of the deploy API. This 
+    way, an advanced users that wants snappy responsivity or complex figure management can do so, but
+    the default is for the user to generate a new figure object each time. Nice!
