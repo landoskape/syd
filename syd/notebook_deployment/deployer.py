@@ -7,6 +7,7 @@ from time import time
 
 import ipywidgets as widgets
 from IPython.display import display
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from ..parameters import ParameterUpdateWarning
@@ -21,6 +22,22 @@ def _plot_context():
         yield
     finally:
         plt.ion()
+
+
+def get_backend_type():
+    """
+    Determines the current matplotlib backend type and returns relevant info
+    """
+    backend = mpl.get_backend().lower()
+
+    if "inline" in backend:
+        return "inline"
+    elif "widget" in backend or "ipympl" in backend:
+        return "widget"
+    elif "qt" in backend:
+        return "qt"
+    else:
+        return "other"
 
 
 # TODO:
@@ -101,6 +118,7 @@ class NotebookDeployment:
         self.suppress_warnings = suppress_warnings
 
         # Initialize containers
+        self.backend_type = get_backend_type()
         self.parameter_widgets: Dict[str, BaseWidget] = {}
         self.layout_widgets = self._create_layout_controls()
         self.plot_output = widgets.Output()
@@ -213,16 +231,21 @@ class NotebookDeployment:
 
         with _plot_context():
             new_fig = self.viewer.plot(state)
-            plt.close(self._current_figure)  # Close old figure
-            self._current_figure = new_fig
-
+            if self.backend_type == "inline":
+                self._current_figure = new_fig
+                plt.close(new_fig)
+            if self.backend_type == "widget":
+                self._current_figure = new_fig
         self._redraw_plot()
 
     def _redraw_plot(self) -> None:
         """Clear and redraw the plot in the output widget."""
         self.plot_output.clear_output(wait=True)
         with self.plot_output:
-            display(self._current_figure)
+            if self.backend_type == "inline":
+                display(self._current_figure)
+            if self.backend_type == "widget":
+                display(self._current_figure.canvas)
 
     def _create_layout(self) -> widgets.Widget:
         """Create the main layout combining controls and plot."""
@@ -289,6 +312,7 @@ class NotebookDeployment:
 
     def deploy(self) -> None:
         """Deploy the interactive viewer with proper state management."""
+        self.backend_type = get_backend_type()
         with self.viewer._deploy_app():
             # Create widgets
             self._create_parameter_widgets()
