@@ -22,6 +22,10 @@ class _NoUpdate:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
+    
+    def __eq__(self, other):
+        """This makes sure all comparisons of _NoUpdate objects return True"""
+        return isinstance(other, _NoUpdate)
 
 
 # Create the singleton instance
@@ -949,7 +953,7 @@ class InteractiveViewer:
         'New Title'
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
         if updates:
             self.parameters[name].update(updates)
@@ -979,7 +983,7 @@ class InteractiveViewer:
         False
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
         if updates:
             self.parameters[name].update(updates)
@@ -1019,9 +1023,9 @@ class InteractiveViewer:
         ...                        value='purple')
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
-        if options is not _NO_UPDATE:
+        if not options == _NO_UPDATE:
             updates["options"] = options
         if updates:
             self.parameters[name].update(updates)
@@ -1063,9 +1067,9 @@ class InteractiveViewer:
         ...     value=['cheese', 'bacon'])
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
-        if options is not _NO_UPDATE:
+        if not options == _NO_UPDATE:
             updates["options"] = options
         if updates:
             self.parameters[name].update(updates)
@@ -1105,11 +1109,11 @@ class InteractiveViewer:
         >>> viewer.update_integer('count', min_value=7, max_value=15)
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
-        if min_value is not _NO_UPDATE:
+        if not min_value == _NO_UPDATE:
             updates["min_value"] = min_value
-        if max_value is not _NO_UPDATE:
+        if not max_value == _NO_UPDATE:
             updates["max_value"] = max_value
         if updates:
             self.parameters[name].update(updates)
@@ -1154,13 +1158,13 @@ class InteractiveViewer:
         ...                    min_value=15.0, max_value=30.0, step=0.1)
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
-        if min_value is not _NO_UPDATE:
+        if not min_value == _NO_UPDATE:
             updates["min_value"] = min_value
-        if max_value is not _NO_UPDATE:
+        if not max_value == _NO_UPDATE:
             updates["max_value"] = max_value
-        if step is not _NO_UPDATE:
+        if not step == _NO_UPDATE:
             updates["step"] = step
         if updates:
             self.parameters[name].update(updates)
@@ -1202,11 +1206,11 @@ class InteractiveViewer:
         >>> viewer.update_integer_range('age_range', min_value=20, max_value=80)
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
-        if min_value is not _NO_UPDATE:
+        if not min_value == _NO_UPDATE:
             updates["min_value"] = min_value
-        if max_value is not _NO_UPDATE:
+        if not max_value == _NO_UPDATE:
             updates["max_value"] = max_value
         if updates:
             self.parameters[name].update(updates)
@@ -1252,13 +1256,13 @@ class InteractiveViewer:
         ...                          min_value=5.0, max_value=50.0, step=0.1)
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
-        if min_value is not _NO_UPDATE:
+        if not min_value == _NO_UPDATE:
             updates["min_value"] = min_value
-        if max_value is not _NO_UPDATE:
+        if not max_value == _NO_UPDATE:
             updates["max_value"] = max_value
-        if step is not _NO_UPDATE:
+        if not step == _NO_UPDATE:
             updates["step"] = step
         if updates:
             self.parameters[name].update(updates)
@@ -1290,7 +1294,7 @@ class InteractiveViewer:
         >>> viewer.update_unbounded_integer('population', value=2000000)
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
         if updates:
             self.parameters[name].update(updates)
@@ -1329,9 +1333,9 @@ class InteractiveViewer:
         >>> viewer.update_unbounded_float('wavelength', step=None)
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not value == _NO_UPDATE:
             updates["value"] = value
-        if step is not _NO_UPDATE:
+        if not step == _NO_UPDATE:
             updates["step"] = step
         if updates:
             self.parameters[name].update(updates)
@@ -1368,9 +1372,9 @@ class InteractiveViewer:
         ...                     callback=new_callback)
         """
         updates = {}
-        if label is not _NO_UPDATE:
+        if not label == _NO_UPDATE:
             updates["label"] = label
-        if callback is not _NO_UPDATE:
+        if not callback == _NO_UPDATE:
             callback = self._prepare_function(
                 callback,
                 context="Updating button callback:",
