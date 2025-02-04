@@ -1,7 +1,7 @@
 import pytest
 from functools import partial
 from syd import make_viewer
-from syd.interactive_viewer import InteractiveViewer
+from syd.viewer import Viewer
 from syd.parameters import ParameterUpdateError
 
 
@@ -51,7 +51,7 @@ valid_lambda_function = lambda viewer, state: "correct"
 invalid_lambda_function = lambda: "incorrect"
 
 
-class MockViewer(InteractiveViewer):
+class MockViewer(Viewer):
     def correct_arguments_positional(self, state):
         return "correct"
 

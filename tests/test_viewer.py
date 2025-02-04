@@ -1,11 +1,11 @@
 import pytest
 from syd.parameters import ParameterType, TextParameter
-from syd.interactive_viewer import InteractiveViewer, validate_parameter_operation
+from syd.viewer import Viewer, validate_parameter_operation
 
 
 with pytest.raises(ValueError):
 
-    class TestViewer(InteractiveViewer):
+    class TestViewer(Viewer):
         def __init__(self):
             pass
 
@@ -16,7 +16,7 @@ with pytest.raises(ValueError):
 
 with pytest.raises(ValueError):
 
-    class TestViewer(InteractiveViewer):
+    class TestViewer(Viewer):
         def __init__(self):
             pass
 
@@ -27,7 +27,7 @@ with pytest.raises(ValueError):
 
 with pytest.raises(ValueError):
 
-    class TestViewer(InteractiveViewer):
+    class TestViewer(Viewer):
         def __init__(self):
             pass
 

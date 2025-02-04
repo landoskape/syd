@@ -2,19 +2,19 @@
 # from unittest.mock import Mock, patch
 # import ipywidgets as widgets
 # from matplotlib.figure import Figure
-# from syd.interactive_viewer import InteractiveViewer
+# from syd.viewer import Viewer
 # from syd.notebook_deployment.widgets import (
 #     create_widget,
 #     TextWidget,
 #     SelectionWidget,
 #     BooleanWidget,
 # )
-# from syd.notebook_deployment.deployer import NotebookDeployment, LayoutConfig
+# from syd.notebook_deployment.deployer import NotebookDeployer, LayoutConfig
 
 
 # @pytest.fixture
 # def basic_parameters():
-#     class TestViewer(InteractiveViewer):
+#     class TestViewer(Viewer):
 #         def plot(self, state) -> Figure:
 #             # Return a mock figure
 #             return Mock(spec=Figure)
@@ -147,10 +147,10 @@
 
 
 # # Deployment Tests
-# class TestNotebookDeployment:
+# class TestNotebookDeployer:
 #     def test_deployment_initialization(self, basic_parameters):
 #         config = LayoutConfig(controls_position="left")
-#         deployment = NotebookDeployment(basic_parameters, config)
+#         deployment = NotebookDeployer(basic_parameters, config)
 #         deployment._create_parameter_widgets()
 
 #         assert len(deployment.parameter_widgets) == 4
@@ -158,7 +158,7 @@
 #         assert deployment.config.is_horizontal is True
 
 #     def test_parameter_change_handling(self, basic_parameters):
-#         deployment = NotebookDeployment(basic_parameters)
+#         deployment = NotebookDeployer(basic_parameters)
 #         deployment._create_parameter_widgets()
 
 #         with patch.object(deployment, "_update_plot") as mock_update_plot:

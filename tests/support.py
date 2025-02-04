@@ -1,9 +1,9 @@
 from contextlib import contextmanager
-from syd.interactive_viewer import InteractiveViewer
+from syd.viewer import Viewer
 from syd.parameters import get_parameter_attributes
 
 
-class MockViewer(InteractiveViewer):
+class MockViewer(Viewer):
     """Simple concrete implementation for testing"""
 
     def plot(self, **kwargs):
