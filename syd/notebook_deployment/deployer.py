@@ -11,7 +11,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from ..parameters import ParameterUpdateWarning
-from ..interactive_viewer import InteractiveViewer
+from ..viewer import Viewer
 from .widgets import BaseWidget, create_widget
 
 
@@ -81,15 +81,15 @@ class LayoutConfig:
         return self.controls_position == "left" or self.controls_position == "right"
 
 
-class NotebookDeployment:
+class NotebookDeployer:
     """
-    A deployment system for InteractiveViewer in Jupyter notebooks using ipywidgets.
+    A deployment system for Viewer in Jupyter notebooks using ipywidgets.
     Built around the parameter widget system for clean separation of concerns.
     """
 
     def __init__(
         self,
-        viewer: InteractiveViewer,
+        viewer: Viewer,
         controls_position: str = "left",
         figure_width: float = 8.0,
         figure_height: float = 6.0,
@@ -97,11 +97,6 @@ class NotebookDeployment:
         continuous: bool = False,
         suppress_warnings: bool = False,
     ):
-        if not isinstance(viewer, InteractiveViewer):  # type: ignore
-            raise TypeError(
-                f"viewer must be an InteractiveViewer, got {type(viewer).__name__}"
-            )
-
         self.viewer = viewer
         self.config = LayoutConfig(
             controls_position=controls_position,
@@ -232,12 +227,13 @@ class NotebookDeployment:
         with _plot_context():
             self._current_figure = self.viewer.plot(state)
             if self.backend_type == "inline":
-                pass  # self._current_figure = new_fig
-                # plt.close(new_fig)
+                plt.close(self._current_figure)
             if self.backend_type == "widget":
-                pass  # plt.close(new_fig)
+                # plt.close(self._current_figure)
                 # self._current_figure = new_fig
+                pass
         self._redraw_plot()
+
 
     def _redraw_plot(self) -> None:
         """Clear and redraw the plot in the output widget."""
@@ -315,6 +311,8 @@ class NotebookDeployment:
         """Deploy the interactive viewer with proper state management."""
         self.backend_type = get_backend_type()
         with self.viewer._deploy_app():
+            plt.close('all')
+            
             # Create widgets
             self._create_parameter_widgets()
 

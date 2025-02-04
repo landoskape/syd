@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import warnings
 from ..parameters import ParameterUpdateWarning
 
-from ..interactive_viewer import InteractiveViewer
+from ..viewer import Viewer
 from .widgets import BaseWidget, create_widget
 
 
@@ -41,23 +41,21 @@ class LayoutConfig:
         return self.controls_position == "left"
 
 
-class NotebookDeployment:
+class NotebookDeployer:
     """
-    A deployment system for InteractiveViewer in Jupyter notebooks using ipywidgets.
+    A deployment system for Viewer in Jupyter notebooks using ipywidgets.
     Built around the parameter widget system for clean separation of concerns.
     """
 
     def __init__(
         self,
-        viewer: InteractiveViewer,
+        viewer: Viewer,
         layout_config: Optional[LayoutConfig] = None,
         continuous: bool = False,
         suppress_warnings: bool = False,
     ):
-        if not isinstance(viewer, InteractiveViewer):  # type: ignore
-            raise TypeError(
-                f"viewer must be an InteractiveViewer, got {type(viewer).__name__}"
-            )
+        if not isinstance(viewer, Viewer):  # type: ignore
+            raise TypeError(f"viewer must be an Viewer, got {type(viewer).__name__}")
 
         self.viewer = viewer
         self.config = layout_config or LayoutConfig()

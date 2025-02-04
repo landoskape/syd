@@ -11,7 +11,7 @@ import base64
 from contextlib import contextmanager
 import webbrowser
 
-from ..interactive_viewer import InteractiveViewer
+from ..viewer import Viewer
 from .components import WebComponentCollection
 
 # Create a template constant to hold our HTML template
@@ -139,17 +139,15 @@ class FlaskLayoutConfig:
 
 
 class FlaskDeployment:
-    """A deployment system for InteractiveViewer using Flask to create a web interface."""
+    """A deployment system for Viewer using Flask to create a web interface."""
 
     def __init__(
         self,
-        viewer: InteractiveViewer,
+        viewer: Viewer,
         layout_config: Optional[FlaskLayoutConfig] = None,
     ):
-        if not isinstance(viewer, InteractiveViewer):
-            raise TypeError(
-                f"viewer must be an InteractiveViewer, got {type(viewer).__name__}"
-            )
+        if not isinstance(viewer, Viewer):
+            raise TypeError(f"viewer must be an Viewer, got {type(viewer).__name__}")
 
         self.viewer = viewer
         self.config = layout_config or FlaskLayoutConfig()

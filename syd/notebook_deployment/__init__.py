@@ -1,1 +1,1 @@
-from .deployer import NotebookDeployment
+from .deployer import NotebookDeployer
