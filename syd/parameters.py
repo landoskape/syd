@@ -265,8 +265,8 @@ class TextParameter(Parameter[str]):
     Parameter for text input.
 
     Creates a text box in the GUI that accepts any string input.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_text` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_text` for usage.
+    See :meth:`~syd.viewer.Viewer.add_text` and
+    :meth:`~syd.viewer.Viewer.update_text` for usage.
 
     Parameters
     ----------
@@ -308,8 +308,8 @@ class BooleanParameter(Parameter[bool]):
     Parameter for boolean values.
 
     Creates a checkbox in the GUI that can be toggled on/off.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_boolean` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_boolean` for usage.
+    See :meth:`~syd.viewer.Viewer.add_boolean` and
+    :meth:`~syd.viewer.Viewer.update_boolean` for usage.
 
     Parameters
     ----------
@@ -351,8 +351,8 @@ class SelectionParameter(Parameter[Any]):
     Parameter for single selection from a list of options.
 
     Creates a dropdown menu in the GUI where users can select one option.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_selection` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_selection` for usage.
+    See :meth:`~syd.viewer.Viewer.add_selection` and
+    :meth:`~syd.viewer.Viewer.update_selection` for usage.
 
     Parameters
     ----------
@@ -411,6 +411,9 @@ class SelectionParameter(Parameter[Any]):
             raise TypeError(
                 f"Options for parameter {self.name} must be a list or tuple"
             )
+        
+        if not options:
+            raise ValueError(f"Options for parameter {self.name} must not be empty")
 
         # Verify all options are hashable (needed for comparison)
         try:
@@ -455,7 +458,7 @@ class SelectionParameter(Parameter[Any]):
                 ParameterUpdateWarning(
                     self.name,
                     type(self).__name__,
-                    f"Value {self.value} not in options: {self.options}, setting to first option",
+                    f"Value {self.value} not in options, setting to first option ({self.options[0]})",
                 )
             )
             self.value = self.options[0]
@@ -467,8 +470,8 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
     Parameter for multiple selections from a list of options.
 
     Creates a set of checkboxes or multi-select dropdown in the GUI.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_multiple_selection` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_multiple_selection` for usage.
+    See :meth:`~syd.viewer.Viewer.add_multiple_selection` and
+    :meth:`~syd.viewer.Viewer.update_multiple_selection` for usage.
 
     Parameters
     ----------
@@ -527,6 +530,9 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
             raise TypeError(
                 f"Options for parameter {self.name} must be a list or tuple"
             )
+        
+        if not options:
+            raise ValueError(f"Options for parameter {self.name} must not be empty")
 
         # Verify all options are hashable (needed for comparison)
         try:
@@ -580,7 +586,7 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
                 ParameterUpdateWarning(
                     self.name,
                     type(self).__name__,
-                    f"For parameter {self.name}, value {self.value} contains invalid options: {invalid}. Setting to empty list.",
+                    f"For parameter {self.name}, value {self.value} contains invalid selections: {invalid}. Setting to empty list.",
                 )
             )
             self.value = []
@@ -595,8 +601,8 @@ class IntegerParameter(Parameter[int]):
     Parameter for bounded integer values.
 
     Creates a slider in the GUI for selecting whole numbers between bounds.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_integer` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_integer` for usage.
+    See :meth:`~syd.viewer.Viewer.add_integer` and
+    :meth:`~syd.viewer.Viewer.update_integer` for usage.
 
     Parameters
     ----------
@@ -711,8 +717,8 @@ class FloatParameter(Parameter[float]):
     Parameter for bounded decimal numbers.
 
     Creates a slider in the GUI for selecting numbers between bounds.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_float` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_float` for usage.
+    See :meth:`~syd.viewer.Viewer.add_float` and
+    :meth:`~syd.viewer.Viewer.update_float` for usage.
 
     Parameters
     ----------
@@ -846,8 +852,8 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
     Parameter for a range of bounded integer values.
 
     Creates a range slider in the GUI for selecting a range of whole numbers.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_integer_range` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_integer_range` for usage.
+    See :meth:`~syd.viewer.Viewer.add_integer_range` and
+    :meth:`~syd.viewer.Viewer.update_integer_range` for usage.
 
     Parameters
     ----------
@@ -995,8 +1001,8 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     Parameter for a range of bounded decimal numbers.
 
     Creates a range slider in the GUI for selecting a range of numbers.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_float_range` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_float_range` for usage.
+    See :meth:`~syd.viewer.Viewer.add_float_range` and
+    :meth:`~syd.viewer.Viewer.update_float_range` for usage.
 
     Parameters
     ----------
@@ -1160,8 +1166,8 @@ class UnboundedIntegerParameter(Parameter[int]):
     Parameter for optionally bounded integer values.
 
     Creates a text input box in the GUI for entering whole numbers.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_unbounded_integer` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_unbounded_integer` for usage.
+    See :meth:`~syd.viewer.Viewer.add_unbounded_integer` and
+    :meth:`~syd.viewer.Viewer.update_unbounded_integer` for usage.
 
     Parameters
     ----------
@@ -1230,8 +1236,8 @@ class UnboundedFloatParameter(Parameter[float]):
     Parameter for optionally bounded decimal numbers.
 
     Creates a text input box in the GUI for entering numbers.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_unbounded_float` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_unbounded_float` for usage.
+    See :meth:`~syd.viewer.Viewer.add_unbounded_float` and
+    :meth:`~syd.viewer.Viewer.update_unbounded_float` for usage.
 
     Parameters
     ----------
@@ -1319,8 +1325,8 @@ class ButtonAction(Parameter[None]):
     Parameter for creating clickable buttons with callbacks.
 
     Creates a button in the GUI that executes a callback function when clicked.
-    See :meth:`~syd.interactive_viewer.InteractiveViewer.add_button` and
-    :meth:`~syd.interactive_viewer.InteractiveViewer.update_button` for usage.
+    See :meth:`~syd.viewer.Viewer.add_button` and
+    :meth:`~syd.viewer.Viewer.update_button` for usage.
 
     Parameters
     ----------
