@@ -22,7 +22,7 @@ class _NoUpdate:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     def __eq__(self, other):
         """This makes sure all comparisons of _NoUpdate objects return True"""
         return isinstance(other, _NoUpdate)
@@ -36,7 +36,7 @@ def validate_parameter_operation(
     operation: str, parameter_type: Union[ParameterType, ActionType]
 ) -> Callable:
     """
-    Decorator that validates parameter operations for the InteractiveViewer class.
+    Decorator that validates parameter operations for the viewer class.
 
     This decorator ensures that:
     1. The operation type matches the method name (add/update)
@@ -76,7 +76,7 @@ def validate_parameter_operation(
             )
 
         @wraps(func)
-        def wrapper(self: "InteractiveViewer", name: Any, *args, **kwargs):
+        def wrapper(self: "Viewer", name: Any, *args, **kwargs):
             # Validate parameter name is a string
             if not isinstance(name, str):
                 if operation == "add":
@@ -127,7 +127,7 @@ def validate_parameter_operation(
     return decorator
 
 
-class InteractiveViewer:
+class Viewer:
     """
     Base class for creating interactive matplotlib figures with GUI controls.
 
@@ -142,7 +142,7 @@ class InteractiveViewer:
 
     Examples
     --------
-    >>> class MyViewer(InteractiveViewer):
+    >>> class MyViewer(Viewer):
     ...     def plot(self, state: Dict[str, Any]):
     ...         fig = plt.figure()
     ...         plt.plot([0, state['x']])
@@ -201,9 +201,9 @@ class InteractiveViewer:
         >>>     return fig
         >>> viewer.set_plot(plot))
 
-        2. Subclass InteractiveViewer and override this method
+        2. Subclass Viewer and override this method
         This will look like this:
-        >>> class YourViewer(InteractiveViewer):
+        >>> class YourViewer(Viewer):
         >>>     def plot(self, state):
         >>>         ... generate figure, plot stuff ...
         >>>         return fig
@@ -227,7 +227,7 @@ class InteractiveViewer:
         """
         raise NotImplementedError(
             "Plot method not implemented. Either subclass "
-            "InteractiveViewer and override plot(), or use "
+            "Viewer and override plot(), or use "
             "set_plot() to provide a plotting function."
         )
 
@@ -238,16 +238,33 @@ class InteractiveViewer:
     def deploy(self, env: str = "notebook", **kwargs):
         """Deploy the app in a notebook or standalone environment"""
         if env == "notebook":
-            from .notebook_deployment import NotebookDeployment
+            from .notebook_deployment import NotebookDeployer
 
-            deployer = NotebookDeployment(self, **kwargs)
+            deployer = NotebookDeployer(self, **kwargs)
             deployer.deploy()
+
+            return self
+        elif env == "plotly":
+            from .plotly_deployment import PlotlyDeployer
+
+            deployer = PlotlyDeployer(self, **kwargs)
+            deployer.deploy(mode="server")
+
+            return self
+        
+        elif env == "plotly-inline":
+            from .plotly_deployment import PlotlyDeployer
+
+            deployer = PlotlyDeployer(self, **kwargs)
+            deployer.deploy(mode="notebook")
 
             return self
         else:
             raise ValueError(
-                f"Unsupported environment: {env}, only 'notebook' is supported right now."
+                f"Unsupported environment: {env}, only 'notebook', 'plotly', and 'plotly-inline' are supported right now."
             )
+
+
 
     @contextmanager
     def _deploy_app(self):
@@ -269,7 +286,6 @@ class InteractiveViewer:
 
         # Handle partial functions
         if isinstance(func, partial):
-            # Create new partial with self as first arg if not already there
             get_self = (
                 lambda func: hasattr(func.func, "__self__") and func.func.__self__
             )
@@ -277,11 +293,6 @@ class InteractiveViewer:
         else:
             get_self = lambda func: hasattr(func, "__self__") and func.__self__
             get_name = lambda func: func.__name__
-
-        # # Check if it's a class method of this class
-        # class_method = get_self(func) is self.__class__
-        # if class_method:
-        #     raise ValueError(context + "Class methods are not supported.")
 
         # Get function signature
         try:
@@ -292,17 +303,17 @@ class InteractiveViewer:
 
         # Look through params and check if there are two positional parameters (including self for bound methods)
         bound_method = get_self(func) is self
-        positional_params = 0 + bound_method
+        positional_params = 0
         optional_part = ""
         for param in params:
             # Check if it's a positional parameter. If it is, count it.
-            # As long as we have less than 2 positional parameters, we're good.
-            # When we already have 2 positional parameters, we need to make sure any other positional parameters have defaults.
+            # We need at least 1 positional parameter. When we already have 1,
+            # we need to make sure any other positional parameters have defaults.
             if param.kind in (
                 inspect.Parameter.POSITIONAL_OR_KEYWORD,
                 inspect.Parameter.POSITIONAL_ONLY,
             ):
-                if positional_params < 2:
+                if positional_params < 1:
                     positional_params += 1
                 else:
                     if param.default == inspect.Parameter.empty:
@@ -318,7 +329,7 @@ class InteractiveViewer:
                     else f", {param.name}"
                 )
 
-        if positional_params != 2:
+        if positional_params != 1:
             func_name = get_name(func)
             if isinstance(func, partial):
                 func_sig = str(inspect.signature(func))
@@ -328,9 +339,8 @@ class InteractiveViewer:
                     context
                     + "\n"
                     + f"Your partial function '{func_name}' has an incorrect signature.\n"
-                    "Partial functions must have exactly two positional parameters.\n"
-                    "The first parameter should be self -- it corresponds to the viewer.\n"
-                    "The second parameter should be state -- a dictionary of the current state of the viewer.\n"
+                    "Partial functions must have exactly one positional parameter\n"
+                    "which corresponds to a dictionary of the current state of the viewer.\n"
                     "\nYour partial function effectivelylooks like this:\n"
                     f"def {func_name}{func_sig}:\n"
                     "    ... your function code ..."
@@ -345,14 +355,14 @@ class InteractiveViewer:
                     context + "\n"
                     f"Your bound method '{func_name}{func_sig}' has an incorrect signature.\n"
                     "Bound methods must have exactly one positional parameter in addition to self.\n"
-                    "The first parameter should be self -- it corresponds to the viewer.\n"
+                    "The first parameter should be self (required for bound methods).\n"
                     "The second parameter should be state -- a dictionary of the current state of the viewer.\n"
                     "\nYour method looks like this:\n"
-                    "class YourViewer(InteractiveViewer):\n"
+                    "class YourViewer(Viewer):\n"
                     f"    def {func_name}{func_sig}:\n"
                     "        ... your function code ...\n"
                     "\nIt should look like this:\n"
-                    "class YourViewer(InteractiveViewer):\n"
+                    "class YourViewer(Viewer):\n"
                     f"    def {func_name}(self, state{optional_part}):\n"
                     "        ... your function code ..."
                 )
@@ -369,27 +379,20 @@ class InteractiveViewer:
                 msg = (
                     context + "\n"
                     f"Your function '{func_name}{func_sig}' has an incorrect signature.\n"
-                    "External functions must have exactly two positional parameters.\n"
-                    "The first parameter should be viewer -- it corresponds to the viewer.\n"
-                    "The second parameter should be state -- a dictionary of the current state of the viewer.\n"
+                    "Functions must have exactly one positional parameter\n"
+                    "which corresponds to a dictionary of the current state of the viewer.\n"
                     "\nYour function looks like this:\n"
                     f"def {func_name}{func_sig}:\n"
                     "    ... your function code ...\n"
                     "\nIt should look like this:\n"
-                    f"def {func_name}({'self, ' if add_self else ''}viewer, state{optional_part}):\n"
+                    f"def {func_name}({'self, ' if add_self else ''}state{optional_part}):\n"
                     "    ... your function code ..."
                 )
                 raise ValueError(msg)
 
-        # If not a bound method, wrap it to inject self when called with just the state
-        if bound_method:
-            return func
-
-        @wraps(func)
-        def func_with_self(*args, **kwargs):
-            return func(self, *args, **kwargs)
-
-        return func_with_self
+        # If we've made it here, the function has exactly one required positional parameter
+        # which means it's callable by the viewer.
+        return func
 
     def perform_callbacks(self, name: str) -> bool:
         """Perform callbacks for all parameters that have changed"""
@@ -935,7 +938,7 @@ class InteractiveViewer:
         """
         Update a text parameter's value.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_text`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_text`.
         See :class:`~syd.parameters.TextParameter` for details about value validation.
 
         Parameters
@@ -965,7 +968,7 @@ class InteractiveViewer:
         """
         Update a boolean parameter's value.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_boolean`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_boolean`.
         See :class:`~syd.parameters.BooleanParameter` for details about value validation.
 
         Parameters
@@ -999,7 +1002,7 @@ class InteractiveViewer:
         """
         Update a selection parameter's value and/or options.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_selection`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_selection`.
         See :class:`~syd.parameters.SelectionParameter` for details about value validation.
 
         Parameters
@@ -1041,7 +1044,7 @@ class InteractiveViewer:
         """
         Update a multiple selection parameter's values and/or options.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_multiple_selection`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_multiple_selection`.
         See :class:`~syd.parameters.MultipleSelectionParameter` for details about value validation.
 
         Parameters
@@ -1086,7 +1089,7 @@ class InteractiveViewer:
         """
         Update an integer parameter's value and/or bounds.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_integer`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_integer`.
         See :class:`~syd.parameters.IntegerParameter` for details about value validation.
 
         Parameters
@@ -1131,7 +1134,7 @@ class InteractiveViewer:
         """
         Update a float parameter's value, bounds, and/or step size.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_float`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_float`.
         See :class:`~syd.parameters.FloatParameter` for details about value validation.
 
         Parameters
@@ -1181,7 +1184,7 @@ class InteractiveViewer:
         """
         Update an integer range parameter's values and/or bounds.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_integer_range`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_integer_range`.
         See :class:`~syd.parameters.IntegerRangeParameter` for details about value validation.
 
         Parameters
@@ -1228,7 +1231,7 @@ class InteractiveViewer:
         """
         Update a float range parameter's values, bounds, and/or step size.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_float_range`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_float_range`.
         See :class:`~syd.parameters.FloatRangeParameter` for details about value validation.
 
         Parameters
@@ -1277,7 +1280,7 @@ class InteractiveViewer:
         """
         Update an unbounded integer parameter's value and/or bounds.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_unbounded_integer`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_unbounded_integer`.
         See :class:`~syd.parameters.UnboundedIntegerParameter` for details about value validation.
 
         Parameters
@@ -1310,7 +1313,7 @@ class InteractiveViewer:
         """
         Update an unbounded float parameter's value, bounds, and/or step size.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_unbounded_float`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_unbounded_float`.
         See :class:`~syd.parameters.UnboundedFloatParameter` for details about value validation.
 
         Parameters
@@ -1351,7 +1354,7 @@ class InteractiveViewer:
         """
         Update a button parameter's label and/or callback function.
 
-        Updates a parameter created by :meth:`~syd.interactive_viewer.InteractiveViewer.add_button`.
+        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_button`.
         See :class:`~syd.parameters.ButtonAction` for details.
 
         Parameters
