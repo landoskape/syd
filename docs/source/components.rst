@@ -57,33 +57,33 @@ The methods have conveniently simple and obvious names, the format is always ``a
      - Add Method
      - Update Method
    * - Text input
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_text`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_text`
+     - :meth:`~syd.viewer.Viewer.add_text`
+     - :meth:`~syd.viewer.Viewer.update_text`
    * - Checkboxes
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_boolean`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_boolean`
+     - :meth:`~syd.viewer.Viewer.add_boolean`
+     - :meth:`~syd.viewer.Viewer.update_boolean`
    * - Dropdown menus
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_selection`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_selection`
+     - :meth:`~syd.viewer.Viewer.add_selection`
+     - :meth:`~syd.viewer.Viewer.update_selection`
    * - Multi-select menus
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_multiple_selection`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_multiple_selection`
+     - :meth:`~syd.viewer.Viewer.add_multiple_selection`
+     - :meth:`~syd.viewer.Viewer.update_multiple_selection`
    * - Integer sliders
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_integer`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_integer`
+     - :meth:`~syd.viewer.Viewer.add_integer`
+     - :meth:`~syd.viewer.Viewer.update_integer`
    * - Float sliders
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_float`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_float`
+     - :meth:`~syd.viewer.Viewer.add_float`
+     - :meth:`~syd.viewer.Viewer.update_float`
    * - Integer Range sliders
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_integer_range`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_integer_range`
+     - :meth:`~syd.viewer.Viewer.add_integer_range`
+     - :meth:`~syd.viewer.Viewer.update_integer_range`
    * - Float Range sliders
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_float_range`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_float_range`
+     - :meth:`~syd.viewer.Viewer.add_float_range`
+     - :meth:`~syd.viewer.Viewer.update_float_range`
    * - Unbounded integer inputs
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_unbounded_integer`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_unbounded_integer`
+     - :meth:`~syd.viewer.Viewer.add_unbounded_integer`
+     - :meth:`~syd.viewer.Viewer.update_unbounded_integer`
    * - Unbounded float inputs
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.add_unbounded_float`
-     - :meth:`~syd.interactive_viewer.InteractiveViewer.update_unbounded_float`
+     - :meth:`~syd.viewer.Viewer.add_unbounded_float`
+     - :meth:`~syd.viewer.Viewer.update_unbounded_float`
     

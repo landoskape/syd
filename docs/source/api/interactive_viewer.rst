@@ -1,12 +1,12 @@
 Interactive Viewer
 ==================
 
-.. currentmodule:: syd.interactive_viewer
+.. currentmodule:: syd.viewer
 
-InteractiveViewer
+Viewer
 -----------------
 
-.. autoclass:: InteractiveViewer
+.. autoclass:: Viewer
    :members:
    :inherited-members:
    :special-members: __init__

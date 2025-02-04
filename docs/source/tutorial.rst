@@ -18,9 +18,9 @@ there if you want more details.
 
     import numpy as np
     import matplotlib.pyplot as plt
-    from syd import InteractiveViewer
+    from syd import Viewer
 
-    class SimpleWaveformViewer(InteractiveViewer):
+    class SimpleWaveformViewer(Viewer):
         """A simple example viewer that shows an interactive waveform."""
         
         def __init__(self):            
