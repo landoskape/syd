@@ -1,7 +1,7 @@
 # Interactive Viewer Documentation Guide
 
 ## Overview
-This guide summarizes approaches for documenting interactive viewers built with the InteractiveViewer class using ipywidgets for notebook deployment.
+This guide summarizes approaches for documenting interactive viewers built with the Viewer class using ipywidgets for notebook deployment.
 
 ## Example Viewers Created
 
