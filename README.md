@@ -93,3 +93,4 @@ Please make sure to update tests as appropriate and adhere to the existing codin
     make them optional and have the ``recycle_figure: bool = False`` flag be part of the deploy API. This 
     way, an advanced users that wants snappy responsivity or complex figure management can do so, but
     the default is for the user to generate a new figure object each time. Nice!
+- I've updated some rules for parameters -- need to make tests for empty options on selection / multiple selections

@@ -15,9 +15,13 @@ dependencies = [
     "ipywidgets",
     "ipympl",
     "matplotlib",
+    "plotly",
+    "dash",
 ]
 license = "GPL-3.0-or-later"
 keywords = ["data-science", "machine-learning", "gui", "interactive", "jupyter", "notebook", "python"]
+
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
