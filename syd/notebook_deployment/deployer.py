@@ -118,10 +118,11 @@ class NotebookDeployer:
         self.layout_widgets = self._create_layout_controls()
         self.plot_output = widgets.Output()
 
-        # Store current figure
-        self._current_figure = None
         # Flag to prevent circular updates
         self._updating = False
+
+        # Last figure to close when new figures are created
+        self._last_figure = None
 
     def _create_layout_controls(self) -> Dict[str, widgets.Widget]:
         """Create widgets for controlling the layout."""
@@ -225,24 +226,28 @@ class NotebookDeployer:
         state = self.viewer.get_state()
 
         with _plot_context():
-            self._current_figure = self.viewer.plot(state)
-            if self.backend_type == "inline":
-                plt.close(self._current_figure)
-            if self.backend_type == "widget":
-                # plt.close(self._current_figure)
-                # self._current_figure = new_fig
-                pass
-        self._redraw_plot()
+            figure = self.viewer.plot(state)
 
-
-    def _redraw_plot(self) -> None:
-        """Clear and redraw the plot in the output widget."""
         self.plot_output.clear_output(wait=True)
+
+        # Close the last figure if it exists to keep matplotlib clean
+        if self._last_figure is not None:
+            plt.close(self._last_figure)
+
         with self.plot_output:
             if self.backend_type == "inline":
-                display(self._current_figure)
-            if self.backend_type == "widget":
-                display(self._current_figure.canvas)
+                display(figure)
+
+                # Also required to make sure a second figure window isn't opened
+                plt.close(figure)
+
+            elif self.backend_type == "widget":
+                display(figure.canvas)
+
+            else:
+                raise ValueError(f"Unsupported backend type: {self.backend_type}")
+
+        self._last_figure = figure
 
     def _create_layout(self) -> widgets.Widget:
         """Create the main layout combining controls and plot."""
@@ -311,8 +316,8 @@ class NotebookDeployer:
         """Deploy the interactive viewer with proper state management."""
         self.backend_type = get_backend_type()
         with self.viewer._deploy_app():
-            plt.close('all')
-            
+            plt.close("all")
+
             # Create widgets
             self._create_parameter_widgets()
 
