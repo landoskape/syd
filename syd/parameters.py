@@ -1,17 +1,6 @@
-from typing import (
-    List,
-    Any,
-    Tuple,
-    Generic,
-    TypeVar,
-    Optional,
-    Dict,
-    Callable,
-    Union,
-    Sequence,
-)
+from typing import List, Any, Tuple, Generic, TypeVar, Optional, Dict, Callable, Union
 from dataclasses import dataclass, field
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from enum import Enum
 from copy import deepcopy
 from warnings import warn
@@ -117,8 +106,33 @@ def get_parameter_attributes(param_class) -> List[str]:
     return attributes
 
 
+class ParameterMeta(ABCMeta):
+    _parameter_types = {}
+    _parameter_ids = {}  # Store unique identifiers for our parameter types
+
+    def __new__(cls, name, bases, namespace):
+        parameter_class = super().__new__(cls, name, bases, namespace)
+        if name != "Parameter":
+            # Generate a unique ID for this parameter type
+            type_id = f"syd.parameters.{name}"  # Using fully qualified name
+            cls._parameter_ids[name] = type_id
+
+            # Add ID to the class
+            setattr(parameter_class, "_parameter_type_id", type_id)
+            cls._parameter_types[name] = parameter_class
+        return parameter_class
+
+    def __instancecheck__(cls, instance):
+        type_id = cls._parameter_ids.get(cls.__name__)
+        if not type_id:
+            return False
+
+        # Check if instance has our type ID
+        return getattr(instance.__class__, "_parameter_type_id", None) == type_id
+
+
 @dataclass
-class Parameter(Generic[T], ABC):
+class Parameter(Generic[T], ABC, metaclass=ParameterMeta):
     """
     Base class for all parameter types. Parameters are the building blocks
     for creating interactive GUI elements.
@@ -411,7 +425,7 @@ class SelectionParameter(Parameter[Any]):
             raise TypeError(
                 f"Options for parameter {self.name} must be a list or tuple"
             )
-        
+
         if not options:
             raise ValueError(f"Options for parameter {self.name} must not be empty")
 
@@ -530,7 +544,7 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
             raise TypeError(
                 f"Options for parameter {self.name} must be a list or tuple"
             )
-        
+
         if not options:
             raise ValueError(f"Options for parameter {self.name} must not be empty")
 
@@ -895,7 +909,6 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
         self.max_value = self._validate_single(max_value, context="max_value")
         self._value = self._validate(value)
 
-
     def _validate_single(self, new_value: Any, context: Optional[str] = None) -> int:
         """
         Validate and convert a single numeric value.
@@ -919,7 +932,6 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
             if context:
                 msg += f" for {context}"
             raise ValueError(msg)
-
 
     def _validate(self, new_value: Any) -> Tuple[int, int]:
         """
@@ -1061,7 +1073,6 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
         self.max_value = self._validate_single(max_value, context="max_value")
         self._value = self._validate(value)
 
-
     def _validate_single(self, new_value: Any, context: Optional[str] = None) -> float:
         """
         Validate and convert a single numeric value.
@@ -1085,7 +1096,6 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
             if context:
                 msg += f" for {context}"
             raise ValueError(msg)
-
 
         # Round to the nearest step
         new_value = round(new_value / self.step) * self.step
