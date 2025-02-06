@@ -118,7 +118,13 @@ class ParameterMeta(ABCMeta):
             cls._parameter_ids[name] = type_id
 
             # Add ID to the class
-            setattr(parameter_class, "_parameter_type_id", type_id)
+            if not hasattr(parameter_class, "_parameter_type_id"):
+                setattr(parameter_class, "_parameter_type_id", type_id)
+            else:
+                if getattr(parameter_class, "_parameter_type_id") != type_id:
+                    raise ValueError(
+                        f"Parameter type {name} has multiple IDs: {type_id} and {getattr(parameter_class, '_parameter_type_id')}"
+                    )
             cls._parameter_types[name] = parameter_class
         return parameter_class
 
