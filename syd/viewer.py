@@ -649,10 +649,11 @@ class Viewer:
         value: Union[float, int],
         min_value: Union[float, int],
         max_value: Union[float, int],
-        step: float = 0.1,
+        step: float = 0.01,
     ) -> None:
         """
         Add a decimal number parameter to the viewer.
+
 
         Creates a slider in the GUI that lets users select numbers between
         min_value and max_value. Values will be rounded to the nearest step
@@ -669,7 +670,7 @@ class Viewer:
         max_value : float
             Maximum allowed value
         step : float, optional
-            Size of each increment (default: 0.1)
+            Size of each increment (default: 0.01)
 
         Examples
         --------
@@ -754,7 +755,7 @@ class Viewer:
         value: Tuple[Union[float, int], Union[float, int]],
         min_value: Union[float, int],
         max_value: Union[float, int],
-        step: float = 0.1,
+        step: float = 0.01,
     ) -> None:
         """
         Add a range parameter for decimal numbers to the viewer.
@@ -775,7 +776,7 @@ class Viewer:
         max_value : float
             Maximum allowed value for both low and high
         step : float, optional
-            Size of each increment (default: 0.1)
+            Size of each increment (default: 0.01)
 
         Examples
         --------
