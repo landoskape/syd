@@ -189,7 +189,7 @@ def test_make_viewer_with_valid_callable(name, kind, func):
             assert False, msg
 
         msg = "viewer.plot should be called with just one positional argument and self implied"
-        assert viewer.plot(viewer.get_state()), msg
+        assert viewer.plot(viewer.state), msg
 
 
 @pytest.mark.parametrize(
@@ -209,7 +209,7 @@ def test_set_plot_with_valid_callable(name, kind, func):
         assert False, msg
 
     msg = "viewer.plot should be called with just one positional argument and self implied"
-    assert viewer.plot(viewer.get_state()), msg
+    assert viewer.plot(viewer.state), msg
 
 
 @pytest.mark.parametrize(
@@ -264,13 +264,13 @@ def test_set_plot_with_invalid_callable(name, kind, func):
         assert False, msg
 
     msg = "Setting plot with an invalid function should not overwrite existing plot"
-    assert viewer.plot(viewer.get_state()) == "correct", msg
+    assert viewer.plot(viewer.state) == "correct", msg
 
     viewer = make_viewer()
     with pytest.raises(ValueError):
         viewer.set_plot(func)
     try:
-        viewer.plot(viewer.get_state())
+        viewer.plot(viewer.state)
     except NotImplementedError:
         pass  # NotImplementedError expected
     else:
@@ -295,7 +295,7 @@ def test_add_button_with_valid_callback(name, kind, func):
         assert False, msg
 
     msg = "Button callback should be called with just one positional argument and self implied"
-    assert viewer.parameters[param_name].callback(viewer.get_state()), msg
+    assert viewer.parameters[param_name].callback(viewer.state), msg
 
 
 @pytest.mark.parametrize(
@@ -328,7 +328,7 @@ def test_add_button_with_invalid_callback(name, kind, func):
     with pytest.raises(ParameterUpdateError):
         viewer.update_button(param_name, callback=func)
 
-    callback_return = viewer.parameters[param_name].callback(viewer.get_state())
+    callback_return = viewer.parameters[param_name].callback(viewer.state)
     msg = "Failing to update the callback should not change the original callback"
     assert callback_return == "good_callback", msg
 

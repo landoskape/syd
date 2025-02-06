@@ -14,7 +14,7 @@ def plot(self, state: Dict[str, Any]) -> Union[Figure, "go.Figure", "pd.plotting
 ### Plot Update Logic
 ```python
 def _update_plot(self) -> None:
-    state = self.viewer.get_state()
+    state = self.viewer.state
     using_widget = 'widget' in plt.get_backend().lower()
     
     with _plot_context():

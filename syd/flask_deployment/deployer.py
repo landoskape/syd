@@ -219,7 +219,7 @@ class FlaskDeployment:
                 parameter = self.viewer.parameters[name]
                 if hasattr(parameter, "callback"):
                     print(f"Executing callback for button: {name}")  # Debug log
-                    parameter.callback(self.viewer.get_state())
+                    parameter.callback(self.viewer.state)
                 else:
                     print(f"No callback found for button: {name}")  # Debug log
 
@@ -259,7 +259,7 @@ class FlaskDeployment:
 
     def _update_plot(self) -> None:
         """Update the plot with current state."""
-        state = self.viewer.get_state()
+        state = self.viewer.state
         print(f"Updating plot with state: {state}")  # Debug log
 
         with self._plot_context(), self._figure_lock:
@@ -291,7 +291,7 @@ class FlaskDeployment:
     def _get_parameter_updates(self) -> Dict[str, Any]:
         """Get JavaScript updates for all parameters."""
         updates = {}
-        state = self.viewer.get_state()
+        state = self.viewer.state
         for name, value in state.items():
             # Skip button parameters since they don't have a meaningful value to update
             if (

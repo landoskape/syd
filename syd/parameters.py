@@ -891,11 +891,12 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
         max_value: int,
     ):
         self.name = name
-        self.min_value = self._validate_single(min_value)
-        self.max_value = self._validate_single(max_value)
+        self.min_value = self._validate_single(min_value, context="min_value")
+        self.max_value = self._validate_single(max_value, context="max_value")
         self._value = self._validate(value)
 
-    def _validate_single(self, new_value: Any) -> int:
+
+    def _validate_single(self, new_value: Any, context: Optional[str] = None) -> int:
         """
         Validate and convert a single numeric value.
 
@@ -913,8 +914,12 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
         """
         try:
             return int(new_value)
-        except ValueError:
-            raise ValueError(f"Value {new_value} cannot be converted to int")
+        except Exception:
+            msg = f"Value {new_value} cannot be converted to int"
+            if context:
+                msg += f" for {context}"
+            raise ValueError(msg)
+
 
     def _validate(self, new_value: Any) -> Tuple[int, int]:
         """
@@ -1052,11 +1057,12 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     ):
         self.name = name
         self.step = step
-        self.min_value = self._validate_single(min_value)
-        self.max_value = self._validate_single(max_value)
+        self.min_value = self._validate_single(min_value, context="min_value")
+        self.max_value = self._validate_single(max_value, context="max_value")
         self._value = self._validate(value)
 
-    def _validate_single(self, new_value: Any) -> float:
+
+    def _validate_single(self, new_value: Any, context: Optional[str] = None) -> float:
         """
         Validate and convert a single numeric value.
 
@@ -1074,8 +1080,12 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
         """
         try:
             new_value = float(new_value)
-        except ValueError:
-            raise ValueError(f"Value {new_value} cannot be converted to float")
+        except Exception:
+            msg = f"Value {new_value} cannot be converted to float"
+            if context:
+                msg += f" for {context}"
+            raise ValueError(msg)
+
 
         # Round to the nearest step
         new_value = round(new_value / self.step) * self.step

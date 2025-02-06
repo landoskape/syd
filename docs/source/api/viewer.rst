@@ -1,5 +1,5 @@
-Interactive Viewer
-==================
+Viewer
+======
 
 .. currentmodule:: syd.viewer
 
@@ -17,7 +17,7 @@ Viewer
       :nosignatures:
 
       plot
-      get_state
+      state
       on_change
       set_parameter_value
 

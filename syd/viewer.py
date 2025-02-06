@@ -158,7 +158,6 @@ class Viewer:
 
     parameters: Dict[str, Parameter]
     callbacks: Dict[str, List[Callable]]
-    state: Dict[str, Any]
     _app_deployed: bool
     _in_callbacks: bool
 
@@ -166,14 +165,15 @@ class Viewer:
         instance = super().__new__(cls)
         instance.parameters = {}
         instance.callbacks = {}
-        instance.state = {}
         instance._app_deployed = False
         instance._in_callbacks = False
         return instance
 
-    def get_state(self) -> Dict[str, Any]:
+    @property
+    def state(self) -> Dict[str, Any]:
         """
         Get the current values of all parameters.
+
 
         Returns
         -------
@@ -184,7 +184,7 @@ class Viewer:
         --------
         >>> viewer.add_float('x', value=1.0, min_value=0, max_value=10)
         >>> viewer.add_text('label', value='data')
-        >>> viewer.get_state()
+        >>> viewer.state
         {'x': 1.0, 'label': 'data'}
         """
         return {name: param.value for name, param in self.parameters.items()}
@@ -196,7 +196,7 @@ class Viewer:
 
         1. Call set_plot() with your plotting function
         This will look like this:
-        >>> def plot(viewer, state):
+        >>> def plot(state):
         >>>     ... generate figure, plot stuff ...
         >>>     return fig
         >>> viewer.set_plot(plot))
@@ -251,7 +251,7 @@ class Viewer:
             deployer.deploy(mode="server")
 
             return self
-        
+
         elif env == "plotly-inline":
             from .plotly_deployment import PlotlyDeployer
 
@@ -263,8 +263,6 @@ class Viewer:
             raise ValueError(
                 f"Unsupported environment: {env}, only 'notebook', 'plotly', and 'plotly-inline' are supported right now."
             )
-
-
 
     @contextmanager
     def _deploy_app(self):
@@ -401,7 +399,7 @@ class Viewer:
         try:
             self._in_callbacks = True
             if name in self.callbacks:
-                state = self.get_state()
+                state = self.state
                 for callback in self.callbacks[name]:
                     callback(state)
         finally:
@@ -491,7 +489,7 @@ class Viewer:
         Examples
         --------
         >>> viewer.add_text('title', value='My Plot')
-        >>> viewer.get_state()['title']
+        >>> viewer.state['title']
         'My Plot'
         """
         try:
@@ -519,7 +517,7 @@ class Viewer:
         Examples
         --------
         >>> viewer.add_boolean('show_grid', value=True)
-        >>> viewer.get_state()['show_grid']
+        >>> viewer.state['show_grid']
         True
         """
         try:
@@ -550,7 +548,7 @@ class Viewer:
         --------
         >>> viewer.add_selection('color', value='red',
         ...                     options=['red', 'green', 'blue'])
-        >>> viewer.get_state()['color']
+        >>> viewer.state['color']
         'red'
         """
         try:
@@ -585,7 +583,7 @@ class Viewer:
         >>> viewer.add_multiple_selection('toppings',
         ...     value=['cheese'],
         ...     options=['cheese', 'pepperoni', 'mushrooms'])
-        >>> viewer.get_state()['toppings']
+        >>> viewer.state['toppings']
         ['cheese']
         """
         try:
@@ -625,10 +623,10 @@ class Viewer:
         Examples
         --------
         >>> viewer.add_integer('count', value=5, min_value=0, max_value=10)
-        >>> viewer.get_state()['count']
+        >>> viewer.state['count']
         5
         >>> viewer.update_integer('count', value=15)  # Will be clamped to 10
-        >>> viewer.get_state()['count']
+        >>> viewer.state['count']
         10
         """
         try:
@@ -677,10 +675,10 @@ class Viewer:
         --------
         >>> viewer.add_float('temperature', value=20.0,
         ...                  min_value=0.0, max_value=100.0, step=0.5)
-        >>> viewer.get_state()['temperature']
+        >>> viewer.state['temperature']
         20.0
         >>> viewer.update_float('temperature', value=20.7)  # Will round to 20.5
-        >>> viewer.get_state()['temperature']
+        >>> viewer.state['temperature']
         20.5
         """
         try:
@@ -729,11 +727,11 @@ class Viewer:
         >>> viewer.add_integer_range('age_range',
         ...                         value=(25, 35),
         ...                         min_value=18, max_value=100)
-        >>> viewer.get_state()['age_range']
+        >>> viewer.state['age_range']
         (25, 35)
         >>> # Values will be swapped if low > high
         >>> viewer.update_integer_range('age_range', value=(40, 30))
-        >>> viewer.get_state()['age_range']
+        >>> viewer.state['age_range']
         (30, 40)
         """
         try:
@@ -784,11 +782,11 @@ class Viewer:
         >>> viewer.add_float_range('price_range',
         ...                       value=(10.0, 20.0),
         ...                       min_value=0.0, max_value=100.0, step=0.5)
-        >>> viewer.get_state()['price_range']
+        >>> viewer.state['price_range']
         (10.0, 20.0)
         >>> # Values will be rounded to nearest step
         >>> viewer.update_float_range('price_range', value=(10.7, 19.2))
-        >>> viewer.get_state()['price_range']
+        >>> viewer.state['price_range']
         (10.5, 19.0)
         """
         try:
@@ -828,7 +826,7 @@ class Viewer:
         Examples
         --------
         >>> viewer.add_unbounded_integer('population', value=1000000)
-        >>> viewer.get_state()['population']
+        >>> viewer.state['population']
         1000000
         """
         try:
@@ -869,11 +867,11 @@ class Viewer:
         Examples
         --------
         >>> viewer.add_unbounded_float('wavelength', value=550e-9, step=1e-9)
-        >>> viewer.get_state()['wavelength']
+        >>> viewer.state['wavelength']
         5.5e-07
         >>> # Values will be rounded if step is provided
         >>> viewer.update_unbounded_float('wavelength', value=550.7e-9)
-        >>> viewer.get_state()['wavelength']
+        >>> viewer.state['wavelength']
         5.51e-07
         """
         try:
@@ -952,7 +950,7 @@ class Viewer:
         --------
         >>> viewer.add_text('title', value='Original Title')
         >>> viewer.update_text('title', value='New Title')
-        >>> viewer.get_state()['title']
+        >>> viewer.state['title']
         'New Title'
         """
         updates = {}
@@ -982,7 +980,7 @@ class Viewer:
         --------
         >>> viewer.add_boolean('show_grid', value=True)
         >>> viewer.update_boolean('show_grid', value=False)
-        >>> viewer.get_state()['show_grid']
+        >>> viewer.state['show_grid']
         False
         """
         updates = {}

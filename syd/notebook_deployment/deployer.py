@@ -179,7 +179,7 @@ class NotebookDeployer:
 
                 if widget._is_action:
                     parameter = self.viewer.parameters[name]
-                    parameter.callback(self.viewer.get_state())
+                    parameter.callback(self.viewer.state)
                 else:
                     self.viewer.set_parameter_value(name, widget.value)
 
@@ -223,7 +223,7 @@ class NotebookDeployer:
 
     def _update_plot(self) -> None:
         """Update the plot with current state."""
-        state = self.viewer.get_state()
+        state = self.viewer.state
 
         with _plot_context():
             figure = self.viewer.plot(state)

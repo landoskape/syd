@@ -10,7 +10,7 @@ Add GUI controls to your plots with just a few lines of code!
    import matplotlib.pyplot as plt
    import numpy as np
 
-   def plot(viewer, state):
+   def plot(state):
       x = np.linspace(0, 2*np.pi, 100)
       y = np.sin(x * state["frequency"])
       fig = plt.figure()

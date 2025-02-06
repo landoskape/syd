@@ -24,6 +24,7 @@ def debounce(wait_time):
     """
     Decorator to prevent a function from being called more than once every wait_time seconds.
     """
+
     def decorator(fn):
         last_called = [0.0]  # Using list to maintain state in closure
 
@@ -42,6 +43,7 @@ def debounce(wait_time):
 @dataclass
 class LayoutConfig:
     """Configuration for the viewer layout."""
+
     controls_position: str = "left"  # Options are: 'left', 'top', 'right', 'bottom'
     controls_width_percent: int = 30
 
@@ -61,7 +63,7 @@ class LayoutConfig:
 def _plot_context():
     """Context manager to temporarily switch matplotlib backend."""
     original_backend = mpl.get_backend()
-    plt.switch_backend('Agg')  # Switch to non-interactive backend
+    plt.switch_backend("Agg")  # Switch to non-interactive backend
     try:
         yield
     finally:
@@ -112,7 +114,7 @@ class PlotlyDeployer:
 
         # Initialize Dash app
         self.app = Dash(__name__, server=server or True, title=title)
-        
+
         # Component styling
         self._component_width = component_width
         self._component_margin = component_margin
@@ -159,7 +161,7 @@ class PlotlyDeployer:
                 component = self._components[name]
                 if component._is_action:
                     parameter = self.viewer.parameters[name]
-                    parameter.callback(self.viewer.get_state())
+                    parameter.callback(self.viewer.state)
                 else:
                     self.viewer.set_parameter_value(name, value)
 
@@ -186,33 +188,52 @@ class PlotlyDeployer:
         controls = html.Div(
             [html.H3("Parameters", style={"marginBottom": "10px"})] + param_components,
             style={
-                "width": f"{self.config.controls_width_percent}%" if self.config.is_horizontal else "100%",
+                "width": (
+                    f"{self.config.controls_width_percent}%"
+                    if self.config.is_horizontal
+                    else "100%"
+                ),
                 "padding": "20px",
-                "borderRight": "1px solid #e5e7eb" if self.config.controls_position == "left" else None,
-                "borderLeft": "1px solid #e5e7eb" if self.config.controls_position == "right" else None,
-            }
+                "borderRight": (
+                    "1px solid #e5e7eb"
+                    if self.config.controls_position == "left"
+                    else None
+                ),
+                "borderLeft": (
+                    "1px solid #e5e7eb"
+                    if self.config.controls_position == "right"
+                    else None
+                ),
+            },
         )
 
         # Create plot container
         plot_container = html.Div(
             id="plot-container",
             style={
-                "width": f"{100 - self.config.controls_width_percent}%" if self.config.is_horizontal else "100%",
+                "width": (
+                    f"{100 - self.config.controls_width_percent}%"
+                    if self.config.is_horizontal
+                    else "100%"
+                ),
                 "padding": "20px",
-            }
+            },
         )
 
         # Add hidden div for state synchronization
         state_sync = html.Div(
-            id={"type": "state_sync", "id": "sync"},
-            style={"display": "none"}
+            id={"type": "state_sync", "id": "sync"}, style={"display": "none"}
         )
 
         # Create final layout based on configuration
         if self.config.controls_position == "left":
-            container = html.Div([controls, plot_container, state_sync], style={"display": "flex"})
+            container = html.Div(
+                [controls, plot_container, state_sync], style={"display": "flex"}
+            )
         elif self.config.controls_position == "right":
-            container = html.Div([plot_container, controls, state_sync], style={"display": "flex"})
+            container = html.Div(
+                [plot_container, controls, state_sync], style={"display": "flex"}
+            )
         elif self.config.controls_position == "top":
             container = html.Div([controls, plot_container, state_sync])
         else:  # bottom
@@ -224,7 +245,7 @@ class PlotlyDeployer:
                 "maxWidth": "1200px",
                 "margin": "auto",
                 "fontFamily": "sans-serif",
-            }
+            },
         )
 
     def setup_callbacks(self) -> None:
@@ -235,12 +256,15 @@ class PlotlyDeployer:
         # Create callback for each parameter
         for name, component in self._components.items():
             parameter = self.viewer.parameters[name]
-            
+
             if not isinstance(parameter, ButtonAction):
+
                 @callback(
                     Output(component.id, "value"),
-                    [Input(component.id, "value"),
-                     Input({"type": "state_sync", "id": ALL}, "data")],
+                    [
+                        Input(component.id, "value"),
+                        Input({"type": "state_sync", "id": ALL}, "data"),
+                    ],
                     prevent_initial_call=True,
                 )
                 def update_parameter(value: Any, sync_data: List[Dict], n=name) -> Any:
@@ -248,11 +272,13 @@ class PlotlyDeployer:
                     triggered = [p["prop_id"] for p in callback_context.triggered]
                     if any(p.startswith("{") for p in triggered):
                         return self.viewer.parameters[n].value
-                    
+
                     # Otherwise handle parameter update normally
                     self._handle_parameter_update(n, value)
                     return value
+
             else:
+
                 @callback(
                     Output(component.id, "n_clicks"),
                     Input(component.id, "n_clicks"),
@@ -265,14 +291,16 @@ class PlotlyDeployer:
 
         # Create callback for plot updates
         @callback(
-            [Output("plot-container", "children"),
-             Output({"type": "state_sync", "id": "sync"}, "data")],
+            [
+                Output("plot-container", "children"),
+                Output({"type": "state_sync", "id": "sync"}, "data"),
+            ],
             [Input(comp.id, "value") for comp in self._components.values()],
         )
         def update_plot(*values):
             with _plot_context():
-                fig = self.viewer.plot(self.viewer.get_state())
-                
+                fig = self.viewer.plot(self.viewer.state)
+
                 # If it's already a Plotly figure, use it directly
                 if isinstance(fig, (go.Figure, dict)):
                     plotly_fig = fig
@@ -280,7 +308,6 @@ class PlotlyDeployer:
                     # Convert matplotlib figure to plotly
                     plotly_fig = mpl_to_plotly(fig)
                     plt.close(fig)  # Clean up the matplotlib figure
-            
 
             return dcc.Graph(figure=plotly_fig), {"timestamp": time()}
 
@@ -291,11 +318,13 @@ class PlotlyDeployer:
         for port in range(start_port, start_port + max_attempts):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 try:
-                    s.bind(('', port))
+                    s.bind(("", port))
                     return port
                 except socket.error:
                     continue
-        raise RuntimeError(f"No available ports found between {start_port} and {start_port + max_attempts}")
+        raise RuntimeError(
+            f"No available ports found between {start_port} and {start_port + max_attempts}"
+        )
 
     def deploy(
         self,
@@ -330,16 +359,18 @@ class PlotlyDeployer:
 
             # Find available port if in server mode
             if mode == "server":
-                port = self.find_available_port(start_port=port, max_attempts=max_port_attempts)
+                port = self.find_available_port(
+                    start_port=port, max_attempts=max_port_attempts
+                )
 
             # Handle warnings based on debug mode
             with warnings.catch_warnings():
                 if not debug:
                     warnings.filterwarnings("ignore", category=UserWarning)
-                
+
                 if mode == "notebook":
                     # Configure JupyterDash for notebook display
                     self.app.run_server(mode="inline", port=port, debug=debug)
                 else:  # server mode
                     # Run as a standalone server
-                    self.app.run(jupyter_mode="tab", host=host, port=port, debug=debug) 
+                    self.app.run(jupyter_mode="tab", host=host, port=port, debug=debug)
