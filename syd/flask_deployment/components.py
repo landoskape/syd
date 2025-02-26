@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generic, List, TypeVar, Union, Optional
+from typing import Any, Dict, Generic, List, TypeVar, Union, Callable, Optional
 from dataclasses import dataclass
-from markupsafe import Markup
+from html import escape
 
 from ..parameters import (
     Parameter,
@@ -15,402 +15,480 @@ from ..parameters import (
     FloatRangeParameter,
     UnboundedIntegerParameter,
     UnboundedFloatParameter,
-    ButtonParameter,
+    ButtonAction,
 )
 
 T = TypeVar("T", bound=Parameter[Any])
 
 
-class BaseWebComponent(Generic[T], ABC):
+@dataclass
+class ComponentStyle:
+    """Style configuration for components."""
+
+    width: str = "auto"
+    margin: str = "3px 0px"
+    description_width: str = "initial"
+    input_class: str = "form-control"
+    label_class: str = "form-label"
+    container_class: str = "mb-3"
+
+
+class BaseComponent(Generic[T], ABC):
     """
-    Abstract base class for all web components.
+    Abstract base class for all parameter components.
 
-    This class defines the interface for HTML/JS components that correspond
-    to different parameter types in the web deployment.
+    This class defines the common interface and shared functionality
+    for components that correspond to different parameter types.
     """
 
-    def __init__(self, parameter: T, component_id: str):
-        """
-        Initialize the web component.
+    _callbacks: List[Callable]
+    _is_action: bool = False
+    _value: Any
+    _id: str
 
-        Args:
-            parameter: The parameter this component represents
-            component_id: Unique ID for this component in the DOM
-        """
-        self.parameter = parameter
-        self.component_id = component_id
+    def __init__(
+        self,
+        parameter: T,
+        continuous: bool = False,
+        style: Optional[ComponentStyle] = None,
+    ):
+        self._id = f"param_{parameter.name}"
+        self._value = parameter.value
+        self._callbacks = []
+        self._continuous = continuous
+        self._style = style or ComponentStyle()
+        self._html = self._create_html(parameter)
 
     @abstractmethod
-    def render_html(self) -> str:
-        """
-        Render the HTML for this component.
-
-        Returns:
-            str: HTML markup for the component
-        """
+    def _create_html(self, parameter: T) -> str:
+        """Create and return the appropriate HTML markup."""
         pass
 
-    @abstractmethod
-    def get_js_init(self) -> str:
-        """
-        Get JavaScript code needed to initialize this component.
+    @property
+    def html(self) -> str:
+        """Get the HTML representation of the component."""
+        return self._html
 
-        Returns:
-            str: JavaScript code that sets up event listeners etc.
-        """
+    @property
+    def value(self) -> Any:
+        """Get the current value of the component."""
+        return self._value
+
+    @value.setter
+    def value(self, new_value: Any) -> None:
+        """Set the value of the component."""
+        self._value = new_value
+        # In a real implementation, we'd use JavaScript to update the DOM
+        # This would be handled by the Flask app's frontend code
+
+    def matches_parameter(self, parameter: T) -> bool:
+        """Check if the component matches the parameter."""
+        return self.value == parameter.value
+
+    def update_from_parameter(self, parameter: T) -> None:
+        """Update the component from the parameter."""
+        try:
+            self.disable_callbacks()
+            self.extra_updates_from_parameter(parameter)
+            self.value = parameter.value
+        finally:
+            self.reenable_callbacks()
+
+    def extra_updates_from_parameter(self, parameter: T) -> None:
+        """Extra updates from the parameter."""
         pass
 
-    def get_js_update(self, value: Any) -> str:
-        """
-        Get JavaScript code needed to update this component's value.
+    def observe(self, callback: Callable) -> None:
+        """Register a callback for value changes."""
+        self._callbacks.append(callback)
 
-        Args:
-            value: New value to set
+    def unobserve(self, callback: Callable) -> None:
+        """Unregister a callback."""
+        self._callbacks.remove(callback)
 
-        Returns:
-            str: JavaScript code that updates the component's value
-        """
-        # Default implementation for simple components
-        return f"document.getElementById('{self.component_id}').value = {self._value_to_js(value)};"
+    def reenable_callbacks(self) -> None:
+        """Reenable all callbacks."""
+        pass  # Handled by Flask routes and JavaScript
 
-    def _value_to_js(self, value: Any) -> str:
-        """Convert a Python value to its JavaScript representation."""
-        if isinstance(value, bool):
-            return str(value).lower()
-        elif isinstance(value, (int, float)):
-            return str(value)
-        elif isinstance(value, str):
-            return f"'{value}'"
-        elif isinstance(value, (list, tuple)):
-            return f"[{', '.join(self._value_to_js(v) for v in value)}]"
-        else:
-            raise ValueError(f"Cannot convert {type(value)} to JavaScript")
+    def disable_callbacks(self) -> None:
+        """Disable all callbacks."""
+        pass  # Handled by Flask routes and JavaScript
 
 
-class TextComponent(BaseWebComponent[TextParameter]):
-    """Component for text input parameters."""
+class TextComponent(BaseComponent[TextParameter]):
+    """Component for text parameters."""
 
-    def render_html(self) -> str:
+    def _create_html(self, parameter: TextParameter) -> str:
         return f"""
-            <div class="form-group">
-                <label for="{self.component_id}">{self.parameter.name}</label>
-                <input type="text" 
-                       class="form-control" 
-                       id="{self.component_id}" 
-                       value="{self.parameter.value}">
-            </div>
-        """
-
-    def get_js_init(self) -> str:
-        return f"""
-            document.getElementById('{self.component_id}').addEventListener('change', (e) => {{
-                updateParameter('{self.parameter.name}', e.target.value);
-            }});
+        <div class="{self._style.container_class}">
+            <label for="{self._id}" class="{self._style.label_class}">{escape(parameter.name)}</label>
+            <input type="text" class="{self._style.input_class}" id="{self._id}" 
+                   name="{parameter.name}" value="{escape(str(parameter.value))}"
+                   style="width: {self._style.width}; margin: {self._style.margin};"
+                   data-continuous="{str(self._continuous).lower()}">
+        </div>
         """
 
 
-class BooleanComponent(BaseWebComponent[BooleanParameter]):
+class BooleanComponent(BaseComponent[BooleanParameter]):
     """Component for boolean parameters."""
 
-    def render_html(self) -> str:
-        checked = "checked" if self.parameter.value else ""
+    def _create_html(self, parameter: BooleanParameter) -> str:
+        checked = "checked" if parameter.value else ""
         return f"""
+        <div class="{self._style.container_class}">
             <div class="form-check">
-                <input type="checkbox" 
-                       class="form-check-input" 
-                       id="{self.component_id}" 
-                       {checked}>
-                <label class="form-check-label" 
-                       for="{self.component_id}">
-                    {self.parameter.name}
+                <input type="checkbox" class="form-check-input" id="{self._id}"
+                       name="{parameter.name}" {checked}
+                       style="margin: {self._style.margin};"
+                       data-continuous="{str(self._continuous).lower()}">
+                <label class="form-check-label" for="{self._id}">
+                    {escape(parameter.name)}
                 </label>
             </div>
+        </div>
         """
 
-    def get_js_init(self) -> str:
-        return f"""
-            document.getElementById('{self.component_id}').addEventListener('change', (e) => {{
-                updateParameter('{self.parameter.name}', e.target.checked);
-            }});
-        """
 
-    def get_js_update(self, value: bool) -> str:
-        return f"document.getElementById('{self.component_id}').checked = {str(value).lower()};"
-
-
-class SelectionComponent(BaseWebComponent[SelectionParameter]):
+class SelectionComponent(BaseComponent[SelectionParameter]):
     """Component for single selection parameters."""
 
-    def render_html(self) -> str:
-        options = []
-        for opt in self.parameter.options:
-            selected = "selected" if opt == self.parameter.value else ""
-            options.append(f'<option value="{opt}" {selected}>{opt}</option>')
+    def _create_html(self, parameter: SelectionParameter) -> str:
+        options_html = ""
+        for option in parameter.options:
+            selected = "selected" if option == parameter.value else ""
+            options_html += f'<option value="{escape(str(option))}" {selected}>{escape(str(option))}</option>'
 
         return f"""
-            <div class="form-group">
-                <label for="{self.component_id}">{self.parameter.name}</label>
-                <select class="form-control" id="{self.component_id}">
-                    {"".join(options)}
-                </select>
-            </div>
+        <div class="{self._style.container_class}">
+            <label for="{self._id}" class="{self._style.label_class}">{escape(parameter.name)}</label>
+            <select class="{self._style.input_class}" id="{self._id}" 
+                    name="{parameter.name}"
+                    style="width: {self._style.width}; margin: {self._style.margin};"
+                    data-continuous="{str(self._continuous).lower()}">
+                {options_html}
+            </select>
+        </div>
         """
 
-    def get_js_init(self) -> str:
-        return f"""
-            document.getElementById('{self.component_id}').addEventListener('change', (e) => {{
-                updateParameter('{self.parameter.name}', e.target.value);
-            }});
-        """
+    def matches_parameter(self, parameter: SelectionParameter) -> bool:
+        """Check if the component matches the parameter."""
+        return self.value == parameter.value and set(self._get_options()) == set(
+            parameter.options
+        )
+
+    def _get_options(self) -> List[Any]:
+        """Get current options from the HTML."""
+        # In a real implementation, this would parse the HTML
+        # For now, we'll just return an empty list
+        return []
+
+    def extra_updates_from_parameter(self, parameter: SelectionParameter) -> None:
+        """Extra updates from the parameter."""
+        # In a real implementation, this would update the options in the DOM
+        pass
 
 
-class MultipleSelectionComponent(BaseWebComponent[MultipleSelectionParameter]):
+class MultipleSelectionComponent(BaseComponent[MultipleSelectionParameter]):
     """Component for multiple selection parameters."""
 
-    def render_html(self) -> str:
-        options = []
-        for opt in self.parameter.options:
-            selected = "selected" if opt in self.parameter.value else ""
-            options.append(f'<option value="{opt}" {selected}>{opt}</option>')
+    def _create_html(self, parameter: MultipleSelectionParameter) -> str:
+        options_html = ""
+        for option in parameter.options:
+            selected = "selected" if option in parameter.value else ""
+            options_html += f'<option value="{escape(str(option))}" {selected}>{escape(str(option))}</option>'
 
         return f"""
-            <div class="form-group">
-                <label for="{self.component_id}">{self.parameter.name}</label>
-                <select multiple class="form-control" id="{self.component_id}">
-                    {"".join(options)}
-                </select>
-            </div>
+        <div class="{self._style.container_class}">
+            <label for="{self._id}" class="{self._style.label_class}">{escape(parameter.name)}</label>
+            <select class="{self._style.input_class}" id="{self._id}" 
+                    name="{parameter.name}" multiple
+                    style="width: {self._style.width}; margin: {self._style.margin};"
+                    data-continuous="{str(self._continuous).lower()}">
+                {options_html}
+            </select>
+        </div>
         """
 
-    def get_js_init(self) -> str:
-        return f"""
-            document.getElementById('{self.component_id}').addEventListener('change', (e) => {{
-                const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
-                updateParameter('{self.parameter.name}', selected);
-            }});
-        """
+    def matches_parameter(self, parameter: MultipleSelectionParameter) -> bool:
+        """Check if the component matches the parameter."""
+        return set(self.value) == set(parameter.value) and set(
+            self._get_options()
+        ) == set(parameter.options)
 
-    def get_js_update(self, values: List[str]) -> str:
-        # More complex update for multi-select
-        return f"""
-            const sel = document.getElementById('{self.component_id}');
-            Array.from(sel.options).forEach(opt => {{
-                opt.selected = {self._value_to_js(values)}.includes(opt.value);
-            }});
-        """
+    def _get_options(self) -> List[Any]:
+        """Get current options from the HTML."""
+        # In a real implementation, this would parse the HTML
+        return []
 
-
-class SliderMixin:
-    """Shared functionality for slider components."""
-
-    def _get_slider_js_init(self, component_id: str, param_name: str) -> str:
-        return f"""
-            noUiSlider.create(document.getElementById('{component_id}'), {{
-                start: {self._value_to_js(self.parameter.value)},
-                connect: true,
-                range: {{
-                    'min': {self.parameter.min_value},
-                    'max': {self.parameter.max_value}
-                }}
-            }}).on('change', (values) => {{
-                updateParameter('{param_name}', parseFloat(values[0]));
-                const value = parseFloat(values[0]);
-                // Update the display text
-                document.getElementById('{component_id}_display').textContent = value.toFixed(2);
-                debouncedUpdateParameter('{param_name}', value);
-            }});
-        """
+    def extra_updates_from_parameter(
+        self, parameter: MultipleSelectionParameter
+    ) -> None:
+        """Extra updates from the parameter."""
+        # In a real implementation, this would update the options in the DOM
+        pass
 
 
-class IntegerComponent(SliderMixin, BaseWebComponent[IntegerParameter]):
+class IntegerComponent(BaseComponent[IntegerParameter]):
     """Component for integer parameters."""
 
-    def render_html(self) -> str:
+    def _create_html(self, parameter: IntegerParameter) -> str:
         return f"""
-            <div class="form-group">
-                <label for="{self.component_id}">{self.parameter.name}</label>
-                <div id="{self.component_id}" class="slider"></div>
-                <span id="{self.component_id}_display" class="value-display">{self.parameter.value}</span>
-            </div>
+        <div class="{self._style.container_class}">
+            <label for="{self._id}" class="{self._style.label_class}">{escape(parameter.name)}</label>
+            <input type="range" class="{self._style.input_class}" id="{self._id}"
+                   name="{parameter.name}" value="{parameter.value}"
+                   min="{parameter.min_value}" max="{parameter.max_value}"
+                   style="width: {self._style.width}; margin: {self._style.margin};"
+                   data-continuous="{str(self._continuous).lower()}">
+            <output for="{self._id}">{parameter.value}</output>
+        </div>
         """
 
-    def get_js_init(self) -> str:
-        return self._get_slider_js_init(self.component_id, self.parameter.name)
+    def matches_parameter(self, parameter: IntegerParameter) -> bool:
+        """Check if the component matches the parameter."""
+        return (
+            self.value == parameter.value
+            and self._get_min() == parameter.min_value
+            and self._get_max() == parameter.max_value
+        )
+
+    def _get_min(self) -> int:
+        """Get minimum value from the HTML."""
+        return 0  # Placeholder
+
+    def _get_max(self) -> int:
+        """Get maximum value from the HTML."""
+        return 100  # Placeholder
+
+    def extra_updates_from_parameter(self, parameter: IntegerParameter) -> None:
+        """Extra updates from the parameter."""
+        # In a real implementation, this would update min/max in the DOM
+        pass
 
 
-class FloatComponent(SliderMixin, BaseWebComponent[FloatParameter]):
+class FloatComponent(BaseComponent[FloatParameter]):
     """Component for float parameters."""
 
-    def render_html(self) -> str:
+    def _create_html(self, parameter: FloatParameter) -> str:
         return f"""
-            <div class="form-group">
-                <label for="{self.component_id}">{self.parameter.name}</label>
-                <div id="{self.component_id}" class="slider"></div>
-                <span id="{self.component_id}_display" class="value-display">{self.parameter.value:.2f}</span>
-            </div>
+        <div class="{self._style.container_class}">
+            <label for="{self._id}" class="{self._style.label_class}">{escape(parameter.name)}</label>
+            <input type="range" class="{self._style.input_class}" id="{self._id}"
+                   name="{parameter.name}" value="{parameter.value}"
+                   min="{parameter.min_value}" max="{parameter.max_value}" step="{parameter.step}"
+                   style="width: {self._style.width}; margin: {self._style.margin};"
+                   data-continuous="{str(self._continuous).lower()}">
+            <output for="{self._id}">{parameter.value}</output>
+        </div>
         """
 
-    def get_js_init(self) -> str:
-        return self._get_slider_js_init(self.component_id, self.parameter.name)
+    def matches_parameter(self, parameter: FloatParameter) -> bool:
+        """Check if the component matches the parameter."""
+        return (
+            self.value == parameter.value
+            and self._get_min() == parameter.min_value
+            and self._get_max() == parameter.max_value
+            and self._get_step() == parameter.step
+        )
+
+    def _get_min(self) -> float:
+        """Get minimum value from the HTML."""
+        return 0.0  # Placeholder
+
+    def _get_max(self) -> float:
+        """Get maximum value from the HTML."""
+        return 1.0  # Placeholder
+
+    def _get_step(self) -> float:
+        """Get step value from the HTML."""
+        return 0.1  # Placeholder
+
+    def extra_updates_from_parameter(self, parameter: FloatParameter) -> None:
+        """Extra updates from the parameter."""
+        # In a real implementation, this would update min/max/step in the DOM
+        pass
 
 
-class RangeSliderMixin:
-    """Shared functionality for range slider components."""
-
-    def _get_range_slider_js_init(self, component_id: str, param_name: str) -> str:
-        return f"""
-            noUiSlider.create(document.getElementById('{component_id}'), {{
-                start: {self._value_to_js(self.parameter.value)},
-                connect: true,
-                range: {{
-                    'min': {self.parameter.min_value},
-                    'max': {self.parameter.max_value}
-                }}
-            }}).on('change', (values) => {{
-                updateParameter('{param_name}', [
-                    parseFloat(values[0]), 
-                    parseFloat(values[1])
-                ]);
-            }});
-        """
-
-
-class IntegerRangeComponent(RangeSliderMixin, BaseWebComponent[IntegerRangeParameter]):
+class IntegerRangeComponent(BaseComponent[IntegerRangeParameter]):
     """Component for integer range parameters."""
 
-    def render_html(self) -> str:
-        low, high = self.parameter.value
+    def _create_html(self, parameter: IntegerRangeParameter) -> str:
+        low, high = parameter.value
         return f"""
-            <div class="form-group">
-                <label for="{self.component_id}">{self.parameter.name}</label>
-                <div id="{self.component_id}" class="range-slider"></div>
-                <span class="value-display">{low} - {high}</span>
+        <div class="{self._style.container_class}">
+            <label for="{self._id}_low" class="{self._style.label_class}">{escape(parameter.name)}</label>
+            <div class="d-flex align-items-center">
+                <input type="range" class="{self._style.input_class}" id="{self._id}_low"
+                       name="{parameter.name}_low" value="{low}"
+                       min="{parameter.min_value}" max="{parameter.max_value}"
+                       style="width: {self._style.width}; margin: {self._style.margin};"
+                       data-continuous="{str(self._continuous).lower()}">
+                <output for="{self._id}_low">{low}</output>
             </div>
+            <div class="d-flex align-items-center">
+                <input type="range" class="{self._style.input_class}" id="{self._id}_high"
+                       name="{parameter.name}_high" value="{high}"
+                       min="{parameter.min_value}" max="{parameter.max_value}"
+                       style="width: {self._style.width}; margin: {self._style.margin};"
+                       data-continuous="{str(self._continuous).lower()}">
+                <output for="{self._id}_high">{high}</output>
+            </div>
+        </div>
         """
 
-    def get_js_init(self) -> str:
-        return self._get_range_slider_js_init(self.component_id, self.parameter.name)
+    def matches_parameter(self, parameter: IntegerRangeParameter) -> bool:
+        """Check if the component matches the parameter."""
+        return (
+            self.value == parameter.value
+            and self._get_min() == parameter.min_value
+            and self._get_max() == parameter.max_value
+        )
+
+    def _get_min(self) -> int:
+        """Get minimum value from the HTML."""
+        return 0  # Placeholder
+
+    def _get_max(self) -> int:
+        """Get maximum value from the HTML."""
+        return 100  # Placeholder
+
+    def extra_updates_from_parameter(self, parameter: IntegerRangeParameter) -> None:
+        """Extra updates from the parameter."""
+        # In a real implementation, this would update min/max in the DOM
+        pass
 
 
-class FloatRangeComponent(RangeSliderMixin, BaseWebComponent[FloatRangeParameter]):
+class FloatRangeComponent(BaseComponent[FloatRangeParameter]):
     """Component for float range parameters."""
 
-    def render_html(self) -> str:
-        low, high = self.parameter.value
+    def _create_html(self, parameter: FloatRangeParameter) -> str:
+        low, high = parameter.value
         return f"""
-            <div class="form-group">
-                <label for="{self.component_id}">{self.parameter.name}</label>
-                <div id="{self.component_id}" class="range-slider"></div>
-                <span class="value-display">{low:.2f} - {high:.2f}</span>
+        <div class="{self._style.container_class}">
+            <label for="{self._id}_low" class="{self._style.label_class}">{escape(parameter.name)}</label>
+            <div class="d-flex align-items-center">
+                <input type="range" class="{self._style.input_class}" id="{self._id}_low"
+                       name="{parameter.name}_low" value="{low}"
+                       min="{parameter.min_value}" max="{parameter.max_value}" step="{parameter.step}"
+                       style="width: {self._style.width}; margin: {self._style.margin};"
+                       data-continuous="{str(self._continuous).lower()}">
+                <output for="{self._id}_low">{low}</output>
             </div>
+            <div class="d-flex align-items-center">
+                <input type="range" class="{self._style.input_class}" id="{self._id}_high"
+                       name="{parameter.name}_high" value="{high}"
+                       min="{parameter.min_value}" max="{parameter.max_value}" step="{parameter.step}"
+                       style="width: {self._style.width}; margin: {self._style.margin};"
+                       data-continuous="{str(self._continuous).lower()}">
+                <output for="{self._id}_high">{high}</output>
+            </div>
+        </div>
         """
 
-    def get_js_init(self) -> str:
-        return self._get_range_slider_js_init(self.component_id, self.parameter.name)
+    def matches_parameter(self, parameter: FloatRangeParameter) -> bool:
+        """Check if the component matches the parameter."""
+        return (
+            self.value == parameter.value
+            and self._get_min() == parameter.min_value
+            and self._get_max() == parameter.max_value
+            and self._get_step() == parameter.step
+        )
+
+    def _get_min(self) -> float:
+        """Get minimum value from the HTML."""
+        return 0.0  # Placeholder
+
+    def _get_max(self) -> float:
+        """Get maximum value from the HTML."""
+        return 1.0  # Placeholder
+
+    def _get_step(self) -> float:
+        """Get step value from the HTML."""
+        return 0.1  # Placeholder
+
+    def extra_updates_from_parameter(self, parameter: FloatRangeParameter) -> None:
+        """Extra updates from the parameter."""
+        # In a real implementation, this would update min/max/step in the DOM
+        pass
 
 
-class UnboundedIntegerComponent(BaseWebComponent[UnboundedIntegerParameter]):
+class UnboundedIntegerComponent(BaseComponent[UnboundedIntegerParameter]):
     """Component for unbounded integer parameters."""
 
-    def render_html(self) -> str:
-        min_attr = (
-            f'min="{self.parameter.min_value}"'
-            if self.parameter.min_value is not None
-            else ""
-        )
-        max_attr = (
-            f'max="{self.parameter.max_value}"'
-            if self.parameter.max_value is not None
-            else ""
-        )
-
+    def _create_html(self, parameter: UnboundedIntegerParameter) -> str:
         return f"""
-            <div class="form-group">
-                <label for="{self.component_id}">{self.parameter.name}</label>
-                <input type="number" 
-                       class="form-control" 
-                       id="{self.component_id}" 
-                       value="{self.parameter.value}"
-                       {min_attr}
-                       {max_attr}
-                       step="1">
-            </div>
-        """
-
-    def get_js_init(self) -> str:
-        return f"""
-            document.getElementById('{self.component_id}').addEventListener('change', (e) => {{
-                updateParameter('{self.parameter.name}', parseInt(e.target.value));
-            }});
+        <div class="{self._style.container_class}">
+            <label for="{self._id}" class="{self._style.label_class}">{escape(parameter.name)}</label>
+            <input type="number" class="{self._style.input_class}" id="{self._id}"
+                   name="{parameter.name}" value="{parameter.value}"
+                   style="width: {self._style.width}; margin: {self._style.margin};"
+                   data-continuous="{str(self._continuous).lower()}">
+        </div>
         """
 
 
-class UnboundedFloatComponent(BaseWebComponent[UnboundedFloatParameter]):
+class UnboundedFloatComponent(BaseComponent[UnboundedFloatParameter]):
     """Component for unbounded float parameters."""
 
-    def render_html(self) -> str:
-        min_attr = (
-            f'min="{self.parameter.min_value}"'
-            if self.parameter.min_value is not None
-            else ""
-        )
-        max_attr = (
-            f'max="{self.parameter.max_value}"'
-            if self.parameter.max_value is not None
-            else ""
-        )
-        step_attr = (
-            f'step="{self.parameter.step}"' if self.parameter.step is not None else ""
-        )
-
+    def _create_html(self, parameter: UnboundedFloatParameter) -> str:
+        step = parameter.step if parameter.step is not None else "any"
         return f"""
-            <div class="form-group">
-                <label for="{self.component_id}">{self.parameter.name}</label>
-                <input type="number" 
-                       class="form-control" 
-                       id="{self.component_id}" 
-                       value="{self.parameter.value}"
-                       {min_attr}
-                       {max_attr}
-                       {step_attr}>
-            </div>
+        <div class="{self._style.container_class}">
+            <label for="{self._id}" class="{self._style.label_class}">{escape(parameter.name)}</label>
+            <input type="number" class="{self._style.input_class}" id="{self._id}"
+                   name="{parameter.name}" value="{parameter.value}" step="{step}"
+                   style="width: {self._style.width}; margin: {self._style.margin};"
+                   data-continuous="{str(self._continuous).lower()}">
+        </div>
         """
 
-    def get_js_init(self) -> str:
-        return f"""
-            document.getElementById('{self.component_id}').addEventListener('change', (e) => {{
-                updateParameter('{self.parameter.name}', parseFloat(e.target.value));
-            }});
-        """
+    def matches_parameter(self, parameter: UnboundedFloatParameter) -> bool:
+        """Check if the component matches the parameter."""
+        return self.value == parameter.value and self._get_step() == parameter.step
+
+    def _get_step(self) -> Optional[float]:
+        """Get step value from the HTML."""
+        return None  # Placeholder
+
+    def extra_updates_from_parameter(self, parameter: UnboundedFloatParameter) -> None:
+        """Extra updates from the parameter."""
+        # In a real implementation, this would update step in the DOM
+        pass
 
 
-class ButtonComponent(BaseWebComponent[ButtonParameter]):
+class ButtonComponent(BaseComponent[ButtonAction]):
     """Component for button parameters."""
 
-    def render_html(self) -> str:
+    _is_action: bool = True
+
+    def _create_html(self, parameter: ButtonAction) -> str:
         return f"""
-            <div class="form-group">
-                <button type="button" 
-                        class="btn btn-primary" 
-                        id="{self.component_id}">
-                    {self.parameter.label}
-                </button>
-            </div>
+        <div class="{self._style.container_class}">
+            <button type="button" class="btn btn-primary" id="{self._id}"
+                    name="{parameter.name}"
+                    style="width: {self._style.width}; margin: {self._style.margin};">
+                {escape(parameter.label)}
+            </button>
+        </div>
         """
 
-    def get_js_init(self) -> str:
-        return f"""
-            document.getElementById('{self.component_id}').addEventListener('click', () => {{
-                buttonClick('{self.parameter.name}');
-            }});
-        """
+    def matches_parameter(self, parameter: ButtonAction) -> bool:
+        """Check if the component matches the parameter."""
+        return True  # Buttons don't have a value to match
+
+    def extra_updates_from_parameter(self, parameter: ButtonAction) -> None:
+        """Extra updates from the parameter."""
+        # In a real implementation, this would update the button label in the DOM
+        pass
 
 
-def create_web_component(
-    parameter: Parameter[Any], component_id: str
-) -> BaseWebComponent[Parameter[Any]]:
-    """Create and return the appropriate web component for the given parameter."""
-
+def create_component(
+    parameter: Union[Parameter[Any], ButtonAction],
+    continuous: bool = False,
+    style: Optional[ComponentStyle] = None,
+) -> BaseComponent[Union[Parameter[Any], ButtonAction]]:
+    """Create the appropriate component for a parameter."""
     component_map = {
         TextParameter: TextComponent,
         BooleanParameter: BooleanComponent,
@@ -422,76 +500,11 @@ def create_web_component(
         FloatRangeParameter: FloatRangeComponent,
         UnboundedIntegerParameter: UnboundedIntegerComponent,
         UnboundedFloatParameter: UnboundedFloatComponent,
-        ButtonParameter: ButtonComponent,
+        ButtonAction: ButtonComponent,
     }
 
-    component_class = component_map.get(type(parameter))
-    if component_class is None:
-        raise ValueError(
-            f"No component implementation for parameter type: {type(parameter)}"
-        )
+    for param_type, component_class in component_map.items():
+        if isinstance(parameter, param_type):
+            return component_class(parameter, continuous, style)
 
-    return component_class(parameter, component_id)
-
-
-class WebComponentCollection:
-    """
-    Manages a collection of web components for a viewer's parameters.
-
-    This class helps organize all the components needed for a viewer,
-    handling their creation, initialization, and updates.
-    """
-
-    def __init__(self):
-        self.components: Dict[str, BaseWebComponent] = {}
-
-    def add_component(self, name: str, parameter: Parameter[Any]) -> None:
-        """Add a new component for the given parameter."""
-        component_id = f"param_{name}"
-        self.components[name] = create_web_component(parameter, component_id)
-
-    def get_all_html(self) -> str:
-        """Get the combined HTML for all components."""
-        return "\n".join(comp.render_html() for comp in self.components.values())
-
-    def get_init_js(self) -> str:
-        """Get the combined initialization JavaScript for all components."""
-        return "\n".join(comp.get_js_init() for comp in self.components.values())
-
-    def get_update_js(self, name: str, value: Any) -> str:
-        """Get the JavaScript to update a specific component's value."""
-        if name not in self.components:
-            raise ValueError(f"No component found for parameter: {name}")
-        return self.components[name].get_js_update(value)
-
-    def get_required_css(self) -> List[str]:
-        """Get list of CSS files required by the components."""
-        return [
-            "https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.css",
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css",
-        ]
-
-    def get_required_js(self) -> List[str]:
-        """Get list of JavaScript files required by the components."""
-        return [
-            "https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.js",
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js",
-        ]
-
-    def get_custom_styles(self) -> str:
-        """Get custom CSS styles needed for the components."""
-        return """
-            .slider, .range-slider {
-                margin: 10px 0;
-            }
-            .value-display {
-                display: block;
-                text-align: center;
-                margin-top: 5px;
-                font-size: 0.9em;
-                color: #666;
-            }
-            .form-group {
-                margin-bottom: 1rem;
-            }
-        """
+    raise ValueError(f"No component available for parameter type: {type(parameter)}")

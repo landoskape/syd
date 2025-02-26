@@ -1,0 +1,82 @@
+/* General layout */
+html, body {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.viewer-container {
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Controls container */
+.controls-container {
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    overflow-y: auto;
+}
+
+.w-controls {
+    width: var(--controls-width);
+}
+
+/* Plot container */
+.plot-container {
+    background-color: white;
+    min-height: 300px;
+}
+
+.plot-container img {
+    max-width: var(--figure-width);
+    max-height: var(--figure-height);
+    object-fit: contain;
+}
+
+/* Form controls */
+.form-control {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+/* Range inputs */
+input[type="range"] {
+    width: 100%;
+}
+
+output {
+    margin-left: 0.5rem;
+}
+
+/* Multiple select */
+select[multiple] {
+    height: auto;
+    min-height: 100px;
+}
+
+/* Button styling */
+.btn-primary {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .viewer-container {
+        flex-direction: column !important;
+    }
+
+    .controls-container {
+        width: 100% !important;
+        max-height: 40vh;
+    }
+
+    .plot-container {
+        height: 60vh;
+    }
+} 

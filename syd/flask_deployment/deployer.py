@@ -1,133 +1,81 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+import warnings
+from functools import wraps
 from dataclasses import dataclass
-import threading
-from flask import Flask, render_template_string, jsonify, request
-import matplotlib
-
-matplotlib.use("Agg")  # Use Agg backend for thread safety
-import matplotlib.pyplot as plt
-import io
-import base64
 from contextlib import contextmanager
+from time import time
+import base64
+from io import BytesIO
+import threading
 import webbrowser
+from pathlib import Path
 
+from flask import Flask, render_template, jsonify, request, Response
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+from ..parameters import ParameterUpdateWarning
 from ..viewer import Viewer
-from .components import WebComponentCollection
+from .components import BaseComponent, ComponentStyle, create_component
 
-# Create a template constant to hold our HTML template
-PAGE_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Interactive Viewer</title>
-    {% for css in required_css %}
-    <link rel="stylesheet" href="{{ css }}">
-    {% endfor %}
-    <style>
-        {{ custom_styles | safe }}
-        .controls {
-            {% if config.is_horizontal %}
-            width: {{ config.controls_width_percent }}%;
-            float: left;
-            padding-right: 20px;
-            {% endif %}
-        }
-        .plot-container {
-            {% if config.is_horizontal %}
-            width: {{ 100 - config.controls_width_percent }}%;
-            float: left;
-            {% endif %}
-        }
-        #plot {
-            width: 100%;
-            height: auto;
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="controls">
-                {{ components_html | safe }}
-            </div>
-            <div class="plot-container">
-                <img id="plot" src="{{ initial_plot }}">
-            </div>
-        </div>
-    </div>
-    
-    {% for js in required_js %}
-    <script src="{{ js }}"></script>
-    {% endfor %}
-    
-    <script>
-        function updateParameter(name, value) {
-            fetch('/update_parameter', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({name, value})
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error(data.error);
-                    return;
-                }
-                // Update plot
-                document.getElementById('plot').src = data.plot;
-                // Apply any parameter updates
-                for (const [param, js] of Object.entries(data.updates)) {
-                    eval(js);
-                }
-            });
-        }
-        
-        function buttonClick(name) {
-            fetch('/button_click', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({name})
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error(data.error);
-                    return;
-                }
-                // Update plot
-                document.getElementById('plot').src = data.plot;
-                // Apply any parameter updates
-                for (const [param, js] of Object.entries(data.updates)) {
-                    eval(js);
-                }
-            });
-        }
-        
-        // Initialize components
-        {{ components_init | safe }}
-    </script>
-</body>
-</html>
-"""
+
+@contextmanager
+def _plot_context():
+    plt.ioff()
+    try:
+        yield
+    finally:
+        plt.ion()
+
+
+def get_backend_type():
+    """
+    Determines the current matplotlib backend type and returns relevant info
+    """
+    backend = mpl.get_backend().lower()
+    if "agg" in backend:
+        return "agg"
+    elif "inline" in backend:
+        return "inline"
+    else:
+        # Force Agg backend for Flask
+        mpl.use("Agg")
+        return "agg"
+
+
+def debounce(wait_time):
+    """
+    Decorator to prevent a function from being called more than once every wait_time seconds.
+    """
+
+    def decorator(fn):
+        last_called = [0.0]  # Using list to maintain state in closure
+
+        @wraps(fn)
+        def debounced(*args, **kwargs):
+            current_time = time()
+            if current_time - last_called[0] >= wait_time:
+                fn(*args, **kwargs)
+                last_called[0] = current_time
+
+        return debounced
+
+    return decorator
 
 
 @dataclass
-class FlaskLayoutConfig:
-    """Configuration for the viewer layout in Flask deployment."""
+class LayoutConfig:
+    """Configuration for the viewer layout."""
 
-    controls_position: str = "left"  # Options are: 'left', 'top'
+    controls_position: str = "left"  # Options are: 'left', 'top', 'right', 'bottom'
     figure_width: float = 8.0
     figure_height: float = 6.0
     controls_width_percent: int = 30
-    port: int = 5000
-    host: str = "localhost"
+    template_path: Optional[str] = None
+    static_path: Optional[str] = None
 
     def __post_init__(self):
-        valid_positions = ["left", "top"]
+        valid_positions = ["left", "top", "right", "bottom"]
         if self.controls_position not in valid_positions:
             raise ValueError(
                 f"Invalid controls position: {self.controls_position}. Must be one of {valid_positions}"
@@ -135,202 +83,220 @@ class FlaskLayoutConfig:
 
     @property
     def is_horizontal(self) -> bool:
-        return self.controls_position == "left"
+        return self.controls_position == "left" or self.controls_position == "right"
 
 
-class FlaskDeployment:
-    """A deployment system for Viewer using Flask to create a web interface."""
+class FlaskDeployer:
+    """
+    A deployment system for Viewer in Flask web applications.
+    Built around the parameter component system for clean separation of concerns.
+    """
 
     def __init__(
         self,
         viewer: Viewer,
-        layout_config: Optional[FlaskLayoutConfig] = None,
+        controls_position: str = "left",
+        figure_width: float = 8.0,
+        figure_height: float = 6.0,
+        controls_width_percent: int = 30,
+        continuous: bool = False,
+        suppress_warnings: bool = False,
+        host: str = "127.0.0.1",
+        port: int = 5000,
+        template_path: Optional[str] = None,
+        static_path: Optional[str] = None,
     ):
-        if not isinstance(viewer, Viewer):
-            raise TypeError(f"viewer must be an Viewer, got {type(viewer).__name__}")
-
         self.viewer = viewer
-        self.config = layout_config or FlaskLayoutConfig()
-        self.components = WebComponentCollection()
+        self.config = LayoutConfig(
+            controls_position=controls_position,
+            figure_width=figure_width,
+            figure_height=figure_height,
+            controls_width_percent=controls_width_percent,
+            template_path=template_path,
+            static_path=static_path,
+        )
+        self.continuous = continuous
+        self.suppress_warnings = suppress_warnings
+        self.host = host
+        self.port = port
 
-        # Initialize Flask app
-        self.app = Flask(__name__)
-        self._setup_routes()
+        # Initialize containers
+        self.backend_type = get_backend_type()
+        self.parameter_components: Dict[str, BaseComponent] = {}
+        self.app = self._create_flask_app()
 
-        # Store current figure
-        self._current_figure = None
-        self._figure_lock = threading.Lock()
+        # Flag to prevent circular updates
+        self._updating = False
 
-    def _setup_routes(self):
-        """Set up the Flask routes for the application."""
+        # Last figure to close when new figures are created
+        self._last_figure = None
 
-        @self.app.route("/")
+    def _create_flask_app(self) -> Flask:
+        """Create and configure the Flask application."""
+        template_path = self.config.template_path or str(
+            Path(__file__).parent / "templates"
+        )
+        static_path = self.config.static_path or str(Path(__file__).parent / "static")
+
+        app = Flask(__name__, template_folder=template_path, static_folder=static_path)
+
+        # Register routes
+        @app.route("/")
         def index():
-            return self._render_page()
+            # Generate initial plot
+            initial_plot = self._generate_plot()
+            if initial_plot is not None:
+                buffer = BytesIO()
+                initial_plot.savefig(buffer, format="png", bbox_inches="tight")
+                buffer.seek(0)
+                initial_plot_data = base64.b64encode(buffer.getvalue()).decode()
+            else:
+                initial_plot_data = ""
 
-        @self.app.route("/update_parameter", methods=["POST"])
-        def update_parameter():
-            data = request.json
-            name = data.get("name")
-            value = data.get("value")
-
-            print(f"Received parameter update: {name} = {value}")  # Debug log
-
-            if name not in self.viewer.parameters:
-                print(f"Parameter {name} not found in viewer parameters")  # Debug log
-                return jsonify({"error": f"Parameter {name} not found"}), 404
-
-            try:
-                print(f"Setting parameter value: {name} = {value}")  # Debug log
-                self.viewer.set_parameter_value(name, value)
-
-                # Update the plot with new parameter values
-                print("Updating plot with new parameters...")  # Debug log
-                self._update_plot()
-
-                updates = self._get_parameter_updates()
-                plot_data = self._get_current_plot_data()
-                # Debug log
-                print(f"Generated updates for parameters: {list(updates.keys())}")
-
-                return jsonify(
-                    {
-                        "success": True,
-                        "updates": updates,
-                        "plot": plot_data,
-                    }
-                )
-            except Exception as e:
-                print(f"Error updating parameter: {str(e)}")  # Debug log
-                return jsonify({"error": str(e)}), 400
-
-        @self.app.route("/button_click", methods=["POST"])
-        def button_click():
-            data = request.json
-            name = data.get("name")
-
-            print(f"Received button click: {name}")  # Debug log
-
-            if name not in self.viewer.parameters:
-                print(f"Button {name} not found in viewer parameters")  # Debug log
-                return jsonify({"error": f"Parameter {name} not found"}), 404
-
-            try:
-                parameter = self.viewer.parameters[name]
-                if hasattr(parameter, "callback"):
-                    print(f"Executing callback for button: {name}")  # Debug log
-                    parameter.callback(self.viewer.state)
-                else:
-                    print(f"No callback found for button: {name}")  # Debug log
-
-                # Update the plot after button click
-                print("Updating plot after button click...")  # Debug log
-                self._update_plot()
-
-                updates = self._get_parameter_updates()
-                plot_data = self._get_current_plot_data()
-                # Debug log
-                print(f"Generated updates for parameters: {list(updates.keys())}")
-
-                return jsonify(
-                    {
-                        "success": True,
-                        "updates": updates,
-                        "plot": plot_data,
-                    }
-                )
-            except Exception as e:
-                print(f"Error handling button click: {str(e)}")  # Debug log
-                return jsonify({"error": str(e)}), 400
-
-    def _create_components(self):
-        """Create web components for all parameters."""
-        for name, param in self.viewer.parameters.items():
-            self.components.add_component(name, param)
-
-    @contextmanager
-    def _plot_context(self):
-        """Context manager for thread-safe plotting."""
-        plt.ioff()
-        try:
-            yield
-        finally:
-            plt.ion()
-
-    def _update_plot(self) -> None:
-        """Update the plot with current state."""
-        state = self.viewer.state
-        print(f"Updating plot with state: {state}")  # Debug log
-
-        with self._plot_context(), self._figure_lock:
-            new_fig = self.viewer.plot(state)
-            plt.close(self._current_figure)  # Close old figure
-            self._current_figure = new_fig
-            print("Plot updated successfully")  # Debug log
-
-    def _get_current_plot_data(self) -> str:
-        """Get the current plot as a base64 encoded PNG."""
-        with self._figure_lock:
-            if self._current_figure is None:
-                return ""
-
-            buffer = io.BytesIO()
-            self._current_figure.savefig(
-                buffer,
-                format="png",
-                bbox_inches="tight",
-                dpi=300,
+            return render_template(
+                "viewer.html",
+                components=self._get_component_html(),
+                controls_position=self.config.controls_position,
+                controls_width=self.config.controls_width_percent,
+                figure_width=self.config.figure_width,
+                figure_height=self.config.figure_height,
+                continuous=self.continuous,
+                initial_plot=initial_plot_data,
             )
+
+        @app.route("/update/<name>", methods=["POST"])
+        def update_parameter(name: str):
+            if name not in self.viewer.parameters:
+                return jsonify({"error": f"Parameter {name} not found"}), 404
+
+            try:
+                value = request.json["value"]
+                self._handle_parameter_update(name, value)
+                return jsonify({"success": True})
+            except Exception as e:
+                return jsonify({"error": str(e)}), 400
+
+        @app.route("/state")
+        def get_state():
+            return jsonify(self.viewer.state)
+
+        @app.route("/plot")
+        def get_plot():
+            # Generate plot and convert to base64 PNG
+            figure = self._generate_plot()
+            if figure is None:
+                return jsonify({"error": "Failed to generate plot"}), 500
+
+            # Save plot to bytes buffer
+            buffer = BytesIO()
+            figure.savefig(buffer, format="png", bbox_inches="tight")
             buffer.seek(0)
-            image_png = buffer.getvalue()
-            buffer.close()
+            image_base64 = base64.b64encode(buffer.getvalue()).decode()
 
-            graphic = base64.b64encode(image_png).decode("utf-8")
-            return f"data:image/png;base64,{graphic}"
+            return jsonify({"image": image_base64})
 
-    def _get_parameter_updates(self) -> Dict[str, Any]:
-        """Get JavaScript updates for all parameters."""
-        updates = {}
-        state = self.viewer.state
-        for name, value in state.items():
-            # Skip button parameters since they don't have a meaningful value to update
-            if (
-                hasattr(self.viewer.parameters[name], "_is_button")
-                and self.viewer.parameters[name]._is_button
-            ):
-                continue
-            updates[name] = self.components.get_update_js(name, value)
-        return updates
+        return app
 
-    def _render_page(self) -> str:
-        """Render the complete HTML page."""
-        # Create initial plot
-        self._update_plot()
-
-        return render_template_string(
-            PAGE_TEMPLATE,
-            config=self.config,
-            components_html=self.components.get_all_html(),
-            components_init=self.components.get_init_js(),
-            initial_plot=self._get_current_plot_data(),
-            required_css=self.components.get_required_css(),
-            required_js=self.components.get_required_js(),
-            custom_styles=self.components.get_custom_styles(),
+    def _create_parameter_components(self) -> None:
+        """Create component instances for all parameters."""
+        style = ComponentStyle(
+            width="100%",
+            margin="10px 0",
+            description_width="auto",
         )
 
-    def deploy(self) -> None:
-        """Deploy the interactive viewer as a web application."""
-        with self.viewer._deploy_app():
-            # Create components
-            self._create_components()
+        for name, param in self.viewer.parameters.items():
+            component = create_component(
+                param,
+                continuous=self.continuous,
+                style=style,
+            )
+            self.parameter_components[name] = component
 
-            # Open browser
-            webbrowser.open(f"http://{self.config.host}:{self.config.port}")
+    def _get_component_html(self) -> List[str]:
+        """Get HTML for all components."""
+        if not self.parameter_components:
+            self._create_parameter_components()
+        return [comp.html for comp in self.parameter_components.values()]
+
+    @debounce(0.2)
+    def _handle_parameter_update(self, name: str, value: Any) -> None:
+        """Handle updates to parameter values."""
+        if self._updating:
+            print(
+                "Already updating -- there's a circular dependency!"
+                "This is probably caused by failing to disable callbacks for a parameter."
+                "It's a bug --- tell the developer on github issues please."
+            )
+            return
+
+        try:
+            self._updating = True
+
+            # Optionally suppress warnings during parameter updates
+            with warnings.catch_warnings():
+                if self.suppress_warnings:
+                    warnings.filterwarnings("ignore", category=ParameterUpdateWarning)
+
+                component = self.parameter_components[name]
+                if component._is_action:
+                    parameter = self.viewer.parameters[name]
+                    parameter.callback(self.viewer.state)
+                else:
+                    self.viewer.set_parameter_value(name, value)
+
+                # Update any components that changed due to dependencies
+                self._sync_components_with_state(exclude=name)
+
+        finally:
+            self._updating = False
+
+    def _sync_components_with_state(self, exclude: Optional[str] = None) -> None:
+        """Sync component values with viewer state."""
+        for name, parameter in self.viewer.parameters.items():
+            if name == exclude:
+                continue
+
+            component = self.parameter_components[name]
+            if not component.matches_parameter(parameter):
+                component.update_from_parameter(parameter)
+
+    def _generate_plot(self) -> Optional[plt.Figure]:
+        """Generate the current plot."""
+        try:
+            with _plot_context():
+                figure = self.viewer.plot(self.viewer.state)
+
+            # Close the last figure if it exists to keep matplotlib clean
+            if self._last_figure is not None:
+                plt.close(self._last_figure)
+
+            self._last_figure = figure
+            return figure
+        except Exception as e:
+            print(f"Error generating plot: {e}")
+            return None
+
+    def deploy(self, open_browser: bool = True) -> None:
+        """
+        Deploy the viewer as a Flask web application.
+
+        Parameters
+        ----------
+        open_browser : bool, optional
+            Whether to automatically open the browser when deploying (default: True)
+        """
+        with self.viewer._deploy_app():
+            if open_browser:
+                # Open browser in a separate thread to not block
+                threading.Timer(
+                    1.0, lambda: webbrowser.open(f"http://{self.host}:{self.port}")
+                ).start()
 
             # Start Flask app
             self.app.run(
-                host=self.config.host,
-                port=self.config.port,
+                host=self.host,
+                port=self.port,
                 debug=False,  # Debug mode doesn't work well with matplotlib
-                use_reloader=False,  # Prevent double startup
+                use_reloader=False,  # Reloader causes issues with matplotlib
             )

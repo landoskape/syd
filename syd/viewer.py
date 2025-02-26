@@ -242,14 +242,13 @@ class Viewer:
 
             deployer = NotebookDeployer(self, **kwargs)
             deployer.deploy()
-
             return self
+
         elif env == "plotly":
             from .plotly_deployment import PlotlyDeployer
 
             deployer = PlotlyDeployer(self, **kwargs)
             deployer.deploy(mode="server")
-
             return self
 
         elif env == "plotly-inline":
@@ -257,11 +256,17 @@ class Viewer:
 
             deployer = PlotlyDeployer(self, **kwargs)
             deployer.deploy(mode="notebook")
+            return self
 
+        elif env == "flask":
+            from .flask_deployment import FlaskDeployer
+
+            deployer = FlaskDeployer(self, **kwargs)
+            deployer.deploy()
             return self
         else:
             raise ValueError(
-                f"Unsupported environment: {env}, only 'notebook', 'plotly', and 'plotly-inline' are supported right now."
+                f"Unsupported environment: {env}, only 'notebook', 'plotly', 'plotly-inline', and 'flask' are supported right now."
             )
 
     @contextmanager
