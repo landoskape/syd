@@ -26,17 +26,15 @@ plot and then deploy it.
 This method will be called whenever the viewer is deployed or when a parameter is
 changed. Some notes: 
 
-- All plot methods have to take two arguments: ``viewer`` and ``state``. The 
-  viewer is the viewer object that you created in the previous step. The state is a 
-  dictionary that contains the current values of all the parameters in the viewer. Most
-  of the time you'll only ever need to use the state input. 
+- All plot methods have to take a single argument: ``state``. ``State`` is a 
+  dictionary that contains the current values of all the parameters in the viewer. 
 
 - The plot method should create and return a matplotlib figure. SYD will handle what to
   do with it - you just need to create it. Don't call ``plt.show()``!
 
 .. code-block:: python
 
-    def plot(viewer, state):
+    def plot(state):
         """Plot the waveform based on current parameters."""
         t = np.linspace(0, 2*np.pi, 1000)
         y = np.sin(state["frequency"] * t) * state["amplitude"]

@@ -19,7 +19,6 @@ from ..parameters import (
 )
 
 T = TypeVar("T", bound=Parameter[Any])
-# Component type var - more flexible than widgets since Plotly components vary
 C = TypeVar("C")
 
 
