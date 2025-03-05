@@ -115,8 +115,10 @@ class NotebookDeployer:
                 "The behavior of the viewer will almost definitely not work as expected."
             )
         self.parameter_widgets: Dict[str, BaseWidget] = {}
-        self.layout_widgets = self._create_layout_controls()
         self.plot_output = widgets.Output()
+
+        # Create layout for controls
+        self.layout_widgets = self._create_layout_controls()
 
         # Flag to prevent circular updates
         self._updating = False
@@ -139,9 +141,6 @@ class NotebookDeployer:
                 layout=widgets.Layout(width="95%"),
                 style={"description_width": "initial"},
             )
-            controls["controls_width"].observe(
-                self._handle_container_width_change, names="value"
-            )
 
         return controls
 
@@ -156,7 +155,7 @@ class NotebookDeployer:
             # Store in widget dict
             self.parameter_widgets[name] = widget
 
-    @debounce(0.2)
+    @debounce(0.1)
     def _handle_widget_engagement(self, name: str) -> None:
         """Handle engagement with an interactive widget."""
         if self._updating:
@@ -184,7 +183,7 @@ class NotebookDeployer:
                     self.viewer.set_parameter_value(name, widget.value)
 
                 # Update any widgets that changed due to dependencies
-                self._sync_widgets_with_state(exclude=name)
+                self._sync_widgets_with_state()
 
                 # Update the plot
                 self._update_plot()
@@ -228,12 +227,12 @@ class NotebookDeployer:
         with _plot_context():
             figure = self.viewer.plot(state)
 
-        self.plot_output.clear_output(wait=True)
-
         # Close the last figure if it exists to keep matplotlib clean
+        # (just moved this from after clear_output.... noting!)
         if self._last_figure is not None:
             plt.close(self._last_figure)
 
+        self.plot_output.clear_output(wait=True)
         with self.plot_output:
             if self.backend_type == "inline":
                 display(figure)
@@ -315,15 +314,17 @@ class NotebookDeployer:
     def deploy(self) -> None:
         """Deploy the interactive viewer with proper state management."""
         self.backend_type = get_backend_type()
-        with self.viewer._deploy_app():
-            plt.close("all")
 
-            # Create widgets
-            self._create_parameter_widgets()
+        # We used to use the deploy_app context, but notebook deployment works
+        # differently because it's asynchronous and this doesn't really behave
+        # as intended. (e.g. with self.viewer._deploy_app() ...)
 
-            # Create and display layout
-            self.layout = self._create_layout()
-            display(self.layout)
+        # Create widgets
+        self._create_parameter_widgets()
 
-            # Create initial plot
-            self._update_plot()
+        # Create and display layout
+        self.layout = self._create_layout()
+        display(self.layout)
+
+        # Create initial plot
+        self._update_plot()

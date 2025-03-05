@@ -462,7 +462,6 @@ class ButtonWidget(BaseWidget[ButtonAction, widgets.Button]):
             layout=widgets.Layout(width=width, margin=margin),
             style={"description_width": description_width},
         )
-        button.on_click(parameter.callback)
         return button
 
     def matches_parameter(self, parameter: ButtonAction) -> bool:
@@ -471,30 +470,28 @@ class ButtonWidget(BaseWidget[ButtonAction, widgets.Button]):
 
     def extra_updates_from_parameter(self, parameter: ButtonAction) -> None:
         """Extra updates from the parameter."""
+        # Callbacks are handled in the deployer, so the only relevant update is the label
         self._widget.description = parameter.label
-        # Update click handler
-        self._widget.on_click(parameter.callback, remove=True)  # Remove old handler
-        self._widget.on_click(parameter.callback)  # Add new handler
 
     def observe(self, callback: Callable) -> None:
         """Observe the widget and call the callback when the value changes."""
+        if self._callbacks:
+            raise ValueError("ButtonWidget already has a callback!")
         self._widget.on_click(callback)
-        self._callbacks.append(callback)
+        self._callbacks = callback
 
-    def unobserve(self, callback: Callable[[Any], None]) -> None:
+    def unobserve(self, callback: Callable) -> None:
         """Unobserve the widget and stop calling the callback when the value changes."""
-        self._widget.on_click(None)
-        self._callbacks.remove(callback)
+        self._widget.on_click(callback, remove=True)
+        self._callbacks = []
 
     def reenable_callbacks(self) -> None:
         """Reenable all callbacks from the widget."""
-        for callback in self._callbacks:
-            self._widget.on_click(callback)
+        self._widget.on_click(self._callbacks)
 
     def disable_callbacks(self) -> None:
         """Disable all callbacks from the widget."""
-        for callback in self._callbacks:
-            self._widget.on_click(None)
+        self._widget.on_click(self._callbacks, remove=True)
 
 
 def create_widget(

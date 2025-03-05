@@ -11,18 +11,18 @@ A package to help you share your data!
 
 Have you ever wanted to look through all your data really quickly interactively? Of course you have. Mo data mo problems, but only if you don't know what to do with it. And that starts with looking at your data. And that's why syd stands for show your data! 
 
-Syd is a system for creating a data viewing GUI that you can view on a web-browser. And guess what? Since it opens on a web browser, you can even open it on any other computer on your local network! For example, your PI. Gone are the days of single random examples that they make infinitely stubborn conclusions about. Now, you can look at all the examples, quickly and easily, on their computer. And that's why syd stands for share your data!
+Syd is a system for creating a data viewing GUI that you can view on a web-browser (feature coming soon, right now only in jupyter notebooks). And guess what? Since it opens on a web browser, you can even open it on any other computer on your local network! For example, your PI's computer. Gone are the days of single random examples that they make infinitely stubborn conclusions about. Now, you can look at all the examples, quickly and easily, on their computer. And that's why syd stands for share your data!
 
-Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This is great, because it means you only have to think about what you want to plot and what you want to be interactive, syd does the work to make an interface. There's some small overhead for learning how to prepare your data to work with syd, but we provide some templates to make it easy. You know what that means? That means you get to focus on _thinking_ about your data, rather than spending time writing code to look at it. And that's why syd stands for Science, Yes! Datum!
+Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This is great, because it means you only have to think about what you want to plot and which parameters you want to be interactive. Syd handles all the behind-the-scenes boilerplate code required to make an interface. You know what that means? It means you get to focus on _thinking_ about your data, rather than spending time writing code to look at it. And that's why syd stands for Science, Yes! Dayummmm!
 
 ## Installation
-
+It's easy, just use pip install. The dependencies are light so it should work in most environments.
 ```bash
 pip install syd
 ```
 
 ## Quick Start
-Right now the only way to use it is in a jupyter notebook. More deployments coming soon!
+Right now the only way to use it is in a jupyter notebook. More deployment options coming soon!
 This is an example of a sine wave viewer which is about as simple as it gets. 
 ```python
 # In a notebook! 
@@ -54,12 +54,6 @@ supporting methods for processing data and updating parameters that require more
 
 Full documentation is available at [shareyourdata.readthedocs.io](https://shareyourdata.readthedocs.io/).
 
-Key features:
-- Create interactive matplotlib visualizations with minimal code
-- Support for various parameter types (sliders, dropdowns, checkboxes, etc.)
-- Real-time updates as parameters change
-- Works in Jupyter notebooks and can be shared over local network
-
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
@@ -76,7 +70,7 @@ Contributions are welcome! Here's how you can help:
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request online
 
-Please make sure to update tests as appropriate and adhere to the existing coding style.
+Please make sure to update tests as appropriate and adhere to the existing coding style (black, line-length=88, other style guidelines not capture by black, generally following pep8 guidelines).
 
 
 ## To-Do List
@@ -89,8 +83,8 @@ Please make sure to update tests as appropriate and adhere to the existing codin
 - Think about whether there's alternatives to creating new figures each time...
 - Consider adding a step to the integer parameter...
 - Idea!
-  - Instead of requiring users to include fig=? ax=? arguments to their plot function, we can instead
-    make them optional and have the ``recycle_figure: bool = False`` flag be part of the deploy API. This 
-    way, an advanced users that wants snappy responsivity or complex figure management can do so, but
-    the default is for the user to generate a new figure object each time. Nice!
+  - We could make fig=?, ax=? arguments optional for the plot function and add a
+    "recycle_figure: bool = False" flag be part of the deploy API. This way, an
+    advanced user that wants snappy responsivity or complex figure management can
+    do so, but the default is for the user to generate a new figure object each time.
 - I've updated some rules for parameters -- need to make tests for empty options on selection / multiple selections

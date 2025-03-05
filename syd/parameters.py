@@ -548,7 +548,7 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
         """
         if not isinstance(options, (list, tuple)):
             raise TypeError(
-                f"Options for parameter {self.name} must be a list or tuple"
+                f"Options for parameter {self.name} must be a list or tuple, received {type(options)}"
             )
 
         if not options:
