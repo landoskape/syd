@@ -5,19 +5,19 @@ from syd.viewer import Viewer
 from syd.parameters import ParameterUpdateError
 
 
-def correct_arguments_positional(viewer, state):
+def correct_arguments_positional(state):
     return "correct"
 
 
-def correct_arguments_kwargs(viewer=None, state=None):
+def correct_arguments_kwargs(state=None):
     return "correct"
 
 
-def correct_arguments_kwargs_extra(viewer=None, state=None, **kwargs):
+def correct_arguments_kwargs_extra(state=None, **kwargs):
     return "correct"
 
 
-def correct_arguments_extra(viewer=None, state=None, extra=None):
+def correct_arguments_extra(state=None, extra=None):
     return "correct"
 
 
@@ -25,30 +25,23 @@ def no_arguments():
     return "external function with no arguments is not allowed"
 
 
-def one_argument(arg1):
-    return "external function with one argument is not allowed"
-
-
-def three_arguments(arg1, arg2, arg3):
+def two_arguments(arg1, arg2):
     return "external function with three arguments is not allowed"
 
 
-def one_kwarg(arg1, *, arg2):
-    return "external function with one kwarg is not allowed"
+def one_kwarg_no_default(arg1, *, arg2):
+    return "external function with positional and one kwarg only without a default value is not allowed"
 
 
 def two_kwargs(*, arg1, arg2):
     return "external function with multiple kwargs is not allowed"
 
 
-def one_positional_and_one_kwarg(arg1, *, arg2):
-    return "external function with one positional and one kwarg is not allowed"
-
-
 not_callable = "not callable"
 
-valid_lambda_function = lambda viewer, state: "correct"
+valid_lambda_function = lambda state: "correct"
 invalid_lambda_function = lambda: "incorrect"
+invalid_lambda_function_with_extra = lambda state, extra: "incorrect"
 
 
 class MockViewer(Viewer):
@@ -74,36 +67,40 @@ class MockViewer(Viewer):
         return "external function with one positional and one kwarg is not allowed"
 
     @staticmethod
-    def correct_arguments_positional_static(self, state):
+    def correct_arguments_positional_static(state):
         return "correct"
 
     @staticmethod
-    def correct_arguments_kwargs_static(self, state=None):
+    def correct_arguments_kwargs_static(state=None):
         return "correct"
 
     @staticmethod
-    def correct_arguments_extra_static(self, state=None, extra=None):
+    def correct_arguments_extra_static(state=None, extra=None):
         return "correct"
 
     @staticmethod
-    def one_argument_static(self):
-        return "external function with one argument is not allowed"
+    def no_argument_static():
+        return "static method with no arguments is not allowed"
 
     @staticmethod
-    def three_arguments_static(self, arg2, arg3):
-        return "external function with three arguments is not allowed"
+    def two_arguments_static(arg2, arg3):
+        return "static method with two arguments is not allowed"
 
     @staticmethod
     def one_positional_and_one_kwarg_static(self, *, arg2):
-        return "external function with one positional and one kwarg is not allowed"
+        return "static method with one positional and one kwarg is not allowed"
 
     @classmethod
-    def two_arguments_class(cls, viewer, state):
+    def two_arguments_class(cls, state):
         return "this is okay"
 
     @classmethod
-    def one_argument_class(cls, viewer):
+    def three_arguments_class(cls, state, extra):
         return "not two additional arguments"
+
+    @classmethod
+    def extra_kwarg_class(cls, state, extra=None):
+        return "this is okay"
 
 
 instance = MockViewer()
@@ -115,7 +112,6 @@ correct_kind_callable_pairs = {
     "correct_kwargs": ("external", correct_arguments_kwargs),
     "correct_kwargs_extra": ("external", correct_arguments_kwargs_extra),
     "correct_extra": ("external", correct_arguments_extra),
-    "correct_partial_three_args": ("external", partial(three_arguments, arg3="make_arg3_a_kwarg")),
     "correct_partial_extra": ("external", partial(correct_arguments_extra, extra="wrap extra in a partial")),
     "correct_lambda": ("external", valid_lambda_function),
     
@@ -129,48 +125,41 @@ correct_kind_callable_pairs = {
     "correct_bound_static_positional": ("bound", instance.correct_arguments_positional_static),
     "correct_bound_static_kwargs": ("bound", instance.correct_arguments_kwargs_static),
     "correct_bound_static_extra": ("bound", instance.correct_arguments_extra_static),
-    "correct_bound_static_partial_three": ("bound", partial(instance.three_arguments_static, arg3="make_arg3_a_kwarg")),
+    "correct_bound_static_partial_three": ("bound", partial(instance.two_arguments_static, arg3="make_arg3_a_kwarg")),
     "correct_bound_static_partial_extra": ("bound", partial(instance.correct_arguments_extra_static, extra="wrap extra in a partial")),
 
+    # Correct bound class methods
     "correct_bound_class": ("bound", instance.two_arguments_class),
+    "correct_bound_class_extra": ("bound", instance.extra_kwarg_class),
 
     # Use the external kind for these so we just use them directly from a distinct instance
-    "correct_bound_other": ("external", instance.three_arguments),
+    "correct_bound_other": ("external", instance.correct_arguments_positional),
 }
 
 incorrect_kind_callable_pairs = {
     # Incorrect external functions
     "incorrect_no_args": ("external", no_arguments),
-    "incorrect_one_arg": ("external", one_argument),
-    "incorrect_three_args": ("external", three_arguments),
-    "incorrect_one_kwarg": ("external", one_kwarg),
+    "incorrect_two_args": ("external", two_arguments),
+    "incorrect_one_kwarg_no_default": ("external", one_kwarg_no_default),
     "incorrect_two_kwargs": ("external", two_kwargs),
-    "incorrect_pos_and_kwarg": ("external", one_positional_and_one_kwarg),
-    "incorrect_partial_state": ("external", partial(correct_arguments_positional, state="wrap state in a partial")),
-    "incorrect_partial_viewer": ("external", partial(correct_arguments_positional, viewer="wrap viewer in a partial")),
-    "incorrect_partial_extra": ("external", partial(correct_arguments_kwargs, extra="wrap extra in a partial")),
-    "incorrect_partial_arg1": ("external", partial(three_arguments, arg1="wrap arg1 in a partial... making all others kwarg-only")),
     "incorrect_not_callable": ("external", not_callable),
     "incorrect_lambda": ("external", invalid_lambda_function),
+    "incorrect_lambda_with_extra": ("external", invalid_lambda_function_with_extra),
     
     # Incorrect bound methods
     "incorrect_bound_one": ("bound", instance.one_argument),
+    "incorrect_bound_three": ("bound", instance.three_arguments),
     "incorrect_bound_pos_kwarg": ("bound", instance.one_positional_and_one_kwarg),
-    "incorrect_bound_static_one": ("bound", instance.one_argument_static),
-    "incorrect_bound_static_three": ("bound", instance.three_arguments_static),
+    "incorrect_bound_static_one": ("bound", instance.no_argument_static),
+    "incorrect_bound_static_three": ("bound", instance.two_arguments_static),
     "incorrect_bound_static_pos_kwarg": ("bound", instance.one_positional_and_one_kwarg_static),
     "incorrect_bound_partial_state": ("bound", partial(instance.correct_arguments_positional, state="wrap state in a partial")),
-    "incorrect_bound_partial_viewer": ("bound", partial(instance.correct_arguments_positional, viewer="wrap viewer in a partial")),
-    "incorrect_bound_partial_extra": ("bound", partial(instance.correct_arguments_kwargs, extra="wrap extra in a partial")),
+    "incorrect_bound_partial_extra": ("bound", partial(instance.correct_arguments_kwargs, state="wrap extra in a partial")),
     "incorrect_bound_partial_arg1": ("bound", partial(instance.three_arguments, arg1="wrap arg1 in a partial... making all others kwarg-only")),
     "incorrect_bound_static_partial_state": ("bound", partial(instance.correct_arguments_positional_static, state="wrap state in a partial")),
-    "incorrect_bound_static_partial_viewer": ("bound", partial(instance.correct_arguments_positional_static, viewer="wrap viewer in a partial")),
     "incorrect_bound_static_partial_extra": ("bound", partial(instance.correct_arguments_kwargs_static, extra="wrap extra in a partial")),
-    "incorrect_bound_static_partial_arg1": ("bound", partial(instance.three_arguments_static, arg1="wrap arg1 in a partial... making all others kwarg-only")),
-    "incorrect_bound_class": ("bound", instance.one_argument_class),
-
     # Use the external kind for these so we just use them directly from a distinct instance
-    "incorrect_bound_other_static": ("external", instance.three_arguments_static),
+    "incorrect_bound_other_static": ("external", instance.two_arguments_static),
 }
 # fmt: on
 
@@ -227,7 +216,7 @@ def test_make_viewer_with_invalid_callable(name, kind, func):
         except Exception as e:
             pass  # Exception expected
         else:
-            msg = f"make_viewer should not accept a function with two positional arguments: {e}"
+            msg = f"make_viewer should accept a function with one positional argument"
             assert False, msg
 
         try:
@@ -247,7 +236,7 @@ def test_make_viewer_with_invalid_callable(name, kind, func):
     ],
 )
 def test_set_plot_with_invalid_callable(name, kind, func):
-    def valid_plot(viewer, state):
+    def valid_plot(state):
         return "correct"
 
     if kind == "external":
@@ -260,7 +249,7 @@ def test_set_plot_with_invalid_callable(name, kind, func):
     except Exception as e:
         pass  # Exception expected
     else:
-        msg = f"make_viewer should not accept a function with two positional arguments: {e}"
+        msg = f"make_viewer accepts a function with a single positional argument"
         assert False, msg
 
     msg = "Setting plot with an invalid function should not overwrite existing plot"
@@ -291,7 +280,7 @@ def test_add_button_with_valid_callback(name, kind, func):
             viewer = instance
         viewer.add_button(param_name, label="test", callback=func)
     except Exception as e:
-        msg = f"add_button should accept a function with two positional arguments: {e}"
+        msg = f"add_button accepts a function with a single positional argument"
         assert False, msg
 
     msg = "Button callback should be called with just one positional argument and self implied"
@@ -320,7 +309,7 @@ def test_add_button_with_invalid_callback(name, kind, func):
         msg = "add_button should not accept invalid callback functions"
         assert False, msg
 
-    def good_callback(viewer, state):
+    def good_callback(state):
         return "good_callback"
 
     # Test that update_button maintains existing valid callback when given invalid one
@@ -347,7 +336,7 @@ def test_on_change_with_valid_callback(name, kind, func):
         viewer.add_text(param_name, value="test")
         viewer.on_change(param_name, func)
     except Exception as e:
-        msg = f"on_change should accept a function with two positional arguments: {e}"
+        msg = f"on_change accepts a function with a single positional argument"
         assert False, msg
 
     try:

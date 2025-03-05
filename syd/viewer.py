@@ -311,6 +311,7 @@ class Viewer:
         # Look through params and check if there are two positional parameters (including self for bound methods)
         bound_method = get_self(func) is self
         positional_params = 0
+        required_kwargs = 0
         optional_part = ""
         for param in params:
             # Check if it's a positional parameter. If it is, count it.
@@ -333,10 +334,12 @@ class Viewer:
                 optional_part += (
                     f", {param.name}={param.default!r}"
                     if param.default != inspect.Parameter.empty
-                    else f", {param.name}"
+                    else f""
                 )
+                if param.default == inspect.Parameter.empty:
+                    required_kwargs += 1
 
-        if positional_params != 1:
+        if positional_params != 1 or required_kwargs != 0:
             func_name = get_name(func)
             if isinstance(func, partial):
                 func_sig = str(inspect.signature(func))

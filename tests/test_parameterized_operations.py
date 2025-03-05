@@ -10,7 +10,7 @@ from syd.parameters import (
 from tests.support import MockViewer, check_no_change
 
 
-def valid_button_callback(viewer, state):
+def valid_button_callback(state):
     pass
 
 
