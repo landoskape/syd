@@ -19,7 +19,8 @@ from ..parameters import (
 )
 
 T = TypeVar("T", bound=Parameter[Any])
-C = TypeVar("C")  # Component type var - more flexible than widgets since Plotly components vary
+# Component type var - more flexible than widgets since Plotly components vary
+C = TypeVar("C")
 
 
 class BaseComponent(Generic[T, C], ABC):
@@ -44,9 +45,7 @@ class BaseComponent(Generic[T, C], ABC):
         label_width: str = "initial",
     ):
         self._id = component_id
-        self._component = self._create_component(
-            parameter, width, margin, label_width
-        )
+        self._component = self._create_component(parameter, width, margin, label_width)
         self._callbacks = []
 
     @abstractmethod
@@ -93,17 +92,19 @@ class TextComponent(BaseComponent[TextParameter, Any]):
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            html.Div(
-                dcc.Input(
-                    id=self._id,
-                    type="text",
-                    value=parameter.value,
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                html.Div(
+                    dcc.Input(
+                        id=self._id,
+                        type="text",
+                        value=parameter.value,
+                    ),
+                    style={"width": width, "margin": margin},
                 ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+            ]
+        )
 
 
 class BooleanComponent(BaseComponent[BooleanParameter, Any]):
@@ -116,16 +117,18 @@ class BooleanComponent(BaseComponent[BooleanParameter, Any]):
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Div(
-                dcc.Checklist(
-                    id=self._id,
-                    options=[{"label": parameter.name, "value": "checked"}],
-                    value=["checked"] if parameter.value else [],
-                ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+        return html.Div(
+            [
+                html.Div(
+                    dcc.Checklist(
+                        id=self._id,
+                        options=[{"label": parameter.name, "value": "checked"}],
+                        value=["checked"] if parameter.value else [],
+                    ),
+                    style={"width": width, "margin": margin},
+                )
+            ]
+        )
 
 
 class SelectionComponent(BaseComponent[SelectionParameter, Any]):
@@ -138,21 +141,27 @@ class SelectionComponent(BaseComponent[SelectionParameter, Any]):
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            html.Div(
-                dcc.Dropdown(
-                    id=self._id,
-                    options=[{"label": opt, "value": opt} for opt in parameter.options],
-                    value=parameter.value,
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                html.Div(
+                    dcc.Dropdown(
+                        id=self._id,
+                        options=[
+                            {"label": opt, "value": opt} for opt in parameter.options
+                        ],
+                        value=parameter.value,
+                    ),
+                    style={"width": width, "margin": margin},
                 ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+            ]
+        )
 
     def matches_parameter(self, parameter: SelectionParameter) -> bool:
         """Check if the component matches the parameter."""
-        current_options = [opt["value"] for opt in self._component.children[1].children.options]
+        current_options = [
+            opt["value"] for opt in self._component.children[1].children.options
+        ]
         return current_options == parameter.options
 
     def extra_updates_from_parameter(self, parameter: SelectionParameter) -> None:
@@ -172,25 +181,33 @@ class MultipleSelectionComponent(BaseComponent[MultipleSelectionParameter, Any])
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            html.Div(
-                dcc.Dropdown(
-                    id=self._id,
-                    options=[{"label": opt, "value": opt} for opt in parameter.options],
-                    value=parameter.value,
-                    multi=True,
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                html.Div(
+                    dcc.Dropdown(
+                        id=self._id,
+                        options=[
+                            {"label": opt, "value": opt} for opt in parameter.options
+                        ],
+                        value=parameter.value,
+                        multi=True,
+                    ),
+                    style={"width": width, "margin": margin},
                 ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+            ]
+        )
 
     def matches_parameter(self, parameter: MultipleSelectionParameter) -> bool:
         """Check if the component matches the parameter."""
-        current_options = [opt["value"] for opt in self._component.children[1].children.options]
+        current_options = [
+            opt["value"] for opt in self._component.children[1].children.options
+        ]
         return current_options == parameter.options
 
-    def extra_updates_from_parameter(self, parameter: MultipleSelectionParameter) -> None:
+    def extra_updates_from_parameter(
+        self, parameter: MultipleSelectionParameter
+    ) -> None:
         """Extra updates from the parameter."""
         self._component.children[1].children.options = [
             {"label": opt, "value": opt} for opt in parameter.options
@@ -207,18 +224,23 @@ class SliderComponent(BaseComponent[Union[IntegerParameter, FloatParameter], Any
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            dcc.Slider(
-                id=self._id,
-                min=parameter.min_value,
-                max=parameter.max_value,
-                value=parameter.value,
-                step=getattr(parameter, 'step', 1),
-                marks={i: str(i) for i in range(parameter.min_value, parameter.max_value + 1)},
-                style={"width": width, "margin": margin}
-            )
-        ])
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                dcc.Slider(
+                    id=self._id,
+                    min=parameter.min_value,
+                    max=parameter.max_value,
+                    value=parameter.value,
+                    step=getattr(parameter, "step", 1),
+                    marks={
+                        i: str(i)
+                        for i in range(parameter.min_value, parameter.max_value + 1)
+                    },
+                    style={"width": width, "margin": margin},
+                ),
+            ]
+        )
 
 
 class IntegerComponent(BaseComponent[IntegerParameter, Any]):
@@ -231,20 +253,25 @@ class IntegerComponent(BaseComponent[IntegerParameter, Any]):
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            html.Div(
-                dcc.Slider(
-                    id=self._id,
-                    min=parameter.min_value,
-                    max=parameter.max_value,
-                    value=parameter.value,
-                    step=1,
-                    marks={i: str(i) for i in range(parameter.min_value, parameter.max_value + 1)},
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                html.Div(
+                    dcc.Slider(
+                        id=self._id,
+                        min=parameter.min_value,
+                        max=parameter.max_value,
+                        value=parameter.value,
+                        step=1,
+                        marks={
+                            i: str(i)
+                            for i in range(parameter.min_value, parameter.max_value + 1)
+                        },
+                    ),
+                    style={"width": width, "margin": margin},
                 ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+            ]
+        )
 
 
 class FloatComponent(BaseComponent[FloatParameter, Any]):
@@ -257,23 +284,32 @@ class FloatComponent(BaseComponent[FloatParameter, Any]):
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            html.Div(
-                dcc.Slider(
-                    id=self._id,
-                    min=parameter.min_value,
-                    max=parameter.max_value,
-                    value=parameter.value,
-                    step=parameter.step,
-                    marks={i: str(i) for i in range(int(parameter.min_value), int(parameter.max_value) + 1)},
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                html.Div(
+                    dcc.Slider(
+                        id=self._id,
+                        min=parameter.min_value,
+                        max=parameter.max_value,
+                        value=parameter.value,
+                        step=parameter.step,
+                        marks={
+                            i: str(i)
+                            for i in range(
+                                int(parameter.min_value), int(parameter.max_value) + 1
+                            )
+                        },
+                    ),
+                    style={"width": width, "margin": margin},
                 ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+            ]
+        )
 
 
-class RangeSliderComponent(BaseComponent[Union[IntegerRangeParameter, FloatRangeParameter], Any]):
+class RangeSliderComponent(
+    BaseComponent[Union[IntegerRangeParameter, FloatRangeParameter], Any]
+):
     """Base component for range sliders."""
 
     def _create_component(
@@ -283,18 +319,23 @@ class RangeSliderComponent(BaseComponent[Union[IntegerRangeParameter, FloatRange
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            dcc.RangeSlider(
-                id=self._id,
-                min=parameter.min_value,
-                max=parameter.max_value,
-                value=parameter.value,
-                step=getattr(parameter, 'step', 1),
-                marks={i: str(i) for i in range(parameter.min_value, parameter.max_value + 1)},
-                style={"width": width, "margin": margin}
-            )
-        ])
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                dcc.RangeSlider(
+                    id=self._id,
+                    min=parameter.min_value,
+                    max=parameter.max_value,
+                    value=parameter.value,
+                    step=getattr(parameter, "step", 1),
+                    marks={
+                        i: str(i)
+                        for i in range(parameter.min_value, parameter.max_value + 1)
+                    },
+                    style={"width": width, "margin": margin},
+                ),
+            ]
+        )
 
 
 class IntegerRangeComponent(BaseComponent[IntegerRangeParameter, Any]):
@@ -307,20 +348,25 @@ class IntegerRangeComponent(BaseComponent[IntegerRangeParameter, Any]):
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            html.Div(
-                dcc.RangeSlider(
-                    id=self._id,
-                    min=parameter.min_value,
-                    max=parameter.max_value,
-                    value=parameter.value,
-                    step=1,
-                    marks={i: str(i) for i in range(parameter.min_value, parameter.max_value + 1)},
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                html.Div(
+                    dcc.RangeSlider(
+                        id=self._id,
+                        min=parameter.min_value,
+                        max=parameter.max_value,
+                        value=parameter.value,
+                        step=1,
+                        marks={
+                            i: str(i)
+                            for i in range(parameter.min_value, parameter.max_value + 1)
+                        },
+                    ),
+                    style={"width": width, "margin": margin},
                 ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+            ]
+        )
 
 
 class FloatRangeComponent(BaseComponent[FloatRangeParameter, Any]):
@@ -333,20 +379,27 @@ class FloatRangeComponent(BaseComponent[FloatRangeParameter, Any]):
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            html.Div(
-                dcc.RangeSlider(
-                    id=self._id,
-                    min=parameter.min_value,
-                    max=parameter.max_value,
-                    value=parameter.value,
-                    step=parameter.step,
-                    marks={i: str(i) for i in range(int(parameter.min_value), int(parameter.max_value) + 1)},
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                html.Div(
+                    dcc.RangeSlider(
+                        id=self._id,
+                        min=parameter.min_value,
+                        max=parameter.max_value,
+                        value=parameter.value,
+                        step=parameter.step,
+                        marks={
+                            i: str(i)
+                            for i in range(
+                                int(parameter.min_value), int(parameter.max_value) + 1
+                            )
+                        },
+                    ),
+                    style={"width": width, "margin": margin},
                 ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+            ]
+        )
 
 
 class UnboundedIntegerComponent(BaseComponent[UnboundedIntegerParameter, Any]):
@@ -359,18 +412,20 @@ class UnboundedIntegerComponent(BaseComponent[UnboundedIntegerParameter, Any]):
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            html.Div(
-                dcc.Input(
-                    id=self._id,
-                    type="number",
-                    value=parameter.value,
-                    step=1,
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                html.Div(
+                    dcc.Input(
+                        id=self._id,
+                        type="number",
+                        value=parameter.value,
+                        step=1,
+                    ),
+                    style={"width": width, "margin": margin},
                 ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+            ]
+        )
 
 
 class UnboundedFloatComponent(BaseComponent[UnboundedFloatParameter, Any]):
@@ -383,18 +438,20 @@ class UnboundedFloatComponent(BaseComponent[UnboundedFloatParameter, Any]):
         margin: str = "3px 0px",
         label_width: str = "initial",
     ) -> Any:
-        return html.Div([
-            html.Label(parameter.name, style={"width": label_width}),
-            html.Div(
-                dcc.Input(
-                    id=self._id,
-                    type="number",
-                    value=parameter.value,
-                    step=parameter.step,
+        return html.Div(
+            [
+                html.Label(parameter.name, style={"width": label_width}),
+                html.Div(
+                    dcc.Input(
+                        id=self._id,
+                        type="number",
+                        value=parameter.value,
+                        step=parameter.step,
+                    ),
+                    style={"width": width, "margin": margin},
                 ),
-                style={"width": width, "margin": margin}
-            )
-        ])
+            ]
+        )
 
 
 class ButtonComponent(BaseComponent[ButtonAction, Any]):
@@ -414,7 +471,7 @@ class ButtonComponent(BaseComponent[ButtonAction, Any]):
                 parameter.label,
                 id=self._id,
             ),
-            style={"width": width, "margin": margin}
+            style={"width": width, "margin": margin},
         )
 
 
