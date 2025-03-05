@@ -187,7 +187,11 @@ class Viewer:
         >>> viewer.state
         {'x': 1.0, 'label': 'data'}
         """
-        return {name: param.value for name, param in self.parameters.items()}
+        return {
+            name: param.value
+            for name, param in self.parameters.items()
+            if not param._is_action
+        }
 
     def plot(self, state: Dict[str, Any]) -> Figure:
         """Create and return a matplotlib figure.
@@ -913,16 +917,19 @@ class Viewer:
         label : str
             Text to display on the button
         callback : callable
-            Function to call when the button is clicked (takes no arguments)
+            Function to call when the button is clicked (takes state as a single argument)
 
         Examples
         --------
-        >>> def reset_plot():
+        >>> def reset_plot(state):
         ...     print("Resetting plot...")
         >>> viewer.add_button('reset', label='Reset Plot', callback=reset_plot)
+
+        >>> def print_plot_info(state):
+        ...     print(f"Current plot info: {state['plot_info']}")
+        >>> viewer.add_button('print_info', label='Print Plot Info', callback=print_plot_info)
         """
         try:
-
             callback = self._prepare_function(
                 callback,
                 context="Setting button callback:",
@@ -1372,10 +1379,10 @@ class Viewer:
 
         Examples
         --------
-        >>> def new_callback():
+        >>> def new_callback(state):
         ...     print("New action...")
         >>> viewer.update_button('reset',
-        ...                     label='Clear Plot',
+        ...                     label='New Action!',
         ...                     callback=new_callback)
         """
         updates = {}
