@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "syd"
-version = "0.1.6"
+dynamic = ["version"]
 authors = [
     {name = "Andrew Landau", email = "andrew+tyler+landau+getridofthisanddtheplusses@gmail.com"},
 ]
@@ -48,6 +48,9 @@ Homepage = "https://github.com/landoskape/syd"
 include = [
     "syd",
 ]
+
+[tool.hatch.version]
+path = "syd/__init__.py"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
