@@ -1,78 +1,59 @@
-from typing import Dict, Any, Optional, List
-import warnings
-from functools import wraps
+"""
+Flask deployer for Syd Viewer objects.
+
+This module provides tools to deploy Syd viewers as Flask web applications.
+"""
+
+import os
+import json
+import logging
+from typing import Dict, Any, Optional, List, Union, Callable, Type
 from dataclasses import dataclass
 from contextlib import contextmanager
-from time import time
-import base64
-from io import BytesIO
-import threading
-import webbrowser
-from pathlib import Path
-
-from flask import Flask, render_template, jsonify, request, Response
-import matplotlib as mpl
+import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+import io
+import numpy as np
 
-from ..parameters import ParameterUpdateWarning
+from flask import (
+    Flask,
+    send_file,
+    request,
+    make_response,
+    jsonify,
+    render_template,
+    url_for,
+)
+from werkzeug.serving import run_simple
+
 from ..viewer import Viewer
-from .components import BaseComponent, ComponentStyle, create_component
-
-
-@contextmanager
-def _plot_context():
-    plt.ioff()
-    try:
-        yield
-    finally:
-        plt.ion()
-
-
-def get_backend_type():
-    """
-    Determines the current matplotlib backend type and returns relevant info
-    """
-    backend = mpl.get_backend().lower()
-    if "agg" in backend:
-        return "agg"
-    elif "inline" in backend:
-        return "inline"
-    else:
-        # Force Agg backend for Flask
-        mpl.use("Agg")
-        return "agg"
-
-
-def debounce(wait_time):
-    """
-    Decorator to prevent a function from being called more than once every wait_time seconds.
-    """
-
-    def decorator(fn):
-        last_called = [0.0]  # Using list to maintain state in closure
-
-        @wraps(fn)
-        def debounced(*args, **kwargs):
-            current_time = time()
-            if current_time - last_called[0] >= wait_time:
-                fn(*args, **kwargs)
-                last_called[0] = current_time
-
-        return debounced
-
-    return decorator
+from ..parameters import (
+    Parameter,
+    TextParameter,
+    BooleanParameter,
+    SelectionParameter,
+    MultipleSelectionParameter,
+    IntegerParameter,
+    FloatParameter,
+    IntegerRangeParameter,
+    FloatRangeParameter,
+    UnboundedIntegerParameter,
+    UnboundedFloatParameter,
+    ButtonAction,
+    ParameterType,
+    ActionType,
+)
 
 
 @dataclass
-class LayoutConfig:
-    """Configuration for the viewer layout."""
+class FlaskLayoutConfig:
+    """Configuration for the Flask viewer layout."""
 
     controls_position: str = "left"  # Options are: 'left', 'top', 'right', 'bottom'
     figure_width: float = 8.0
     figure_height: float = 6.0
     controls_width_percent: int = 30
-    template_path: Optional[str] = None
-    static_path: Optional[str] = None
 
     def __post_init__(self):
         valid_positions = ["left", "top", "right", "bottom"]
@@ -88,8 +69,8 @@ class LayoutConfig:
 
 class FlaskDeployer:
     """
-    A deployment system for Viewer in Flask web applications.
-    Built around the parameter component system for clean separation of concerns.
+    A deployment system for Viewer as a Flask web application.
+    Creates a Flask app with routes for the UI, data API, and plot generation.
     """
 
     def __init__(
@@ -99,204 +80,356 @@ class FlaskDeployer:
         figure_width: float = 8.0,
         figure_height: float = 6.0,
         controls_width_percent: int = 30,
-        continuous: bool = False,
-        suppress_warnings: bool = False,
-        host: str = "127.0.0.1",
-        port: int = 5000,
-        template_path: Optional[str] = None,
-        static_path: Optional[str] = None,
+        static_folder: Optional[str] = None,
+        template_folder: Optional[str] = None,
+        debug: bool = False,
     ):
+        """
+        Initialize the Flask deployer.
+
+        Parameters
+        ----------
+        viewer : Viewer
+            The viewer to deploy
+        controls_position : str, optional
+            Position of the controls ('left', 'top', 'right', 'bottom')
+        figure_width : float, optional
+            Width of the figure in inches
+        figure_height : float, optional
+            Height of the figure in inches
+        controls_width_percent : int, optional
+            Width of the controls as a percentage of the total width
+        static_folder : str, optional
+            Custom path to static files
+        template_folder : str, optional
+            Custom path to template files
+        debug : bool, optional
+            Whether to enable debug mode
+        """
         self.viewer = viewer
-        self.config = LayoutConfig(
+        self.config = FlaskLayoutConfig(
             controls_position=controls_position,
             figure_width=figure_width,
             figure_height=figure_height,
             controls_width_percent=controls_width_percent,
-            template_path=template_path,
-            static_path=static_path,
         )
-        self.continuous = continuous
-        self.suppress_warnings = suppress_warnings
-        self.host = host
-        self.port = port
+        self.debug = debug
 
-        # Initialize containers
-        self.backend_type = get_backend_type()
-        self.parameter_components: Dict[str, BaseComponent] = {}
-        self.app = self._create_flask_app()
+        # Use default folders if not specified
+        package_dir = os.path.dirname(os.path.abspath(__file__))
+        self.static_folder = static_folder or os.path.join(package_dir, "static")
+        self.template_folder = template_folder or os.path.join(package_dir, "templates")
 
-        # Flag to prevent circular updates
-        self._updating = False
+        # Create Flask app
+        self.app = self.create_app()
 
-        # Last figure to close when new figures are created
-        self._last_figure = None
+    def create_app(self) -> Flask:
+        """
+        Create and configure the Flask application.
 
-    def _create_flask_app(self) -> Flask:
-        """Create and configure the Flask application."""
-        template_path = self.config.template_path or str(
-            Path(__file__).parent / "templates"
+        Returns
+        -------
+        Flask
+            The configured Flask application
+        """
+        app = Flask(
+            __name__,
+            static_folder=self.static_folder,
+            template_folder=self.template_folder,
         )
-        static_path = self.config.static_path or str(Path(__file__).parent / "static")
 
-        app = Flask(__name__, template_folder=template_path, static_folder=static_path)
+        # Configure logging
+        if not self.debug:
+            log = logging.getLogger("werkzeug")
+            log.setLevel(logging.ERROR)
 
-        # Register routes
+        # Define routes
+
         @app.route("/")
-        def index():
-            # Generate initial plot
-            initial_plot = self._generate_plot()
-            if initial_plot is not None:
-                buffer = BytesIO()
-                initial_plot.savefig(buffer, format="png", bbox_inches="tight")
-                buffer.seek(0)
-                initial_plot_data = base64.b64encode(buffer.getvalue()).decode()
-            else:
-                initial_plot_data = ""
+        def home():
+            """Render the main page."""
+            return render_template("index.html", config=self.config)
 
-            return render_template(
-                "viewer.html",
-                components=self._get_component_html(),
-                controls_position=self.config.controls_position,
-                controls_width=self.config.controls_width_percent,
-                figure_width=self.config.figure_width,
-                figure_height=self.config.figure_height,
-                continuous=self.continuous,
-                initial_plot=initial_plot_data,
-            )
+        @app.route("/init-data")
+        def init_data():
+            """Provide initial parameter information."""
+            param_info = {}
 
-        @app.route("/update/<name>", methods=["POST"])
-        def update_parameter(name: str):
-            if name not in self.viewer.parameters:
-                return jsonify({"error": f"Parameter {name} not found"}), 404
+            for name, param in self.viewer.parameters.items():
+                param_info[name] = self._get_parameter_info(param)
 
-            try:
-                value = request.json["value"]
-                self._handle_parameter_update(name, value)
-                return jsonify({"success": True})
-            except Exception as e:
-                return jsonify({"error": str(e)}), 400
-
-        @app.route("/state")
-        def get_state():
-            return jsonify(self.viewer.state)
+            return jsonify({"params": param_info})
 
         @app.route("/plot")
-        def get_plot():
-            # Generate plot and convert to base64 PNG
-            figure = self._generate_plot()
-            if figure is None:
-                return jsonify({"error": "Failed to generate plot"}), 500
+        def plot():
+            """Generate and return a plot based on the current state."""
+            try:
+                # Get parameters from request
+                state = self._parse_request_args(request.args)
 
-            # Save plot to bytes buffer
-            buffer = BytesIO()
-            figure.savefig(buffer, format="png", bbox_inches="tight")
-            buffer.seek(0)
-            image_base64 = base64.b64encode(buffer.getvalue()).decode()
+                # Update viewer state
+                for name, value in state.items():
+                    if name in self.viewer.parameters:
+                        self.viewer.parameters[name].value = value
 
-            return jsonify({"image": image_base64})
+                # Get the plot from the viewer
+                with _plot_context():
+                    fig = self.viewer.plot(self.viewer.state)
+
+                # Save the plot to a buffer
+                buf = io.BytesIO()
+                fig.savefig(buf, format="png", bbox_inches="tight", dpi=100)
+                buf.seek(0)
+                plt.close(fig)
+
+                # Return the image
+                response = make_response(send_file(buf, mimetype="image/png"))
+                response.headers["Cache-Control"] = "no-cache"
+                return response
+
+            except Exception as e:
+                app.logger.error(f"Error: {str(e)}")
+                return f"Error generating plot: {str(e)}", 500
+
+        @app.route("/update-param", methods=["POST"])
+        def update_param():
+            """Update a parameter and run its callbacks."""
+            try:
+                data = request.get_json()
+                name = data.get("name")
+                value = data.get("value")
+
+                if name not in self.viewer.parameters:
+                    return jsonify({"error": f"Parameter {name} not found"}), 404
+
+                # Parse value based on parameter type
+                parsed_value = self._parse_parameter_value(name, value)
+                self.viewer.parameters[name].value = parsed_value
+
+                # Run callbacks
+                self.viewer.perform_callbacks(name)
+
+                # Return updated state
+                return jsonify({"success": True, "state": self.viewer.state})
+
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
 
         return app
 
-    def _create_parameter_components(self) -> None:
-        """Create component instances for all parameters."""
-        style = ComponentStyle(
-            width="100%",
-            margin="10px 0",
-            description_width="auto",
-        )
-
-        for name, param in self.viewer.parameters.items():
-            component = create_component(
-                param,
-                continuous=self.continuous,
-                style=style,
-            )
-            self.parameter_components[name] = component
-
-    def _get_component_html(self) -> List[str]:
-        """Get HTML for all components."""
-        if not self.parameter_components:
-            self._create_parameter_components()
-        return [comp.html for comp in self.parameter_components.values()]
-
-    @debounce(0.2)
-    def _handle_parameter_update(self, name: str, value: Any) -> None:
-        """Handle updates to parameter values."""
-        if self._updating:
-            print(
-                "Already updating -- there's a circular dependency!"
-                "This is probably caused by failing to disable callbacks for a parameter."
-                "It's a bug --- tell the developer on github issues please."
-            )
-            return
-
-        try:
-            self._updating = True
-
-            # Optionally suppress warnings during parameter updates
-            with warnings.catch_warnings():
-                if self.suppress_warnings:
-                    warnings.filterwarnings("ignore", category=ParameterUpdateWarning)
-
-                component = self.parameter_components[name]
-                if component._is_action:
-                    parameter = self.viewer.parameters[name]
-                    parameter.callback(self.viewer.state)
-                else:
-                    self.viewer.set_parameter_value(name, value)
-
-                # Update any components that changed due to dependencies
-                self._sync_components_with_state(exclude=name)
-
-        finally:
-            self._updating = False
-
-    def _sync_components_with_state(self, exclude: Optional[str] = None) -> None:
-        """Sync component values with viewer state."""
-        for name, parameter in self.viewer.parameters.items():
-            if name == exclude:
-                continue
-
-            component = self.parameter_components[name]
-            if not component.matches_parameter(parameter):
-                component.update_from_parameter(parameter)
-
-    def _generate_plot(self) -> Optional[plt.Figure]:
-        """Generate the current plot."""
-        try:
-            with _plot_context():
-                figure = self.viewer.plot(self.viewer.state)
-
-            # Close the last figure if it exists to keep matplotlib clean
-            if self._last_figure is not None:
-                plt.close(self._last_figure)
-
-            self._last_figure = figure
-            return figure
-        except Exception as e:
-            print(f"Error generating plot: {e}")
-            return None
-
-    def deploy(self, open_browser: bool = True) -> None:
+    def _get_parameter_info(self, param: Parameter) -> Dict[str, Any]:
         """
-        Deploy the viewer as a Flask web application.
+        Convert a Parameter object to a dictionary of information for the frontend.
 
         Parameters
         ----------
-        open_browser : bool, optional
-            Whether to automatically open the browser when deploying (default: True)
-        """
-        with self.viewer._deploy_app():
-            if open_browser:
-                # Open browser in a separate thread to not block
-                threading.Timer(
-                    1.0, lambda: webbrowser.open(f"http://{self.host}:{self.port}")
-                ).start()
+        param : Parameter
+            The parameter to convert
 
-            # Start Flask app
-            self.app.run(
-                host=self.host,
-                port=self.port,
-                debug=False,  # Debug mode doesn't work well with matplotlib
-                use_reloader=False,  # Reloader causes issues with matplotlib
-            )
+        Returns
+        -------
+        Dict[str, Any]
+            Parameter information for the frontend
+        """
+        if isinstance(param, TextParameter):
+            return {"type": "text", "value": param.value}
+        elif isinstance(param, BooleanParameter):
+            return {"type": "boolean", "value": param.value}
+        elif isinstance(param, SelectionParameter):
+            return {"type": "selection", "value": param.value, "options": param.options}
+        elif isinstance(param, MultipleSelectionParameter):
+            return {
+                "type": "multiple-selection",
+                "value": param.value,
+                "options": param.options,
+            }
+        elif isinstance(param, IntegerParameter):
+            return {
+                "type": "integer",
+                "value": param.value,
+                "min": param.min_value,
+                "max": param.max_value,
+                "step": 1,
+            }
+        elif isinstance(param, FloatParameter):
+            return {
+                "type": "float",
+                "value": param.value,
+                "min": param.min_value,
+                "max": param.max_value,
+                "step": param.step,
+            }
+        elif isinstance(param, IntegerRangeParameter):
+            return {
+                "type": "integer-range",
+                "value": param.value,
+                "min": param.min_value,
+                "max": param.max_value,
+                "step": 1,
+            }
+        elif isinstance(param, FloatRangeParameter):
+            return {
+                "type": "float-range",
+                "value": param.value,
+                "min": param.min_value,
+                "max": param.max_value,
+                "step": param.step,
+            }
+        elif isinstance(param, UnboundedIntegerParameter):
+            return {"type": "unbounded-integer", "value": param.value}
+        elif isinstance(param, UnboundedFloatParameter):
+            return {"type": "unbounded-float", "value": param.value, "step": param.step}
+        elif isinstance(param, ButtonAction):
+            return {"type": "button", "label": param.label}
+        else:
+            return {"type": "unknown", "value": str(param.value)}
+
+    def _parse_request_args(self, args) -> Dict[str, Any]:
+        """
+        Parse request arguments into appropriate Python types based on parameter types.
+
+        Parameters
+        ----------
+        args : MultiDict
+            Request arguments
+
+        Returns
+        -------
+        Dict[str, Any]
+            Parsed parameters
+        """
+        result = {}
+
+        for name, value in args.items():
+            # Skip if parameter doesn't exist
+            if name not in self.viewer.parameters:
+                continue
+
+            result[name] = self._parse_parameter_value(name, value)
+
+        return result
+
+    def _parse_parameter_value(self, name: str, value: Any) -> Any:
+        """
+        Parse a parameter value based on its type.
+
+        Parameters
+        ----------
+        name : str
+            Parameter name
+        value : Any
+            Raw value
+
+        Returns
+        -------
+        Any
+            Parsed value
+        """
+        param = self.viewer.parameters[name]
+
+        if isinstance(param, TextParameter):
+            return str(value)
+        elif isinstance(param, BooleanParameter):
+            return value.lower() == "true" if isinstance(value, str) else bool(value)
+        elif isinstance(param, (IntegerParameter, UnboundedIntegerParameter)):
+            return int(value)
+        elif isinstance(param, (FloatParameter, UnboundedFloatParameter)):
+            return float(value)
+        elif isinstance(param, (IntegerRangeParameter, FloatRangeParameter)):
+            # Parse JSON array for range parameters
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError:
+                    raise ValueError(f"Invalid range format: {value}")
+            return value
+        elif isinstance(param, MultipleSelectionParameter):
+            # Parse JSON array for multiple selection
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError:
+                    return [value] if value else []
+            return value
+        else:
+            return value
+
+    def run(self, host: str = "127.0.0.1", port: int = 5000, **kwargs):
+        """
+        Run the Flask application server.
+
+        Parameters
+        ----------
+        host : str, optional
+            Host to run the server on
+        port : int, optional
+            Port to run the server on
+        **kwargs
+            Additional arguments to pass to app.run()
+        """
+        run_simple(host, port, self.app, use_reloader=self.debug, **kwargs)
+
+
+@contextmanager
+def _plot_context():
+    """Context manager for creating matplotlib plots."""
+    try:
+        fig = plt.figure()
+        yield fig
+    finally:
+        plt.close(fig)
+
+
+def deploy_flask(
+    viewer: Viewer,
+    host: str = "127.0.0.1",
+    port: int = 5000,
+    controls_position: str = "left",
+    figure_width: float = 8.0,
+    figure_height: float = 6.0,
+    controls_width_percent: int = 30,
+    debug: bool = False,
+    **kwargs,
+):
+    """
+    Deploy a Viewer as a Flask web application.
+
+    Parameters
+    ----------
+    viewer : Viewer
+        The viewer to deploy
+    host : str, optional
+        Host to run the server on
+    port : int, optional
+        Port to run the server on
+    controls_position : str, optional
+        Position of the controls ('left', 'top', 'right', 'bottom')
+    figure_width : float, optional
+        Width of the figure in inches
+    figure_height : float, optional
+        Height of the figure in inches
+    controls_width_percent : int, optional
+        Width of the controls as a percentage of the total width
+    debug : bool, optional
+        Whether to enable debug mode
+    **kwargs
+        Additional arguments to pass to app.run()
+
+    Returns
+    -------
+    FlaskDeployer
+        The deployer instance
+    """
+    deployer = FlaskDeployer(
+        viewer,
+        controls_position=controls_position,
+        figure_width=figure_width,
+        figure_height=figure_height,
+        controls_width_percent=controls_width_percent,
+        debug=debug,
+    )
+
+    print(f"Interactive plot server running on http://{host}:{port}")
+    deployer.run(host=host, port=port, **kwargs)
+
+    return deployer

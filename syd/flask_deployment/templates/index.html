@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Syd Viewer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="viewer-container" data-controls-position="{{ config.controls_position }}">
+        <div class="controls-container" data-width-percent="{{ config.controls_width_percent }}"
+             {% if config.is_horizontal %}style="width: {{ config.controls_width_percent }}%;"{% else %}style="height: {{ config.controls_width_percent }}%;"{% endif %}>
+            <div id="controls-container">
+                <!-- Controls will be dynamically generated via JavaScript -->
+            </div>
+        </div>
+        
+        <div class="plot-container"
+             {% if config.is_horizontal %}style="width: calc(100% - {{ config.controls_width_percent }}%);"{% else %}style="height: calc(100% - {{ config.controls_width_percent }}%);"{% endif %}>
+            <img id="plot-image" width="100%" height="100%">
+        </div>
+    </div>
+    
+    <!-- Store config as data attributes for JS to access -->
+    <div id="viewer-config" 
+         data-figure-width="{{ config.figure_width }}"
+         data-figure-height="{{ config.figure_height }}"
+         data-controls-position="{{ config.controls_position }}"
+         data-controls-width-percent="{{ config.controls_width_percent }}"
+         style="display:none;"></div>
+         
+    <script src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+</body>
+</html> 
