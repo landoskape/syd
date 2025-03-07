@@ -10,11 +10,16 @@ import logging
 from typing import Dict, Any, Optional, List, Union, Callable, Type
 from dataclasses import dataclass
 from contextlib import contextmanager
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import io
 import numpy as np
+import time
+from functools import wraps
+import webbrowser
+import threading
+
 
 from flask import (
     Flask,
@@ -44,6 +49,30 @@ from ..parameters import (
     ParameterType,
     ActionType,
 )
+
+mpl.use("Agg")
+
+
+def debounce(wait_time=0.1):
+    """
+    Decorator to debounce function calls.
+    Prevents a function from being called too frequently.
+    """
+
+    def decorator(fn):
+        last_call_time = [0]
+
+        @wraps(fn)
+        def debounced(*args, **kwargs):
+            current_time = time.time()
+            if current_time - last_call_time[0] > wait_time:
+                last_call_time[0] = current_time
+                return fn(*args, **kwargs)
+            return None
+
+        return debounced
+
+    return decorator
 
 
 @dataclass
@@ -119,6 +148,9 @@ class FlaskDeployer:
         package_dir = os.path.dirname(os.path.abspath(__file__))
         self.static_folder = static_folder or os.path.join(package_dir, "static")
         self.template_folder = template_folder or os.path.join(package_dir, "templates")
+
+        # State tracking
+        self.in_callbacks = False
 
         # Create Flask app
         self.app = self.create_app()
@@ -198,24 +230,81 @@ class FlaskDeployer:
                 data = request.get_json()
                 name = data.get("name")
                 value = data.get("value")
+                is_action = data.get("action", False)
 
                 if name not in self.viewer.parameters:
                     return jsonify({"error": f"Parameter {name} not found"}), 404
 
-                # Parse value based on parameter type
-                parsed_value = self._parse_parameter_value(name, value)
-                self.viewer.parameters[name].value = parsed_value
+                # Handle the parameter update or action
+                if is_action:
+                    # For button actions, run the callback
+                    self._handle_action(name)
+                else:
+                    # For normal parameters, update value and run callbacks
+                    parsed_value = self._parse_parameter_value(name, value)
+                    self._handle_parameter_update(name, parsed_value)
 
-                # Run callbacks
-                self.viewer.perform_callbacks(name)
-
-                # Return updated state
+                # Return the updated state
                 return jsonify({"success": True, "state": self.viewer.state})
 
             except Exception as e:
+                app.logger.error(f"Error updating parameter: {str(e)}")
                 return jsonify({"error": str(e)}), 500
 
         return app
+
+    @debounce(0.1)
+    def _handle_parameter_update(self, name: str, value: Any) -> None:
+        """
+        Handle a parameter update, including running callbacks.
+
+        Parameters
+        ----------
+        name : str
+            The name of the parameter to update
+        value : Any
+            The new value for the parameter
+        """
+        # Prevent recursive callback cycles
+        if self.in_callbacks:
+            return
+
+        try:
+            # Update the parameter value
+            self.viewer.parameters[name].value = value
+
+            # Run callbacks for this parameter
+            self.in_callbacks = True
+
+            # The viewer's perform_callbacks method will automatically
+            # pass the state dictionary to the callbacks
+            self.viewer.perform_callbacks(name)
+        finally:
+            self.in_callbacks = False
+
+    def _handle_action(self, name: str) -> None:
+        """
+        Handle a button action by executing its callback.
+
+        Parameters
+        ----------
+        name : str
+            The name of the button parameter
+        """
+        # Prevent recursive callback cycles
+        if self.in_callbacks:
+            return
+
+        try:
+            # Execute the button callback
+            param = self.viewer.parameters[name]
+            if isinstance(param, ButtonAction) and param.callback:
+                self.in_callbacks = True
+
+                # Pass the current state to the callback
+                param.callback(self.viewer.state)
+        finally:
+            self.in_callbacks = False
 
     def _get_parameter_info(self, param: Parameter) -> Dict[str, Any]:
         """
@@ -280,7 +369,7 @@ class FlaskDeployer:
         elif isinstance(param, UnboundedFloatParameter):
             return {"type": "unbounded-float", "value": param.value, "step": param.step}
         elif isinstance(param, ButtonAction):
-            return {"type": "button", "label": param.label}
+            return {"type": "button", "label": param.label, "is_action": True}
         else:
             return {"type": "unknown", "value": str(param.value)}
 
@@ -389,6 +478,7 @@ def deploy_flask(
     figure_height: float = 6.0,
     controls_width_percent: int = 30,
     debug: bool = False,
+    open_browser: bool = True,
     **kwargs,
 ):
     """
@@ -412,6 +502,8 @@ def deploy_flask(
         Width of the controls as a percentage of the total width
     debug : bool, optional
         Whether to enable debug mode
+    open_browser : bool, optional
+        Whether to open the browser automatically
     **kwargs
         Additional arguments to pass to app.run()
 
@@ -428,6 +520,18 @@ def deploy_flask(
         controls_width_percent=controls_width_percent,
         debug=debug,
     )
+
+    url = f"http://{host}:{port}"
+    print(f"Interactive plot server running on {url}")
+
+    if open_browser:
+        # Open browser in a separate thread after a small delay
+        # to ensure the server has started
+        def open_browser_tab():
+            time.sleep(1.0)  # Short delay to allow server to start
+            webbrowser.open(url)
+
+        threading.Thread(target=open_browser_tab).start()
 
     print(f"Interactive plot server running on http://{host}:{port}")
     deployer.run(host=host, port=port, **kwargs)

@@ -15,6 +15,9 @@ const config = {
     controlsWidthPercent: parseInt(document.getElementById('viewer-config').dataset.controlsWidthPercent || 30)
 };
 
+// Track whether we're currently in an update operation
+let isUpdating = false;
+
 // Initialize the viewer
 document.addEventListener('DOMContentLoaded', function() {
     // Fetch initial parameter information from server
@@ -73,6 +76,7 @@ function createControlGroup(name, param) {
     // Create control group div
     const controlGroup = document.createElement('div');
     controlGroup.className = 'control-group';
+    controlGroup.id = `control-group-${name}`;
     
     // Add label
     const label = document.createElement('span');
@@ -528,6 +532,9 @@ function createButtonControl(name, param) {
     button.textContent = param.label || name;
     
     button.addEventListener('click', function() {
+        // Show button as active
+        button.classList.add('active');
+        
         // Send action to the server
         fetch('/update-param', {
             method: 'POST',
@@ -542,14 +549,21 @@ function createButtonControl(name, param) {
         })
         .then(response => response.json())
         .then(data => {
+            // Remove active class
+            button.classList.remove('active');
+            
             if (data.error) {
                 console.error('Error:', data.error);
             } else {
                 // Update state with any changes from callbacks
                 updateStateFromServer(data.state);
+                // Update plot if needed
+                updatePlot();
             }
         })
         .catch(error => {
+            // Remove active class
+            button.classList.remove('active');
             console.error('Error:', error);
         });
     });
@@ -561,6 +575,11 @@ function createButtonControl(name, param) {
  * Update a parameter value and send to server
  */
 function updateParameter(name, value) {
+    // Prevent recursive updates
+    if (isUpdating) {
+        return;
+    }
+    
     // Update local state
     state[name] = value;
     
@@ -595,12 +614,20 @@ function updateParameter(name, value) {
  * Update local state from server response
  */
 function updateStateFromServer(serverState) {
-    // Update any parameters that changed due to callbacks
-    for (const [name, value] of Object.entries(serverState)) {
-        if (JSON.stringify(state[name]) !== JSON.stringify(value)) {
-            state[name] = value;
-            updateControlValue(name, value);
+    // Set updating flag to prevent recursive updates
+    isUpdating = true;
+    
+    try {
+        // Update any parameters that changed due to callbacks
+        for (const [name, value] of Object.entries(serverState)) {
+            if (JSON.stringify(state[name]) !== JSON.stringify(value)) {
+                state[name] = value;
+                updateControlValue(name, value);
+            }
         }
+    } finally {
+        // Clear updating flag
+        isUpdating = false;
     }
 }
 
