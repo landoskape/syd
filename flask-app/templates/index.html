@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sine Wave Visualizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Sine Wave Visualizer</h1>
+    
+    <div class="controls">
+        <div class="control-group">
+            <span class="control-label">Frequency:</span>
+            <input type="range" id="frequency-slider" min="0.1" max="10" step="0.1" value="1.0">
+            <input type="number" id="frequency-input" min="0.1" step="0.1" value="1.0">
+        </div>
+        
+        <div class="control-group">
+            <span class="control-label">Amplitude:</span>
+            <input type="range" id="amplitude-slider" min="0.1" max="5" step="0.1" value="1.0">
+            <input type="number" id="amplitude-input" min="0.1" step="0.1" value="1.0">
+        </div>
+        
+        <div class="control-group">
+            <span class="control-label">Offset:</span>
+            <input type="range" id="offset-slider" min="-5" max="5" step="0.1" value="0.0">
+            <input type="number" id="offset-input" step="0.1" value="0.0">
+        </div>
+        
+        <div class="control-group">
+            <span class="control-label">Color:</span>
+            <input type="color" id="color-input" value="#FF0000">
+        </div>
+    </div>
+    
+    <div class="plot-container">
+        <img id="plot-image" width="100%">
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+</body>
+</html> 
