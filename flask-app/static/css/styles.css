@@ -52,12 +52,18 @@ input[type="number"] {
     border-radius: 4px;
 }
 
-input[type="color"] {
-    width: 60px;
-    height: 40px;
-    border: none;
+.color-dropdown {
+    flex-grow: 1;
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
     border-radius: 4px;
+    background-color: white;
     cursor: pointer;
+}
+
+.color-dropdown option {
+    padding: 8px;
 }
 
 .plot-container {

@@ -16,6 +16,18 @@ fetch('/init-data')
         state.offset = data.default_offset;
         state.color = data.default_color;
         
+        // Populate color dropdown with options
+        const colorSelect = document.getElementById('color-select');
+        data.color_options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value;
+            optionElement.textContent = option.name;
+            colorSelect.appendChild(optionElement);
+        });
+        
+        // Set the default selected color
+        colorSelect.value = state.color;
+        
         // Update UI elements with default values
         document.getElementById('frequency-slider').value = state.frequency;
         document.getElementById('frequency-input').value = state.frequency;
@@ -23,7 +35,6 @@ fetch('/init-data')
         document.getElementById('amplitude-input').value = state.amplitude;
         document.getElementById('offset-slider').value = state.offset;
         document.getElementById('offset-input').value = state.offset;
-        document.getElementById('color-input').value = state.color;
         
         // Generate initial plot
         updatePlot();
@@ -86,8 +97,8 @@ document.getElementById('offset-input').addEventListener('change', function() {
     }
 });
 
-// Event listener for color control
-document.getElementById('color-input').addEventListener('change', function() {
+// Event listener for color dropdown
+document.getElementById('color-select').addEventListener('change', function() {
     state.color = this.value;
     updatePlot();
 }); 
