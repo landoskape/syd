@@ -14,7 +14,7 @@ h1 {
 
 .controls {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 20px;
     margin: 20px 0;
 }
@@ -34,6 +34,7 @@ h1 {
     font-weight: bold;
     min-width: 100px;
     color: #444;
+    text-transform: capitalize;
 }
 
 input[type="range"] {
@@ -52,7 +53,7 @@ input[type="number"] {
     border-radius: 4px;
 }
 
-.color-dropdown {
+select {
     flex-grow: 1;
     padding: 8px;
     font-size: 16px;
@@ -62,8 +63,35 @@ input[type="number"] {
     cursor: pointer;
 }
 
+.color-dropdown {
+    min-width: 150px;
+}
+
 .color-dropdown option {
     padding: 8px;
+}
+
+/* Multiple selection styling */
+.multiple-select {
+    min-width: 200px;
+    min-height: 100px;
+    padding: 8px;
+}
+
+.multiple-select option {
+    padding: 6px;
+}
+
+.multiple-select option:checked {
+    background-color: #e6f7ff;
+    font-weight: bold;
+}
+
+.helper-text {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
 }
 
 .plot-container {
@@ -79,4 +107,73 @@ input[type="number"] {
     margin: 0 auto;
     max-width: 100%;
     height: auto;
+}
+
+/* Range parameter styling */
+.range-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-grow: 1;
+}
+
+.range-input {
+    width: 60px;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.range-slider-container {
+    position: relative;
+    height: 30px;
+    flex-grow: 1;
+}
+
+.range-slider {
+    position: absolute;
+    width: 100%;
+    height: 5px;
+    background: transparent;
+    outline: none;
+    pointer-events: none;
+}
+
+.range-slider::-webkit-slider-thumb {
+    pointer-events: auto;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    border: 1px solid #2980b9;
+}
+
+.range-slider::-moz-range-thumb {
+    pointer-events: auto;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    border: 1px solid #2980b9;
+}
+
+/* Style for the min slider (lower) */
+.min-slider {
+    z-index: 1;
+}
+
+/* Style for the max slider (upper) */
+.max-slider {
+    z-index: 2;
+}
+
+.range-display {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
 } 

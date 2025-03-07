@@ -12,4 +12,4 @@ if __name__ == "__main__":
     port = 5000
     print(f"Interactive plot server running on http://{local_ip}:{port}")
     app = create_app()
-    app.run(host=local_ip, port=port)
+    app.run(debug=True, host=local_ip, port=port)
