@@ -7,53 +7,54 @@ This directory contains tests for the SYD package, including specialized tests f
 The tests are organized into the following directories:
 
 - `tests/`: Root directory containing tests for core functionality
-  - `test_notebook/`: Tests for the notebook deployment module
-  - `test_flask/`: Tests for the flask deployment module
+- `tests/_notyet_notebook/`: Future tests for the notebook deployment module (not yet active)
+- `tests/_notyet_flask/`: Future tests for the flask deployment module (not yet active)
 
-## Notebook Deployment Tests
+## Future Notebook Deployment Tests
 
-The notebook deployment tests are organized into the following files:
+The notebook deployment tests are organized into the following files (currently prefixed with "future_" to prevent pytest from running them):
 
-- `test_widgets.py`: Tests for widget creation, updates, and callbacks
-- `test_deployer_config.py`: Tests for deployer configuration
-- `test_deployer_layout.py`: Tests for layout creation and positioning
-- `test_deployer_updates.py`: Tests for plot updates and synchronization
-- `test_deployer_integration.py`: Integration tests for the notebook deployer
+- `future_widgets.py`: Tests for widget creation, updates, and callbacks
+- `future_deployer_config.py`: Tests for deployer configuration
+- `future_deployer_layout.py`: Tests for layout creation and positioning
+- `future_deployer_updates.py`: Tests for plot updates and synchronization
+- `future_deployer_integration.py`: Integration tests for the notebook deployer
 
-## Flask Deployment Tests
+## Future Flask Deployment Tests
 
-The flask deployment tests are organized into the following files:
+The flask deployment tests are organized into the following files (currently prefixed with "future_" to prevent pytest from running them):
 
-- `test_components.py`: Tests for component creation and updates
-- `test_routes.py`: Tests for Flask routes
-- `test_error_handling.py`: Tests for error handling
-- `test_integration.py`: Integration tests for the Flask deployment
+- `future_components.py`: Tests for component creation and updates
+- `future_routes.py`: Tests for Flask routes
+- `future_error_handling.py`: Tests for error handling
+- `future_integration.py`: Integration tests for the Flask deployment
 
 ## Running the Tests
 
-To run all tests:
+To run all active tests:
 
 ```bash
 pytest
 ```
 
-To run only the notebook deployment tests:
+## Activating Future Tests
 
-```bash
-pytest tests/test_notebook
-```
+To activate the future tests, follow these steps:
 
-To run only the flask deployment tests:
+1. Rename the directories by removing the "_notyet_" prefix:
+   ```bash
+   mv tests/_notyet_notebook tests/test_notebook
+   mv tests/_notyet_flask tests/test_flask
+   ```
 
-```bash
-pytest tests/test_flask
-```
-
-To run a specific test file:
-
-```bash
-pytest tests/test_notebook/test_widgets.py
-```
+2. Rename the test files by changing "future_" to "test_":
+   ```bash
+   cd tests/test_notebook
+   for file in future_*.py; do mv "$file" "test_${file#future_}"; done
+   
+   cd ../test_flask
+   for file in future_*.py; do mv "$file" "test_${file#future_}"; done
+   ```
 
 ## Testing Approach
 
