@@ -19,6 +19,7 @@ import time
 from functools import wraps
 import webbrowser
 import threading
+import socket
 
 
 from flask import (
@@ -106,6 +107,7 @@ class FlaskDeployer:
         self,
         viewer: Viewer,
         controls_position: str = "left",
+        fig_dpi: int = 300,
         figure_width: float = 8.0,
         figure_height: float = 6.0,
         controls_width_percent: int = 30,
@@ -122,6 +124,8 @@ class FlaskDeployer:
             The viewer to deploy
         controls_position : str, optional
             Position of the controls ('left', 'top', 'right', 'bottom')
+        fig_dpi : int, optional
+            DPI of the figure - higher is better quality but takes longer to generate
         figure_width : float, optional
             Width of the figure in inches
         figure_height : float, optional
@@ -142,6 +146,7 @@ class FlaskDeployer:
             figure_height=figure_height,
             controls_width_percent=controls_width_percent,
         )
+        self.fig_dpi = fig_dpi
         self.debug = debug
 
         # Use default folders if not specified
@@ -210,7 +215,7 @@ class FlaskDeployer:
 
                 # Save the plot to a buffer
                 buf = io.BytesIO()
-                fig.savefig(buf, format="png", bbox_inches="tight", dpi=100)
+                fig.savefig(buf, format="png", bbox_inches="tight", dpi=self.fig_dpi)
                 buf.seek(0)
                 plt.close(fig)
 
@@ -443,7 +448,7 @@ class FlaskDeployer:
         else:
             return value
 
-    def run(self, host: str = "127.0.0.1", port: int = 5000, **kwargs):
+    def run(self, host: str = "127.0.0.1", port: Optional[int] = None, **kwargs):
         """
         Run the Flask application server.
 
@@ -452,11 +457,49 @@ class FlaskDeployer:
         host : str, optional
             Host to run the server on
         port : int, optional
-            Port to run the server on
+            Port to run the server on. If None, an available port will be automatically found.
         **kwargs
             Additional arguments to pass to app.run()
         """
+        # Find an available port if none is specified
+        if port is None:
+            port = _find_available_port()
+
         run_simple(host, port, self.app, use_reloader=self.debug, **kwargs)
+
+
+def _find_available_port(start_port=5000, max_attempts=100):
+    """
+    Find an available port starting from start_port.
+
+    Parameters
+    ----------
+    start_port : int, optional
+        Port to start searching from
+    max_attempts : int, optional
+        Maximum number of ports to try
+
+    Returns
+    -------
+    int
+        An available port number
+
+    Raises
+    ------
+    RuntimeError
+        If no available port is found after max_attempts
+    """
+    for port in range(start_port, start_port + max_attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("127.0.0.1", port))
+                return port
+            except OSError:
+                continue
+
+    raise RuntimeError(
+        f"Could not find an available port after {max_attempts} attempts starting from {start_port}"
+    )
 
 
 @contextmanager
@@ -472,7 +515,7 @@ def _plot_context():
 def deploy_flask(
     viewer: Viewer,
     host: str = "127.0.0.1",
-    port: int = 5000,
+    port: Optional[int] = None,
     controls_position: str = "left",
     figure_width: float = 8.0,
     figure_height: float = 6.0,
@@ -491,7 +534,7 @@ def deploy_flask(
     host : str, optional
         Host to run the server on
     port : int, optional
-        Port to run the server on
+        Port to run the server on. If None, an available port will be automatically found.
     controls_position : str, optional
         Position of the controls ('left', 'top', 'right', 'bottom')
     figure_width : float, optional
@@ -521,6 +564,10 @@ def deploy_flask(
         debug=debug,
     )
 
+    # Find an available port if none is specified
+    if port is None:
+        port = _find_available_port()
+
     url = f"http://{host}:{port}"
     print(f"Interactive plot server running on {url}")
 
@@ -533,7 +580,8 @@ def deploy_flask(
 
         threading.Thread(target=open_browser_tab).start()
 
-    print(f"Interactive plot server running on http://{host}:{port}")
+    # This is included as an argument in some deployers but will break the Flask deployer
+    kwargs.pop("continuous", None)
     deployer.run(host=host, port=port, **kwargs)
 
     return deployer

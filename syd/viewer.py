@@ -241,6 +241,7 @@ class Viewer:
 
     def deploy(self, env: str = "notebook", **kwargs):
         """Deploy the app in a notebook or standalone environment"""
+        env = env.lower()
         if env == "notebook":
             from .notebook_deployment import NotebookDeployer
 
@@ -262,11 +263,14 @@ class Viewer:
             deployer.deploy(mode="notebook")
             return self
 
-        elif env == "flask":
-            from .flask_deployment import FlaskDeployer
+        elif env == "browser" or env == "flask":
+            from .flask_deployment import deploy_flask
 
-            deployer = FlaskDeployer(self, **kwargs)
-            deployer.deploy()
+            # Ensure port is None by default if not specified
+            if "port" not in kwargs:
+                kwargs["port"] = None
+
+            deployer = deploy_flask(self, **kwargs)
             return self
         else:
             raise ValueError(
