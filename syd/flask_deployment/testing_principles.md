@@ -57,7 +57,7 @@ class TestFlaskDeployerComponents(unittest.TestCase):
 def test_parameter_update_state_sync():
     # Create real viewer with test parameters
     viewer = Viewer()
-    viewer.add_float('test_param', value=1.0, min_value=0, max_value=10)
+    viewer.add_float('test_param', value=1.0, min=0, max=10)
     
     # Create deployer with this viewer
     deployer = FlaskDeployer(viewer)
@@ -82,7 +82,7 @@ def test_parameter_update_state_sync():
 ```python
 def test_update_parameter_endpoint():
     viewer = Viewer()
-    viewer.add_float('test_param', value=1.0, min_value=0, max_value=10)
+    viewer.add_float('test_param', value=1.0, min=0, max=10)
     deployer = FlaskDeployer(viewer)
     app = deployer.app
     
@@ -218,8 +218,8 @@ def standard_test_viewer():
         return fig
         
     viewer.set_plot(plot)
-    viewer.add_float('amplitude', value=1.0, min_value=0, max_value=2)
-    viewer.add_float('frequency', value=1.0, min_value=0.1, max_value=5)
+    viewer.add_float('amplitude', value=1.0, min=0, max=2)
+    viewer.add_float('frequency', value=1.0, min=0.1, max=5)
     
     return viewer
 

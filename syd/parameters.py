@@ -216,8 +216,8 @@ class Parameter(Generic[T], ABC, metaclass=ParameterMeta):
 
         Examples
         --------
-        >>> param = FloatParameter("temperature", 20.0, min_value=0, max_value=100)
-        >>> param.update({"value": 25.0, "max_value": 150})
+        >>> param = FloatParameter("temperature", 20.0, min=0, max=100)
+        >>> param.update({"value": 25.0, "max": 150})
         """
         param_copy = deepcopy(self)
 
@@ -629,38 +629,38 @@ class IntegerParameter(Parameter[int]):
     name : str
         The name of the parameter
     value : int
-        Initial value (will be clamped to fit between min_value and max_value)
-    min_value : int
+        Initial value (will be clamped to fit between min and max)
+    min : int
         Minimum allowed value
-    max_value : int
+    max : int
         Maximum allowed value
 
     Examples
     --------
-    >>> age = IntegerParameter("age", value=25, min_value=0, max_value=120)
+    >>> age = IntegerParameter("age", value=25, min=0, max=120)
     >>> age.value
     25
-    >>> age.update({"value": 150})  # Will be clamped to max_value
+    >>> age.update({"value": 150})  # Will be clamped to max
     >>> age.value
     120
-    >>> age.update({"value": -10})  # Will be clamped to min_value
+    >>> age.update({"value": -10})  # Will be clamped to min
     >>> age.value
     0
     """
 
-    min_value: int
-    max_value: int
+    min: int
+    max: int
 
     def __init__(
         self,
         name: str,
         value: int,
-        min_value: int,
-        max_value: int,
+        min: int,
+        max: int,
     ):
         self.name = name
-        self.min_value = self._validate(min_value, compare_to_range=False)
-        self.max_value = self._validate(max_value, compare_to_range=False)
+        self.min = self._validate(min, compare_to_range=False)
+        self.max = self._validate(max, compare_to_range=False)
         self._value = self._validate(value)
 
     def _validate(self, new_value: Any, compare_to_range: bool = True) -> int:
@@ -683,43 +683,43 @@ class IntegerParameter(Parameter[int]):
             raise ValueError(f"Value {new_value} cannot be converted to int")
 
         if compare_to_range:
-            if new_value < self.min_value:
+            if new_value < self.min:
                 warn(
                     ParameterUpdateWarning(
                         self.name,
                         type(self).__name__,
-                        f"Value {new_value} below minimum {self.min_value}, clamping",
+                        f"Value {new_value} below minimum {self.min}, clamping",
                     )
                 )
-                new_value = self.min_value
-            if new_value > self.max_value:
+                new_value = self.min
+            if new_value > self.max:
                 warn(
                     ParameterUpdateWarning(
                         self.name,
                         type(self).__name__,
-                        f"Value {new_value} above maximum {self.max_value}, clamping",
+                        f"Value {new_value} above maximum {self.max}, clamping",
                     )
                 )
-                new_value = self.max_value
+                new_value = self.max
         return int(new_value)
 
     def _validate_update(self) -> None:
         """
         Validate complete parameter state after updates.
 
-        Ensures min_value <= max_value, swapping if needed.
+        Ensures min <= max, swapping if needed.
         Re-validates current value against potentially updated bounds.
 
         Raises:
             ParameterUpdateError: If bounds are invalid (e.g. None when required)
         """
-        if self.min_value is None or self.max_value is None:
+        if self.min is None or self.max is None:
             raise ParameterUpdateError(
                 self.name,
                 type(self).__name__,
-                "IntegerParameter must have both min_value and max_value bounds",
+                "IntegerParameter must have both min and max bounds",
             )
-        if self.min_value > self.max_value:
+        if self.min > self.max:
             warn(
                 ParameterUpdateWarning(
                     self.name,
@@ -727,7 +727,7 @@ class IntegerParameter(Parameter[int]):
                     f"Min value greater than max value, swapping",
                 )
             )
-            self.min_value, self.max_value = self.max_value, self.min_value
+            self.min, self.max = self.max, self.min
         self.value = self._validate(self.value)
 
 
@@ -745,10 +745,10 @@ class FloatParameter(Parameter[float]):
     name : str
         The name of the parameter
     value : float
-        Initial value (will be clamped to fit between min_value and max_value)
-    min_value : float
+        Initial value (will be clamped to fit between min and max)
+    min : float
         Minimum allowed value
-    max_value : float
+    max : float
         Maximum allowed value
     step : float, optional
         Size of each increment (default is 0.001)
@@ -756,13 +756,13 @@ class FloatParameter(Parameter[float]):
     Examples
     --------
     >>> temp = FloatParameter("temperature", value=98.6,
-    ...     min_value=95.0, max_value=105.0, step=0.1)
+    ...     min=95.0, max=105.0, step=0.1)
     >>> temp.value
     98.6
     >>> temp.update({"value": 98.67})  # Will be rounded to nearest step
     >>> temp.value
     98.7
-    >>> temp.update({"value": 110.0})  # Will be clamped to max_value
+    >>> temp.update({"value": 110.0})  # Will be clamped to max
     >>> temp.value
     105.0
 
@@ -774,22 +774,22 @@ class FloatParameter(Parameter[float]):
     - step=5.0 allows values like 0.0, 5.0, 10.0, etc.
     """
 
-    min_value: float
-    max_value: float
+    min: float
+    max: float
     step: float
 
     def __init__(
         self,
         name: str,
         value: float,
-        min_value: float,
-        max_value: float,
+        min: float,
+        max: float,
         step: float = 0.001,
     ):
         self.name = name
         self.step = step
-        self.min_value = self._validate(min_value, compare_to_range=False)
-        self.max_value = self._validate(max_value, compare_to_range=False)
+        self.min = self._validate(min, compare_to_range=False)
+        self.max = self._validate(max, compare_to_range=False)
         self._value = self._validate(value)
 
     def _validate(self, new_value: Any, compare_to_range: bool = True) -> float:
@@ -817,24 +817,24 @@ class FloatParameter(Parameter[float]):
         new_value = round(new_value / self.step) * self.step
 
         if compare_to_range:
-            if new_value < self.min_value:
+            if new_value < self.min:
                 warn(
                     ParameterUpdateWarning(
                         self.name,
                         type(self).__name__,
-                        f"Value {new_value} below minimum {self.min_value}, clamping",
+                        f"Value {new_value} below minimum {self.min}, clamping",
                     )
                 )
-                new_value = self.min_value
-            if new_value > self.max_value:
+                new_value = self.min
+            if new_value > self.max:
                 warn(
                     ParameterUpdateWarning(
                         self.name,
                         type(self).__name__,
-                        f"Value {new_value} above maximum {self.max_value}, clamping",
+                        f"Value {new_value} above maximum {self.max}, clamping",
                     )
                 )
-                new_value = self.max_value
+                new_value = self.max
 
         return float(new_value)
 
@@ -842,19 +842,19 @@ class FloatParameter(Parameter[float]):
         """
         Validate complete parameter state after updates.
 
-        Ensures min_value <= max_value, swapping if needed.
+        Ensures min <= max, swapping if needed.
         Re-validates current value against potentially updated bounds.
 
         Raises:
             ParameterUpdateError: If bounds are invalid (e.g. None when required)
         """
-        if self.min_value is None or self.max_value is None:
+        if self.min is None or self.max is None:
             raise ParameterUpdateError(
                 self.name,
                 type(self).__name__,
-                "FloatParameter must have both min_value and max_value bounds",
+                "FloatParameter must have both min and max bounds",
             )
-        if self.min_value > self.max_value:
+        if self.min > self.max:
             warn(
                 ParameterUpdateWarning(
                     self.name,
@@ -862,7 +862,7 @@ class FloatParameter(Parameter[float]):
                     f"Min value greater than max value, swapping",
                 )
             )
-            self.min_value, self.max_value = self.max_value, self.min_value
+            self.min, self.max = self.max, self.min
         self.value = self._validate(self.value)
 
 
@@ -881,15 +881,15 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
         The name of the parameter
     value : tuple[int, int]
         Initial (low, high) values
-    min_value : int
+    min : int
         Minimum allowed value for both low and high
-    max_value : int
+    max : int
         Maximum allowed value for both low and high
 
     Examples
     --------
     >>> age_range = IntegerRangeParameter("age_range",
-    ...     value=(25, 35), min_value=18, max_value=100)
+    ...     value=(25, 35), min=18, max=100)
     >>> age_range.value
     (25, 35)
     >>> age_range.update({"value": (35, 25)})  # Values will be swapped
@@ -900,19 +900,19 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
     (18, 40)
     """
 
-    min_value: int
-    max_value: int
+    min: int
+    max: int
 
     def __init__(
         self,
         name: str,
         value: Tuple[int, int],
-        min_value: int,
-        max_value: int,
+        min: int,
+        max: int,
     ):
         self.name = name
-        self.min_value = self._validate_single(min_value, context="min_value")
-        self.max_value = self._validate_single(max_value, context="max_value")
+        self.min = self._validate_single(min, context="min")
+        self.max = self._validate_single(max, context="max")
         self._value = self._validate(value)
 
     def _validate_single(self, new_value: Any, context: Optional[str] = None) -> int:
@@ -969,24 +969,24 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
             )
             low, high = high, low
 
-        if low < self.min_value:
+        if low < self.min:
             warn(
                 ParameterUpdateWarning(
                     self.name,
                     type(self).__name__,
-                    f"Low value {low} below minimum {self.min_value}, clamping",
+                    f"Low value {low} below minimum {self.min}, clamping",
                 )
             )
-            low = self.min_value
-        if high > self.max_value:
+            low = self.min
+        if high > self.max:
             warn(
                 ParameterUpdateWarning(
                     self.name,
                     type(self).__name__,
-                    f"High value {high} above maximum {self.max_value}, clamping",
+                    f"High value {high} above maximum {self.max}, clamping",
                 )
             )
-            high = self.max_value
+            high = self.max
 
         return (low, high)
 
@@ -994,19 +994,19 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
         """
         Validate complete parameter state after updates.
 
-        Ensures min_value <= max_value, swapping if needed.
+        Ensures min <= max, swapping if needed.
         Re-validates current value against potentially updated bounds.
 
         Raises:
             ParameterUpdateError: If bounds are invalid (e.g. None when required)
         """
-        if self.min_value is None or self.max_value is None:
+        if self.min is None or self.max is None:
             raise ParameterUpdateError(
                 self.name,
                 type(self).__name__,
-                "IntegerRangeParameter must have both min_value and max_value bounds",
+                "IntegerRangeParameter must have both min and max bounds",
             )
-        if self.min_value > self.max_value:
+        if self.min > self.max:
             warn(
                 ParameterUpdateWarning(
                     self.name,
@@ -1014,7 +1014,7 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
                     f"Min value greater than max value, swapping",
                 )
             )
-            self.min_value, self.max_value = self.max_value, self.min_value
+            self.min, self.max = self.max, self.min
         self.value = self._validate(self.value)
 
 
@@ -1033,9 +1033,9 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
         The name of the parameter
     value : tuple[float, float]
         Initial (low, high) values
-    min_value : float
+    min : float
         Minimum allowed value for both low and high
-    max_value : float
+    max : float
         Maximum allowed value for both low and high
     step : float, optional
         Size of each increment (default is 0.001)
@@ -1043,7 +1043,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     Examples
     --------
     >>> temp_range = FloatRangeParameter("temperature_range",
-    ...     value=(98.6, 100.4), min_value=95.0, max_value=105.0, step=0.1)
+    ...     value=(98.6, 100.4), min=95.0, max=105.0, step=0.1)
     >>> temp_range.value
     (98.6, 100.4)
     >>> temp_range.update({"value": (98.67, 100.0)})  # Low will be rounded
@@ -1061,22 +1061,22 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     - step=5.0 allows values like 0.0, 5.0, 10.0, etc.
     """
 
-    min_value: float
-    max_value: float
+    min: float
+    max: float
     step: float
 
     def __init__(
         self,
         name: str,
         value: Tuple[float, float],
-        min_value: float,
-        max_value: float,
+        min: float,
+        max: float,
         step: float = 0.001,
     ):
         self.name = name
         self.step = step
-        self.min_value = self._validate_single(min_value, context="min_value")
-        self.max_value = self._validate_single(max_value, context="max_value")
+        self.min = self._validate_single(min, context="min")
+        self.max = self._validate_single(max, context="max")
         self._value = self._validate(value)
 
     def _validate_single(self, new_value: Any, context: Optional[str] = None) -> float:
@@ -1137,24 +1137,24 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
             )
             low, high = high, low
 
-        if low < self.min_value:
+        if low < self.min:
             warn(
                 ParameterUpdateWarning(
                     self.name,
                     type(self).__name__,
-                    f"Low value {low} below minimum {self.min_value}, clamping",
+                    f"Low value {low} below minimum {self.min}, clamping",
                 )
             )
-            low = self.min_value
-        if high > self.max_value:
+            low = self.min
+        if high > self.max:
             warn(
                 ParameterUpdateWarning(
                     self.name,
                     type(self).__name__,
-                    f"High value {high} above maximum {self.max_value}, clamping",
+                    f"High value {high} above maximum {self.max}, clamping",
                 )
             )
-            high = self.max_value
+            high = self.max
 
         return (low, high)
 
@@ -1162,19 +1162,19 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
         """
         Validate complete parameter state after updates.
 
-        Ensures min_value <= max_value, swapping if needed.
+        Ensures min <= max, swapping if needed.
         Re-validates current value against potentially updated bounds.
 
         Raises:
             ParameterUpdateError: If bounds are invalid (e.g. None when required)
         """
-        if self.min_value is None or self.max_value is None:
+        if self.min is None or self.max is None:
             raise ParameterUpdateError(
                 self.name,
                 type(self).__name__,
-                "FloatRangeParameter must have both min_value and max_value bounds",
+                "FloatRangeParameter must have both min and max bounds",
             )
-        if self.min_value > self.max_value:
+        if self.min > self.max:
             warn(
                 ParameterUpdateWarning(
                     self.name,
@@ -1182,7 +1182,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
                     f"Min value greater than max value, swapping",
                 )
             )
-            self.min_value, self.max_value = self.max_value, self.min_value
+            self.min, self.max = self.max, self.min
         self.value = self._validate(self.value)
 
 
@@ -1336,7 +1336,7 @@ class UnboundedFloatParameter(Parameter[float]):
         """
         Validate complete parameter state after updates.
 
-        Ensures min_value <= max_value, swapping if needed.
+        Ensures min <= max, swapping if needed.
         Re-validates current value against potentially updated bounds.
 
         Raises:

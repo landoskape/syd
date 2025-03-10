@@ -615,45 +615,38 @@ class Viewer:
         name: str,
         *,
         value: Union[float, int],
-        min_value: Union[float, int],
-        max_value: Union[float, int],
+        min: Union[float, int],
+        max: Union[float, int],
     ) -> None:
         """
         Add an integer parameter to the viewer.
 
-        Creates a slider in the GUI that lets users select whole numbers between
-        min_value and max_value. Values will be clamped to stay within bounds.
+        Creates a slider to select whole numbers between a minimum and maximum.
         See :class:`~syd.parameters.IntegerParameter` for details.
 
         Parameters
         ----------
         name : str
-            Name of the parameter (used as label in GUI)
+            Name of the parameter (used as label in GUI and internal identifier)
         value : int
-            Initial value (will be clamped between min_value and max_value)
-        min_value : int
+            Initial value (default position of the slider)
+        min : int
             Minimum allowed value
-        max_value : int
+        max : int
             Maximum allowed value
 
         Examples
         --------
-        >>> viewer.add_integer('count', value=5, min_value=0, max_value=10)
-        >>> viewer.state['count']
-        5
-        >>> viewer.update_integer('count', value=15)  # Will be clamped to 10
-        >>> viewer.state['count']
-        10
+        >>> viewer.add_integer('age', value=25, min=0, max=120)
+
+        >>> viewer.add_integer('year', value=2023, min=1900, max=2100)
         """
         try:
             new_param = ParameterType.integer.value(
-                name,
-                value,
-                min_value,
-                max_value,
+                name, int(value), int(min), int(max)
             )
         except Exception as e:
-            raise ParameterAddError(name, "number", str(e))
+            raise ParameterAddError(name, "integer", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -663,51 +656,41 @@ class Viewer:
         name: str,
         *,
         value: Union[float, int],
-        min_value: Union[float, int],
-        max_value: Union[float, int],
+        min: Union[float, int],
+        max: Union[float, int],
         step: float = 0.01,
     ) -> None:
         """
-        Add a decimal number parameter to the viewer.
+        Add a float parameter to the viewer.
 
-
-        Creates a slider in the GUI that lets users select numbers between
-        min_value and max_value. Values will be rounded to the nearest step
-        and clamped to stay within bounds.
+        Creates a slider to select decimal numbers between a minimum and maximum.
+        See :class:`~syd.parameters.FloatParameter` for details.
 
         Parameters
         ----------
         name : str
-            Name of the parameter (used as label in GUI)
+            Name of the parameter (internal identifier)
         value : float
-            Initial value (will be clamped between min_value and max_value)
-        min_value : float
+            Initial value (default position of the slider)
+        min : float
             Minimum allowed value
-        max_value : float
+        max : float
             Maximum allowed value
         step : float, optional
-            Size of each increment (default: 0.01)
+            Step size for the slider (default: 0.01)
 
         Examples
         --------
-        >>> viewer.add_float('temperature', value=20.0,
-        ...                  min_value=0.0, max_value=100.0, step=0.5)
-        >>> viewer.state['temperature']
-        20.0
-        >>> viewer.update_float('temperature', value=20.7)  # Will round to 20.5
-        >>> viewer.state['temperature']
-        20.5
+        >>> viewer.add_float('temperature', value=98.6, min=95.0, max=105.0, step=0.1)
+
+        >>> viewer.add_float('price', value=9.99, min=0.0, max=100.0, step=0.01)
         """
         try:
             new_param = ParameterType.float.value(
-                name,
-                value,
-                min_value,
-                max_value,
-                step,
+                name, float(value), float(min), float(max), float(step)
             )
         except Exception as e:
-            raise ParameterAddError(name, "number", str(e)) from e
+            raise ParameterAddError(name, "float", str(e)) from e
         else:
             self.parameters[name] = new_param
 
@@ -717,46 +700,36 @@ class Viewer:
         name: str,
         *,
         value: Tuple[Union[float, int], Union[float, int]],
-        min_value: Union[float, int],
-        max_value: Union[float, int],
+        min: Union[float, int],
+        max: Union[float, int],
     ) -> None:
         """
-        Add a range parameter for whole numbers to the viewer.
+        Add an integer range parameter to the viewer.
 
-        Creates a range slider in the GUI that lets users select a range of integers
-        between min_value and max_value. The range is specified as (low, high) and
-        both values will be clamped to stay within bounds.
+        Creates a range slider to select a range of whole numbers between bounds.
         See :class:`~syd.parameters.IntegerRangeParameter` for details.
 
         Parameters
         ----------
         name : str
-            Name of the parameter (used as label in GUI)
+            Name of the parameter (internal identifier)
         value : tuple[int, int]
-            Initial (low, high) values
-        min_value : int
-            Minimum allowed value for both low and high
-        max_value : int
-            Maximum allowed value for both low and high
+            Initial (low, high) values for the range
+        min : int
+            Minimum allowed value for the range
+        max : int
+            Maximum allowed value for the range
 
         Examples
         --------
-        >>> viewer.add_integer_range('age_range',
-        ...                         value=(25, 35),
-        ...                         min_value=18, max_value=100)
-        >>> viewer.state['age_range']
-        (25, 35)
-        >>> # Values will be swapped if low > high
-        >>> viewer.update_integer_range('age_range', value=(40, 30))
-        >>> viewer.state['age_range']
-        (30, 40)
+        >>> viewer.add_integer_range('age_range', value=(25, 45), min=18, max=100)
+
+        >>> viewer.add_integer_range('year_range', value=(2000, 2020), min=1900, max=2100)
         """
         try:
+            val_low, val_high = value
             new_param = ParameterType.integer_range.value(
-                name,
-                value,
-                min_value,
-                max_value,
+                name, (int(val_low), int(val_high)), int(min), int(max)
             )
         except Exception as e:
             raise ParameterAddError(name, "integer_range", str(e)) from e
@@ -769,50 +742,43 @@ class Viewer:
         name: str,
         *,
         value: Tuple[Union[float, int], Union[float, int]],
-        min_value: Union[float, int],
-        max_value: Union[float, int],
+        min: Union[float, int],
+        max: Union[float, int],
         step: float = 0.01,
     ) -> None:
         """
-        Add a range parameter for decimal numbers to the viewer.
+        Add a float range parameter to the viewer.
 
-        Creates a range slider in the GUI that lets users select a range of numbers
-        between min_value and max_value. The range is specified as (low, high) and
-        both values will be rounded to the nearest step and clamped to stay within bounds.
+        Creates a range slider to select a range of decimal numbers between bounds.
         See :class:`~syd.parameters.FloatRangeParameter` for details.
 
         Parameters
         ----------
         name : str
-            Name of the parameter (used as label in GUI)
+            Name of the parameter (internal identifier)
         value : tuple[float, float]
-            Initial (low, high) values
-        min_value : float
-            Minimum allowed value for both low and high
-        max_value : float
-            Maximum allowed value for both low and high
+            Initial (low, high) values for the range
+        min : float
+            Minimum allowed value for the range
+        max : float
+            Maximum allowed value for the range
         step : float, optional
-            Size of each increment (default: 0.01)
+            Step size for the slider (default: 0.01)
 
         Examples
         --------
-        >>> viewer.add_float_range('price_range',
-        ...                       value=(10.0, 20.0),
-        ...                       min_value=0.0, max_value=100.0, step=0.5)
-        >>> viewer.state['price_range']
-        (10.0, 20.0)
-        >>> # Values will be rounded to nearest step
-        >>> viewer.update_float_range('price_range', value=(10.7, 19.2))
-        >>> viewer.state['price_range']
-        (10.5, 19.0)
+        >>> viewer.add_float_range('temp_range', value=(97.0, 99.0), min=95.0, max=105.0, step=0.1)
+
+        >>> viewer.add_float_range('price_range', value=(10.0, 50.0), min=0.0, max=100.0, step=0.01)
         """
         try:
+            val_low, val_high = value
             new_param = ParameterType.float_range.value(
                 name,
-                value,
-                min_value,
-                max_value,
-                step,
+                (float(val_low), float(val_high)),
+                float(min),
+                float(max),
+                float(step),
             )
         except Exception as e:
             raise ParameterAddError(name, "float_range", str(e)) from e
@@ -1101,43 +1067,42 @@ class Viewer:
         name: str,
         *,
         value: Union[int, _NoUpdate] = _NO_UPDATE,
-        min_value: Union[int, _NoUpdate] = _NO_UPDATE,
-        max_value: Union[int, _NoUpdate] = _NO_UPDATE,
+        min: Union[int, _NoUpdate] = _NO_UPDATE,
+        max: Union[int, _NoUpdate] = _NO_UPDATE,
     ) -> None:
         """
-        Update an integer parameter's value and/or bounds.
+        Update an integer parameter.
 
-        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_integer`.
-        See :class:`~syd.parameters.IntegerParameter` for details about value validation.
+        Change the value or bounds of an existing integer parameter.
+        See :class:`~syd.parameters.IntegerParameter` for details.
 
         Parameters
         ----------
         name : str
-            Name of the integer parameter to update
+            Name of the parameter to update
         value : int, optional
-            New value (will be clamped to bounds) (if not provided, no change)
-        min_value : int, optional
-            New minimum value (if not provided, no change)
-        max_value : int, optional
-            New maximum value (if not provided, no change)
+            New value
+        min : int, optional
+            New minimum allowed value
+        max : int, optional
+            New maximum allowed value
 
         Examples
         --------
-        >>> viewer.add_integer('count', value=5, min_value=0, max_value=10)
-        >>> # Update just the value
-        >>> viewer.update_integer('count', value=8)
-        >>> # Update bounds (current value will be clamped if needed)
-        >>> viewer.update_integer('count', min_value=7, max_value=15)
+        >>> viewer.update_integer('age', value=30)  # Update just the value
+
+        >>> viewer.update_integer('year', min=2000, max=2023)  # Update just the bounds
         """
         updates = {}
-        if not value == _NO_UPDATE:
-            updates["value"] = value
-        if not min_value == _NO_UPDATE:
-            updates["min_value"] = min_value
-        if not max_value == _NO_UPDATE:
-            updates["max_value"] = max_value
-        if updates:
-            self.parameters[name].update(updates)
+        if value is not _NO_UPDATE:
+            updates["value"] = int(value)
+        if min is not _NO_UPDATE:
+            updates["min"] = int(min)
+        if max is not _NO_UPDATE:
+            updates["max"] = int(max)
+
+        parameter = self.parameters[name]
+        parameter.update(updates)
 
     @validate_parameter_operation("update", ParameterType.float)
     def update_float(
@@ -1145,50 +1110,47 @@ class Viewer:
         name: str,
         *,
         value: Union[float, _NoUpdate] = _NO_UPDATE,
-        min_value: Union[float, _NoUpdate] = _NO_UPDATE,
-        max_value: Union[float, _NoUpdate] = _NO_UPDATE,
+        min: Union[float, _NoUpdate] = _NO_UPDATE,
+        max: Union[float, _NoUpdate] = _NO_UPDATE,
         step: Union[float, _NoUpdate] = _NO_UPDATE,
     ) -> None:
         """
-        Update a float parameter's value, bounds, and/or step size.
+        Update a float parameter.
 
-        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_float`.
-        See :class:`~syd.parameters.FloatParameter` for details about value validation.
+        Change the value, bounds, or step size of an existing float parameter.
+        See :class:`~syd.parameters.FloatParameter` for details.
 
         Parameters
         ----------
         name : str
-            Name of the float parameter to update
+            Name of the parameter to update
         value : float, optional
-            New value (will be rounded and clamped) (if not provided, no change)
-        min_value : float, optional
-            New minimum value (if not provided, no change)
-        max_value : float, optional
-            New maximum value (if not provided, no change)
+            New value
+        min : float, optional
+            New minimum allowed value
+        max : float, optional
+            New maximum allowed value
         step : float, optional
-            New step size (if not provided, no change)
+            New step size for the slider
 
         Examples
         --------
-        >>> viewer.add_float('temperature', value=20.0,
-        ...                  min_value=0.0, max_value=100.0, step=0.5)
-        >>> # Update just the value (will round to step)
-        >>> viewer.update_float('temperature', value=20.7)  # Becomes 20.5
-        >>> # Update bounds and step size
-        >>> viewer.update_float('temperature',
-        ...                    min_value=15.0, max_value=30.0, step=0.1)
+        >>> viewer.update_float('temperature', value=99.5)  # Update just the value
+
+        >>> viewer.update_float('price', min=5.0, max=200.0, step=0.05)  # Update bounds and step
         """
         updates = {}
-        if not value == _NO_UPDATE:
-            updates["value"] = value
-        if not min_value == _NO_UPDATE:
-            updates["min_value"] = min_value
-        if not max_value == _NO_UPDATE:
-            updates["max_value"] = max_value
-        if not step == _NO_UPDATE:
-            updates["step"] = step
-        if updates:
-            self.parameters[name].update(updates)
+        if value is not _NO_UPDATE:
+            updates["value"] = float(value)
+        if min is not _NO_UPDATE:
+            updates["min"] = float(min)
+        if max is not _NO_UPDATE:
+            updates["max"] = float(max)
+        if step is not _NO_UPDATE:
+            updates["step"] = float(step)
+
+        parameter = self.parameters[name]
+        parameter.update(updates)
 
     @validate_parameter_operation("update", ParameterType.integer_range)
     def update_integer_range(
@@ -1196,45 +1158,43 @@ class Viewer:
         name: str,
         *,
         value: Union[Tuple[int, int], _NoUpdate] = _NO_UPDATE,
-        min_value: Union[int, _NoUpdate] = _NO_UPDATE,
-        max_value: Union[int, _NoUpdate] = _NO_UPDATE,
+        min: Union[int, _NoUpdate] = _NO_UPDATE,
+        max: Union[int, _NoUpdate] = _NO_UPDATE,
     ) -> None:
         """
-        Update an integer range parameter's values and/or bounds.
+        Update an integer range parameter.
 
-        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_integer_range`.
-        See :class:`~syd.parameters.IntegerRangeParameter` for details about value validation.
+        Change the range values or bounds of an existing integer range parameter.
+        See :class:`~syd.parameters.IntegerRangeParameter` for details.
 
         Parameters
         ----------
         name : str
-            Name of the integer range parameter to update
+            Name of the parameter to update
         value : tuple[int, int], optional
-            New (low, high) values (will be clamped) (if not provided, no change)
-        min_value : int, optional
-            New minimum value for both low and high (if not provided, no change)
-        max_value : int, optional
-            New maximum value for both low and high (if not provided, no change)
+            New (low, high) values
+        min : int, optional
+            New minimum allowed value
+        max : int, optional
+            New maximum allowed value
 
         Examples
         --------
-        >>> viewer.add_integer_range('age_range',
-        ...                         value=(25, 35),
-        ...                         min_value=18, max_value=100)
-        >>> # Update just the range (values will be swapped if needed)
-        >>> viewer.update_integer_range('age_range', value=(40, 30))  # Becomes (30, 40)
-        >>> # Update bounds (current values will be clamped if needed)
-        >>> viewer.update_integer_range('age_range', min_value=20, max_value=80)
+        >>> viewer.update_integer_range('age_range', value=(30, 50))  # Update just the values
+
+        >>> viewer.update_integer_range('year_range', min=1950, max=2023)  # Update just the bounds
         """
         updates = {}
-        if not value == _NO_UPDATE:
-            updates["value"] = value
-        if not min_value == _NO_UPDATE:
-            updates["min_value"] = min_value
-        if not max_value == _NO_UPDATE:
-            updates["max_value"] = max_value
-        if updates:
-            self.parameters[name].update(updates)
+        if value is not _NO_UPDATE:
+            val_low, val_high = value
+            updates["value"] = (int(val_low), int(val_high))
+        if min is not _NO_UPDATE:
+            updates["min"] = int(min)
+        if max is not _NO_UPDATE:
+            updates["max"] = int(max)
+
+        parameter = self.parameters[name]
+        parameter.update(updates)
 
     @validate_parameter_operation("update", ParameterType.float_range)
     def update_float_range(
@@ -1242,51 +1202,53 @@ class Viewer:
         name: str,
         *,
         value: Union[Tuple[float, float], _NoUpdate] = _NO_UPDATE,
-        min_value: Union[float, _NoUpdate] = _NO_UPDATE,
-        max_value: Union[float, _NoUpdate] = _NO_UPDATE,
+        min: Union[float, _NoUpdate] = _NO_UPDATE,
+        max: Union[float, _NoUpdate] = _NO_UPDATE,
         step: Union[float, _NoUpdate] = _NO_UPDATE,
     ) -> None:
         """
-        Update a float range parameter's values, bounds, and/or step size.
+        Update a float range parameter.
 
-        Updates a parameter created by :meth:`~syd.viewer.Viewer.add_float_range`.
-        See :class:`~syd.parameters.FloatRangeParameter` for details about value validation.
+        Change the range values, bounds, or step size of an existing float range parameter.
+        See :class:`~syd.parameters.FloatRangeParameter` for details.
 
         Parameters
         ----------
         name : str
-            Name of the float range parameter to update
+            Name of the parameter to update
         value : tuple[float, float], optional
-            New (low, high) values (will be rounded and clamped) (if not provided, no change)
-        min_value : float, optional
-            New minimum value for both low and high (if not provided, no change)
-        max_value : float, optional
-            New maximum value for both low and high (if not provided, no change)
+            New (low, high) values
+        min : float, optional
+            New minimum allowed value
+        max : float, optional
+            New maximum allowed value
         step : float, optional
-            New step size for rounding values (if not provided, no change)
+            New step size for the slider
 
         Examples
         --------
-        >>> viewer.add_float_range('price_range',
-        ...                       value=(10.0, 20.0),
-        ...                       min_value=0.0, max_value=100.0, step=0.5)
-        >>> # Update just the range (values will be rounded and swapped if needed)
-        >>> viewer.update_float_range('price_range', value=(15.7, 14.2))  # Becomes (14.0, 15.5)
-        >>> # Update bounds and step size
-        >>> viewer.update_float_range('price_range',
-        ...                          min_value=5.0, max_value=50.0, step=0.1)
+        >>> viewer.update_float_range('temp_range', value=(97.5, 98.5))  # Update just the values
+
+        >>> viewer.update_float_range(
+        ...     'price_range',
+        ...     min=10.0,
+        ...     max=500.0,
+        ...     step=0.5
+        ... )  # Update bounds and step
         """
         updates = {}
-        if not value == _NO_UPDATE:
-            updates["value"] = value
-        if not min_value == _NO_UPDATE:
-            updates["min_value"] = min_value
-        if not max_value == _NO_UPDATE:
-            updates["max_value"] = max_value
-        if not step == _NO_UPDATE:
-            updates["step"] = step
-        if updates:
-            self.parameters[name].update(updates)
+        if value is not _NO_UPDATE:
+            val_low, val_high = value
+            updates["value"] = (float(val_low), float(val_high))
+        if min is not _NO_UPDATE:
+            updates["min"] = float(min)
+        if max is not _NO_UPDATE:
+            updates["max"] = float(max)
+        if step is not _NO_UPDATE:
+            updates["step"] = float(step)
+
+        parameter = self.parameters[name]
+        parameter.update(updates)
 
     @validate_parameter_operation("update", ParameterType.unbounded_integer)
     def update_unbounded_integer(

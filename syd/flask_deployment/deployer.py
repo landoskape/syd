@@ -341,32 +341,34 @@ class FlaskDeployer:
             return {
                 "type": "integer",
                 "value": param.value,
-                "min": param.min_value,
-                "max": param.max_value,
-                "step": 1,
+                "name": param.name,
+                "min": param.min,
+                "max": param.max,
             }
         elif isinstance(param, FloatParameter):
             return {
                 "type": "float",
                 "value": param.value,
-                "min": param.min_value,
-                "max": param.max_value,
+                "name": param.name,
+                "min": param.min,
+                "max": param.max,
                 "step": param.step,
             }
         elif isinstance(param, IntegerRangeParameter):
             return {
                 "type": "integer-range",
                 "value": param.value,
-                "min": param.min_value,
-                "max": param.max_value,
-                "step": 1,
+                "name": param.name,
+                "min": param.min,
+                "max": param.max,
             }
         elif isinstance(param, FloatRangeParameter):
             return {
                 "type": "float-range",
                 "value": param.value,
-                "min": param.min_value,
-                "max": param.max_value,
+                "name": param.name,
+                "min": param.min,
+                "max": param.max,
                 "step": param.step,
             }
         elif isinstance(param, UnboundedIntegerParameter):

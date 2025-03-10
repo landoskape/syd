@@ -240,30 +240,33 @@ class IntegerWidget(BaseWidget[IntegerParameter, widgets.IntSlider]):
         margin: str = "3px 0px",
         description_width: str = "initial",
     ) -> widgets.IntSlider:
+        """Create the integer slider widget."""
         return widgets.IntSlider(
             value=parameter.value,
-            min=parameter.min_value,
-            max=parameter.max_value,
+            min=parameter.min,
+            max=parameter.max,
+            step=1,
             description=parameter.name,
-            continuous=continuous,
-            layout=widgets.Layout(width=width, margin=margin),
+            continuous_update=continuous,
             style={"description_width": description_width},
+            layout=widgets.Layout(width=width, margin=margin),
         )
 
     def matches_parameter(self, parameter: IntegerParameter) -> bool:
-        """Check if the widget matches the parameter."""
+        """Check if the widget values match the parameter."""
         return (
-            self.value == parameter.value
-            and self._widget.min == parameter.min_value
-            and self._widget.max == parameter.max_value
+            self._widget.description == parameter.name
+            and self._widget.value == parameter.value
+            and self._widget.min == parameter.min
+            and self._widget.max == parameter.max
         )
 
     def extra_updates_from_parameter(self, parameter: IntegerParameter) -> None:
-        """Extra updates from the parameter."""
+        """Update the widget attributes from the parameter."""
         current_value = self._widget.value
-        self._widget.min = parameter.min_value
-        self._widget.max = parameter.max_value
-        self.value = max(parameter.min_value, min(parameter.max_value, current_value))
+        self._widget.min = parameter.min
+        self._widget.max = parameter.max
+        self.value = max(parameter.min, min(parameter.max, current_value))
 
 
 class FloatWidget(BaseWidget[FloatParameter, widgets.FloatSlider]):
@@ -277,32 +280,35 @@ class FloatWidget(BaseWidget[FloatParameter, widgets.FloatSlider]):
         margin: str = "3px 0px",
         description_width: str = "initial",
     ) -> widgets.FloatSlider:
+        """Create the float slider widget."""
         return widgets.FloatSlider(
             value=parameter.value,
-            min=parameter.min_value,
-            max=parameter.max_value,
+            min=parameter.min,
+            max=parameter.max,
             step=parameter.step,
             description=parameter.name,
-            continuous=continuous,
-            layout=widgets.Layout(width=width, margin=margin),
+            continuous_update=continuous,
             style={"description_width": description_width},
+            layout=widgets.Layout(width=width, margin=margin),
         )
 
     def matches_parameter(self, parameter: FloatParameter) -> bool:
-        """Check if the widget matches the parameter."""
+        """Check if the widget values match the parameter."""
         return (
-            self.value == parameter.value
-            and self._widget.min == parameter.min_value
-            and self._widget.max == parameter.max_value
+            self._widget.description == parameter.name
+            and self._widget.value == parameter.value
+            and self._widget.min == parameter.min
+            and self._widget.max == parameter.max
+            and self._widget.step == parameter.step
         )
 
     def extra_updates_from_parameter(self, parameter: FloatParameter) -> None:
-        """Extra updates from the parameter."""
+        """Update the widget attributes from the parameter."""
         current_value = self._widget.value
-        self._widget.min = parameter.min_value
-        self._widget.max = parameter.max_value
+        self._widget.min = parameter.min
+        self._widget.max = parameter.max
         self._widget.step = parameter.step
-        self.value = max(parameter.min_value, min(parameter.max_value, current_value))
+        self.value = max(parameter.min, min(parameter.max, current_value))
 
 
 class IntegerRangeWidget(BaseWidget[IntegerRangeParameter, widgets.IntRangeSlider]):
@@ -316,33 +322,39 @@ class IntegerRangeWidget(BaseWidget[IntegerRangeParameter, widgets.IntRangeSlide
         margin: str = "3px 0px",
         description_width: str = "initial",
     ) -> widgets.IntRangeSlider:
+        """Create the integer range slider widget."""
+        low, high = parameter.value
         return widgets.IntRangeSlider(
-            value=parameter.value,
-            min=parameter.min_value,
-            max=parameter.max_value,
+            value=[low, high],
+            min=parameter.min,
+            max=parameter.max,
+            step=1,
             description=parameter.name,
-            continuous=continuous,
-            layout=widgets.Layout(width=width, margin=margin),
+            continuous_update=continuous,
             style={"description_width": description_width},
+            layout=widgets.Layout(width=width, margin=margin),
         )
 
     def matches_parameter(self, parameter: IntegerRangeParameter) -> bool:
-        """Check if the widget matches the parameter."""
+        """Check if the widget values match the parameter."""
+        low, high = parameter.value
         return (
-            self.value == parameter.value
-            and self._widget.min == parameter.min_value
-            and self._widget.max == parameter.max_value
+            self._widget.description == parameter.name
+            and self._widget.value[0] == low
+            and self._widget.value[1] == high
+            and self._widget.min == parameter.min
+            and self._widget.max == parameter.max
         )
 
     def extra_updates_from_parameter(self, parameter: IntegerRangeParameter) -> None:
-        """Extra updates from the parameter."""
-        current_value = self._widget.value
-        self._widget.min = parameter.min_value
-        self._widget.max = parameter.max_value
-        low, high = current_value
-        low = max(parameter.min_value, min(parameter.max_value, low))
-        high = max(parameter.min_value, min(parameter.max_value, high))
-        self.value = (low, high)
+        """Update the widget attributes from the parameter."""
+        low, high = self._widget.value
+        self._widget.min = parameter.min
+        self._widget.max = parameter.max
+        # Ensure values stay within bounds
+        low = max(parameter.min, min(parameter.max, low))
+        high = max(parameter.min, min(parameter.max, high))
+        self.value = [low, high]
 
 
 class FloatRangeWidget(BaseWidget[FloatRangeParameter, widgets.FloatRangeSlider]):
@@ -356,35 +368,41 @@ class FloatRangeWidget(BaseWidget[FloatRangeParameter, widgets.FloatRangeSlider]
         margin: str = "3px 0px",
         description_width: str = "initial",
     ) -> widgets.FloatRangeSlider:
+        """Create the float range slider widget."""
+        low, high = parameter.value
         return widgets.FloatRangeSlider(
-            value=parameter.value,
-            min=parameter.min_value,
-            max=parameter.max_value,
+            value=[low, high],
+            min=parameter.min,
+            max=parameter.max,
             step=parameter.step,
             description=parameter.name,
-            continuous=continuous,
-            layout=widgets.Layout(width=width, margin=margin),
+            continuous_update=continuous,
             style={"description_width": description_width},
+            layout=widgets.Layout(width=width, margin=margin),
         )
 
     def matches_parameter(self, parameter: FloatRangeParameter) -> bool:
-        """Check if the widget matches the parameter."""
+        """Check if the widget values match the parameter."""
+        low, high = parameter.value
         return (
-            self.value == parameter.value
-            and self._widget.min == parameter.min_value
-            and self._widget.max == parameter.max_value
+            self._widget.description == parameter.name
+            and self._widget.value[0] == low
+            and self._widget.value[1] == high
+            and self._widget.min == parameter.min
+            and self._widget.max == parameter.max
+            and self._widget.step == parameter.step
         )
 
     def extra_updates_from_parameter(self, parameter: FloatRangeParameter) -> None:
-        """Extra updates from the parameter."""
-        current_value = self._widget.value
-        self._widget.min = parameter.min_value
-        self._widget.max = parameter.max_value
+        """Update the widget attributes from the parameter."""
+        low, high = self._widget.value
+        self._widget.min = parameter.min
+        self._widget.max = parameter.max
         self._widget.step = parameter.step
-        low, high = current_value
-        low = max(parameter.min_value, min(parameter.max_value, low))
-        high = max(parameter.min_value, min(parameter.max_value, high))
-        self.value = (low, high)
+        # Ensure values stay within bounds
+        low = max(parameter.min, min(parameter.max, low))
+        high = max(parameter.min, min(parameter.max, high))
+        self.value = [low, high]
 
 
 class UnboundedIntegerWidget(BaseWidget[UnboundedIntegerParameter, widgets.IntText]):
