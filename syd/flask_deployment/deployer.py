@@ -447,6 +447,58 @@ class FlaskDeployer:
                 except json.JSONDecodeError:
                     return [value] if value else []
             return value
+        elif isinstance(param, SelectionParameter):
+            # For SelectionParameter, we need to handle various type conversion scenarios
+
+            # First check if the value is already in options (exact match)
+            if value in param.options:
+                return value
+
+            # Handle string conversion if value is a string but options might be numeric
+            if isinstance(value, str):
+                # Try to convert to integer if it looks like an integer
+                if value.isdigit():
+                    int_value = int(value)
+                    if int_value in param.options:
+                        return int_value
+
+                # Try to convert to float if it has a decimal point
+                try:
+                    float_value = float(value)
+                    # Check for direct float match
+                    if float_value in param.options:
+                        return float_value
+
+                    # Check for float equality with integer or other float options
+                    for option in param.options:
+                        if (
+                            isinstance(option, (int, float))
+                            and abs(float_value - float(option)) < 1e-10
+                        ):
+                            return option
+                except ValueError:
+                    pass
+
+            # Handle numeric conversion - when value is numeric but needs type matching
+            if isinstance(value, (int, float)):
+                for option in param.options:
+                    # Convert both to float for comparison to handle int/float mismatches
+                    if (
+                        isinstance(option, (int, float))
+                        and abs(float(value) - float(option)) < 1e-10
+                    ):
+                        return option
+
+                    # Also try string conversion as a fallback
+                    if isinstance(option, str):
+                        try:
+                            if abs(float(value) - float(option)) < 1e-10:
+                                return option
+                        except ValueError:
+                            pass
+
+            # If we couldn't find a match, return the original value (will likely cause an error)
+            return value
         else:
             return value
 
