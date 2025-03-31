@@ -67,7 +67,7 @@ class LayoutConfig:
     controls_position: str = "left"  # Options are: 'left', 'top', 'right', 'bottom'
     figure_width: float = 8.0
     figure_height: float = 6.0
-    controls_width_percent: int = 30
+    controls_width_percent: int = 20
 
     def __post_init__(self):
         valid_positions = ["left", "top", "right", "bottom"]
@@ -93,7 +93,7 @@ class NotebookDeployer:
         controls_position: str = "left",
         figure_width: float = 8.0,
         figure_height: float = 6.0,
-        controls_width_percent: int = 30,
+        controls_width_percent: int = 20,
         continuous: bool = False,
         suppress_warnings: bool = False,
     ):
@@ -111,7 +111,7 @@ class NotebookDeployer:
         self.backend_type = get_backend_type()
         if self.backend_type not in ["inline", "widget"]:
             warnings.warn(
-                "The current backend is not supported. Please use %matplotlib widget or %matplotlib inline.\n"
+                f"The current backend ({self.backend_type}) is not supported. Please use %matplotlib widget or %matplotlib inline.\n"
                 "The behavior of the viewer will almost definitely not work as expected."
             )
         self.parameter_widgets: Dict[str, BaseWidget] = {}
@@ -134,8 +134,8 @@ class NotebookDeployer:
         if self.config.is_horizontal:
             controls["controls_width"] = widgets.IntSlider(
                 value=self.config.controls_width_percent,
-                min=20,
-                max=80,
+                min=10,
+                max=50,
                 description="Controls Width %",
                 continuous=True,
                 layout=widgets.Layout(width="95%"),
@@ -269,6 +269,13 @@ class NotebookDeployer:
                 + list(self.layout_widgets.values()),
                 layout=widgets.Layout(margin="10px 0px"),
             )
+
+            # Register the controls_width slider's observer
+            if "controls_width" in self.layout_widgets:
+                self.layout_widgets["controls_width"].observe(
+                    self._handle_container_width_change, names="value"
+                )
+
             widgets_elements = [param_box, layout_box]
         else:
             widgets_elements = [param_box]
