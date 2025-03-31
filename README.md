@@ -70,18 +70,24 @@ Please make sure to update tests as appropriate and adhere to the existing codin
 
 
 ## To-Do List
-- Layout controls for deployers needs work
-- Consider "app_deployed" context for each deployer...
+- Layout controls
+  - [ ] Improve the display and make it look better
+  - [ ] Add a "save" button that saves the current state of the viewer to a json file
+  - [ ] Add a "load" button that loads the viewer state from a json file
+  - [ ] Add a "freeze" button that allows the user to update state variables without updating the plot until unfreezing
+- [ ] Consider "app_deployed" context for each deployer...
+- [ ] Consider the error messages and if they can be more informative and less opaque -- especially when debugging (e.g. when we always get routed to the decorators that check things...)
 - Notebook deployment debouncer: 
-  - Probably make this dependent on whether the user is in %matplotlib widget mode or not
-  - Also probably make it dependent on whether the deployer is in continuous mode or not
-  - Potentially make the wait_time dynamic depending on how fast the plot method is and how
-  - frequently the no comm messages show up... (if we can catch them)
-- Think about whether there's alternatives to creating new figures each time...
-- Consider adding a step to the integer parameter...
-- Idea!
-  - We could make fig=?, ax=? arguments optional for the plot function and add a
+  - [ ] Probably make this dependent on whether the user is in %matplotlib widget mode or not
+  - [ ] Also probably make it dependent on whether the deployer is in continuous mode or not
+  - [ ] Potentially make the wait_time dynamic depending on how fast the plot method is and how frequently the no comm messages show up... (if we can catch them)
+- [ ] Consider adding a step to the integer parameter...
+- Idea for figure management:
+  - [ ] We could make fig=?, ax=? arguments optional for the plot function and add a
     "recycle_figure: bool = False" flag be part of the deploy API. This way, an
     advanced user that wants snappy responsivity or complex figure management can
     do so, but the default is for the user to generate a new figure object each time.
 - I've updated some rules for parameters -- need to make tests for empty options on selection / multiple selections
+- Export options:
+  - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
+  - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
