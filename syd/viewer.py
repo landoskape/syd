@@ -17,6 +17,7 @@ class _NoUpdate:
     """Singleton class to represent a non-update in parameter operations."""
 
     _instance = None
+    _noupdate_identifier = "NO_UPDATE"
 
     def __new__(cls):
         if cls._instance is None:
@@ -25,7 +26,7 @@ class _NoUpdate:
 
     def __eq__(self, other):
         """This makes sure all comparisons of _NoUpdate objects return True"""
-        return isinstance(other, _NoUpdate)
+        return isinstance(other, _NoUpdate) or (hasattr(other, "_noupdate_identifier") and other._noupdate_identifier == self._noupdate_identifier)
 
 
 # Create the singleton instance
@@ -1094,11 +1095,11 @@ class Viewer:
         >>> viewer.update_integer('year', min=2000, max=2023)  # Update just the bounds
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not isinstance(value, _NoUpdate):
             updates["value"] = int(value)
-        if min is not _NO_UPDATE:
+        if not isinstance(min, _NoUpdate):
             updates["min"] = int(min)
-        if max is not _NO_UPDATE:
+        if not isinstance(max, _NoUpdate):
             updates["max"] = int(max)
 
         parameter = self.parameters[name]
@@ -1140,13 +1141,13 @@ class Viewer:
         >>> viewer.update_float('price', min=5.0, max=200.0, step=0.05)  # Update bounds and step
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not isinstance(value, _NoUpdate):
             updates["value"] = float(value)
-        if min is not _NO_UPDATE:
+        if not isinstance(min, _NoUpdate):
             updates["min"] = float(min)
-        if max is not _NO_UPDATE:
+        if not isinstance(max, _NoUpdate):
             updates["max"] = float(max)
-        if step is not _NO_UPDATE:
+        if not isinstance(step, _NoUpdate):
             updates["step"] = float(step)
 
         parameter = self.parameters[name]
@@ -1185,12 +1186,12 @@ class Viewer:
         >>> viewer.update_integer_range('year_range', min=1950, max=2023)  # Update just the bounds
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not isinstance(value, _NoUpdate):
             val_low, val_high = value
             updates["value"] = (int(val_low), int(val_high))
-        if min is not _NO_UPDATE:
+        if not isinstance(min, _NoUpdate):
             updates["min"] = int(min)
-        if max is not _NO_UPDATE:
+        if not isinstance(max, _NoUpdate):
             updates["max"] = int(max)
 
         parameter = self.parameters[name]
@@ -1237,14 +1238,14 @@ class Viewer:
         ... )  # Update bounds and step
         """
         updates = {}
-        if value is not _NO_UPDATE:
+        if not isinstance(value, _NoUpdate):
             val_low, val_high = value
             updates["value"] = (float(val_low), float(val_high))
-        if min is not _NO_UPDATE:
+        if not isinstance(min, _NoUpdate):
             updates["min"] = float(min)
-        if max is not _NO_UPDATE:
+        if not isinstance(max, _NoUpdate):
             updates["max"] = float(max)
-        if step is not _NO_UPDATE:
+        if not isinstance(step, _NoUpdate):
             updates["step"] = float(step)
 
         parameter = self.parameters[name]
