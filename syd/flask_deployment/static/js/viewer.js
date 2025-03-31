@@ -268,6 +268,12 @@ function createSelectionControl(name, param) {
         const optionElement = document.createElement('option');
         optionElement.value = option;
         optionElement.textContent = formatLabel(String(option));
+        // Store the original type information as a data attribute
+        optionElement.dataset.originalType = typeof option;
+        // For float values, also store the original value for exact comparison
+        if (typeof option === 'number') {
+            optionElement.dataset.originalValue = option;
+        }
         select.appendChild(optionElement);
     });
     
@@ -276,7 +282,21 @@ function createSelectionControl(name, param) {
     
     // Add event listener
     select.addEventListener('change', function() {
-        updateParameter(name, this.value);
+        // Get the selected option element
+        const selectedOption = this.options[this.selectedIndex];
+        let valueToSend = this.value;
+        
+        // Convert back to the original type if needed
+        if (selectedOption.dataset.originalType === 'number') {
+            // Use the original value from the dataset for exact precision with floats
+            if (selectedOption.dataset.originalValue) {
+                valueToSend = parseFloat(selectedOption.dataset.originalValue);
+            } else {
+                valueToSend = parseFloat(valueToSend);
+            }
+        }
+        
+        updateParameter(name, valueToSend);
     });
     
     return select;
