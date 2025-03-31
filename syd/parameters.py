@@ -458,9 +458,42 @@ class SelectionParameter(Parameter[Any]):
         Raises:
             ValueError: If value is not in options list
         """
-        if new_value not in self.options:
-            raise ValueError(f"Value {new_value} not in options: {self.options}")
-        return new_value
+        # Direct check for non-float values or when new_value is exactly in options
+        if new_value in self.options:
+            return new_value
+
+        # Special handling for numeric values to account for type mismatches
+        if isinstance(new_value, (int, float)):
+            for option in self.options:
+                # For numeric options, compare as floats
+                if (
+                    isinstance(option, (int, float))
+                    and abs(float(new_value) - float(option)) < 1e-10
+                ):
+                    return option
+                # Also try string conversion for numeric strings
+                elif isinstance(option, str):
+                    try:
+                        if abs(float(new_value) - float(option)) < 1e-10:
+                            return option
+                    except ValueError:
+                        pass
+
+        # Handle string conversion - when new_value is a string but options might be numeric
+        if isinstance(new_value, str):
+            try:
+                # Try to convert to float if possible
+                float_value = float(new_value)
+                for option in self.options:
+                    if (
+                        isinstance(option, (int, float))
+                        and abs(float_value - float(option)) < 1e-10
+                    ):
+                        return option
+            except ValueError:
+                pass
+
+        raise ValueError(f"Value {new_value} not in options: {self.options}")
 
     def _validate_update(self) -> None:
         """
@@ -473,7 +506,46 @@ class SelectionParameter(Parameter[Any]):
             TypeError: If options is not a list or tuple
         """
         self.options = self._validate_options(self.options)
-        if self.value not in self.options:
+
+        # Check if value is directly in options
+        if self.value in self.options:
+            return
+
+        # For numeric values, try flexible comparison
+        value_found = False
+        if isinstance(self.value, (int, float)):
+            for option in self.options:
+                if (
+                    isinstance(option, (int, float))
+                    and abs(float(self.value) - float(option)) < 1e-10
+                ):
+                    # Don't update self.value here as we want to keep the original type if possible
+                    value_found = True
+                    break
+                elif isinstance(option, str):
+                    try:
+                        if abs(float(self.value) - float(option)) < 1e-10:
+                            value_found = True
+                            break
+                    except ValueError:
+                        pass
+
+        # For string values that might be numeric
+        if not value_found and isinstance(self.value, str):
+            try:
+                float_value = float(self.value)
+                for option in self.options:
+                    if (
+                        isinstance(option, (int, float))
+                        and abs(float_value - float(option)) < 1e-10
+                    ):
+                        value_found = True
+                        break
+            except ValueError:
+                pass
+
+        # If value is not found after all checks, reset to first option
+        if not value_found:
             warn(
                 ParameterUpdateWarning(
                     self.name,
