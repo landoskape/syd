@@ -91,3 +91,4 @@ Please make sure to update tests as appropriate and adhere to the existing codin
 - Export options:
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
+- [ ] Testing for remove parameter method in Viewer class

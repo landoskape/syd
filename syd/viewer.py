@@ -26,7 +26,10 @@ class _NoUpdate:
 
     def __eq__(self, other):
         """This makes sure all comparisons of _NoUpdate objects return True"""
-        return isinstance(other, _NoUpdate) or (hasattr(other, "_noupdate_identifier") and other._noupdate_identifier == self._noupdate_identifier)
+        return isinstance(other, _NoUpdate) or (
+            hasattr(other, "_noupdate_identifier")
+            and other._noupdate_identifier == self._noupdate_identifier
+        )
 
 
 # Create the singleton instance
@@ -248,20 +251,6 @@ class Viewer:
 
             deployer = NotebookDeployer(self, **kwargs)
             deployer.deploy()
-            return self
-
-        elif env == "plotly":
-            from .plotly_deployment import PlotlyDeployer
-
-            deployer = PlotlyDeployer(self, **kwargs)
-            deployer.deploy(mode="server")
-            return self
-
-        elif env == "plotly-inline":
-            from .plotly_deployment import PlotlyDeployer
-
-            deployer = PlotlyDeployer(self, **kwargs)
-            deployer.deploy(mode="notebook")
             return self
 
         elif env == "browser" or env == "flask":
@@ -488,6 +477,18 @@ class Viewer:
         self.perform_callbacks(name)
 
     # -------------------- parameter registration methods --------------------
+    def remove_parameter(self, name: str) -> None:
+        """
+        Remove a parameter from the viewer.
+
+        Parameters
+        ----------
+        name : str
+            Name of the parameter to remove
+        """
+        if name in self.parameters:
+            del self.parameters[name]
+
     @validate_parameter_operation("add", ParameterType.text)
     def add_text(self, name: str, *, value: str) -> None:
         """
