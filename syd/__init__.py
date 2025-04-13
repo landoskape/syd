@@ -1,7 +1,7 @@
 from typing import Callable, Optional
 from .viewer import Viewer
 
-__version__ = "0.1.7"
+__version__ = "0.1.8"
 
 
 def make_viewer(plot_func: Optional[Callable] = None):

@@ -44,7 +44,7 @@ env = "browser" # for viewing in a web browser
 viewer.deploy(env=env)
 ```
 
-We have several examples of more complex viewers in the [examples](examples) folder. A good one to start with is the [simple example](examples/simple_example.ipynb) because this has detailed explanations of how to use the core elements of SYD. To see an example that showcases everything you can do with SYD, try [complex example](examples/simple_example.ipynb). And to see what the same viewer looks like when written as a class, check out [subclass example](examples/subclass_example.ipynb). This format is pretty useful when you want complex functionality - for example if you want to add extra supporting methods for processing data and updating parameters that require more complex logic or if your data processing requires some clever preprocessing to make plotting fast. 
+We have several examples of more complex viewers in the [examples](examples) folder. A good one to start with is the [simple example](examples/1-simple_example.ipynb) because this has detailed explanations of how to use the core elements of SYD. To see an example that showcases everything you can do with SYD, try [complex example](examples/2a-complex_example.ipynb). And to see what the same viewer looks like when written as a class, check out [subclass example](examples/2b-subclass_example.ipynb). This format is pretty useful when you want complex functionality - for example if you want to add extra supporting methods for processing data and updating parameters that require more complex logic or if your data processing requires some clever preprocessing to make plotting fast. 
 
 ## Documentation
 
