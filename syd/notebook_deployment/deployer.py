@@ -227,6 +227,9 @@ class NotebookDeployer:
         with _plot_context():
             figure = self.viewer.plot(state)
 
+        # Update widgets if plot function updated a parameter
+        self._sync_widgets_with_state()
+
         # Close the last figure if it exists to keep matplotlib clean
         # (just moved this from after clear_output.... noting!)
         if self._last_figure is not None:

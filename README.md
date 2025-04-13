@@ -75,6 +75,7 @@ Please make sure to update tests as appropriate and adhere to the existing codin
   - [ ] Add a "save" button that saves the current state of the viewer to a json file
   - [ ] Add a "load" button that loads the viewer state from a json file
   - [ ] Add a "freeze" button that allows the user to update state variables without updating the plot until unfreezing
+  - [ ] Add a window for capturing any error messages that might be thrown by the plot function. Maybe we could have a little interface for looking at each one (up to a point) and the user could press a button to throw an error for the traceback. 
 - [ ] Consider "app_deployed" context for each deployer...
 - [ ] Consider the error messages and if they can be more informative and less opaque -- especially when debugging (e.g. when we always get routed to the decorators that check things...)
 - Notebook deployment debouncer: 
@@ -92,3 +93,5 @@ Please make sure to update tests as appropriate and adhere to the existing codin
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
 - [ ] Testing for remove parameter method in Viewer class
+- [ ] Consider changing the *_range name to *_pair
+- [ ] Remove the label attribute from button parameters

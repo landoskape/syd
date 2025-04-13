@@ -44,9 +44,7 @@ test = [
 Homepage = "https://github.com/landoskape/syd"
 
 [tool.hatch.build]
-include = [
-    "syd",
-]
+include = ["syd"]
 
 [tool.hatch.version]
 path = "syd/__init__.py"
