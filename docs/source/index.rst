@@ -18,7 +18,7 @@ Add GUI controls to your plots with just a few lines of code!
       return fig
 
    viewer = make_viewer(plot)
-   viewer.add_float('frequency', value=1.0, min_value=0, max_value=3.0)
+   viewer.add_float('frequency', value=1.0, min=0, max=3.0)
    viewer.deploy(continuous=True)
 
 

@@ -156,7 +156,7 @@ class Viewer:
     ...         self.update_float('x', value=state['x'])
     ...
     >>> viewer = MyViewer()
-    >>> viewer.add_float('x', value=1.0, min_value=0, max_value=10)
+    >>> viewer.add_float('x', value=1.0, min=0, max=10)
     >>> viewer.on_change('x', viewer.update_based_on_x)
     """
 
@@ -186,7 +186,7 @@ class Viewer:
 
         Examples
         --------
-        >>> viewer.add_float('x', value=1.0, min_value=0, max_value=10)
+        >>> viewer.add_float('x', value=1.0, min=0, max=10)
         >>> viewer.add_text('label', value='data')
         >>> viewer.state
         {'x': 1.0, 'label': 'data'}

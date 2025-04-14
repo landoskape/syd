@@ -24,7 +24,7 @@
 #     mock_viewer.add_text("text_param", value="test")
 #     mock_viewer.add_boolean("bool_param", value=True)
 #     mock_viewer.add_selection("select_param", value="A", options=["A", "B", "C"])
-#     mock_viewer.add_integer("int_param", value=5, min_value=0, max_value=10)
+#     mock_viewer.add_integer("int_param", value=5, min=0, max=10)
 #     return mock_viewer
 
 
@@ -93,11 +93,11 @@
 #         widget = create_widget(param)
 
 #         # Test value clamping
-#         widget.value = 15  # Above max_value
-#         assert widget.value == 10  # Should be clamped to max_value
+#         widget.value = 15  # Above max
+#         assert widget.value == 10  # Should be clamped to max
 
-#         widget.value = -5  # Below min_value
-#         assert widget.value == 0  # Should be clamped to min_value
+#         widget.value = -5  # Below min
+#         assert widget.value == 0  # Should be clamped to min
 
 
 # # Callback Tests

@@ -25,10 +25,10 @@ there if you want more details.
         
         def __init__(self):            
             # Add parameters
-            self.add_float("frequency", value=1.0, min_value=0.1, max_value=5.0)
-            self.add_float("sine_amplitude", value=1.0, min_value=0.1, max_value=2.0)
-            self.add_float("square_amplitude", value=1.0, min_value=0.1, max_value=2.0)
-            self.add_float("sawtooth_amplitude", value=1.0, min_value=0.1, max_value=2.0)
+            self.add_float("frequency", value=1.0, min=0.1, max=5.0)
+            self.add_float("sine_amplitude", value=1.0, min=0.1, max=2.0)
+            self.add_float("square_amplitude", value=1.0, min=0.1, max=2.0)
+            self.add_float("sawtooth_amplitude", value=1.0, min=0.1, max=2.0)
             self.add_selection("sine_color", value="red", options=["red", "blue", "green"])
             self.add_selection("square_color", value="blue", options=["red", "blue", "green"])
             self.add_selection("sawtooth_color", value="green", options=["red", "blue", "green"])
