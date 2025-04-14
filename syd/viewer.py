@@ -37,7 +37,8 @@ _NO_UPDATE = _NoUpdate()
 
 
 def validate_parameter_operation(
-    operation: str, parameter_type: Union[ParameterType, ActionType]
+    operation: str,
+    parameter_type: Union[ParameterType, ActionType],
 ) -> Callable:
     """
     Decorator that validates parameter operations for the viewer class.
