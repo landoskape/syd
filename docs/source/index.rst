@@ -34,9 +34,12 @@ You can install Syd using pip:
 Requirements
 ------------
 
-- Python 3.7+
+- Python 3.9+ (it might work on older versions but it isn't tested on them!)
 - matplotlib
 - ipywidgets (for Jupyter notebook support) 
+- ipympl (for Jupyter notebook support)
+- ipykernel (for Jupyter notebook support)
+- flask (for web deployment)
 
 
 .. toctree::
