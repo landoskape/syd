@@ -1,4 +1,4 @@
-# syd
+# Syd
 
 [![PyPI version](https://badge.fury.io/py/syd.svg)](https://badge.fury.io/py/syd)
 [![Tests](https://github.com/landoskape/syd/actions/workflows/tests.yml/badge.svg)](https://github.com/landoskape/syd/actions/workflows/tests.yml)
@@ -9,11 +9,11 @@
 
 A package to help you share your data!
 
-Have you ever wanted to look through all your data really quickly interactively? Of course you have. Mo data mo problems, but only if you don't know what to do with it. And that starts with looking at your data. And that's why syd stands for show your data! 
+Have you ever wanted to look through all your data really quickly interactively? Of course you have. Mo data mo problems, but only if you don't know what to do with it. And that's why Syd stands for show your data! 
 
-Syd is a system for creating a data viewing GUI that you can view on a web-browser (or in a jupyter notebook). And guess what? Since it opens on a web browser, you can even open it on any other computer on your local network! For example, your PI's computer. Gone are the days of single random examples that they make infinitely stubborn conclusions about. Now, you can look at all the examples, quickly and easily, on their computer. And that's why syd stands for share your data!
+Syd is a system for creating a data viewing GUI that you can view in a jupyter notebook or in a web browser. And guess what? Since it can open in a web browser, you can even open it on any other computer on your local network! For example, your PI's computer. Gone are the days of single random examples that they make infinitely stubborn conclusions about. Now, you can look at all the examples, quickly and easily, on their computer. And that's why Syd stands for share your data!
 
-Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This means you only have to think about _**what**_ you want to plot and _**which**_ parameters you want to be interactive. Syd handles all the behind-the-scenes action required to make an interface. And do you know what that means? It means you get to spend your time _thinking_ about your data, rather than writing code to look at it. And that's why syd stands for Science, Yes! Dayummmm!
+Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This means you only have to think about _**what**_ you want to plot and _**which**_ parameters you want to be interactive. Syd handles all the behind-the-scenes action required to make an interface. And do you know what that means? It means you get to spend your time _thinking_ about your data, rather than writing code to look at it. And that's why Syd stands for Science, Yes! Dayummmm!
 
 ## Installation
 It's easy, just use pip install. The dependencies are light so it should work in most environments.
@@ -39,14 +39,15 @@ viewer.set_plot(plot)
 viewer.add_float('amplitude', value=1.0, min=0, max=2)
 viewer.add_float('frequency', value=1.0, min=0.1, max=5)
 
-# env = "notebook" # for viewing within a jupyter notebook
-env = "browser" # for viewing in a web browser
+# env = "browser" # for viewing in a web browser
+env = "notebook" # for viewing within a jupyter notebook
 viewer.deploy(env=env)
 ```
 
-We have several examples of more complex viewers in the [examples](examples) folder. A good one to start with is the [simple example](examples/1-simple_example.ipynb) because this has detailed explanations of how to use the core elements of SYD. To see an example that showcases everything you can do with SYD, try [complex example](examples/2a-complex_example.ipynb). And to see what the same viewer looks like when written as a class, check out [subclass example](examples/2b-subclass_example.ipynb). This format is pretty useful when you want complex functionality - for example if you want to add extra supporting methods for processing data and updating parameters that require more complex logic or if your data processing requires some clever preprocessing to make plotting fast. 
+We have several examples of more complex viewers in the [examples](examples) folder. A good one to start with is the [simple example](examples/1-simple_example.ipynb) because this has detailed explanations of how to use the core elements of Syd. To see an example that showcases everything you can do with Syd, try [complex example](examples/2a-complex_example.ipynb). And to see what the same viewer looks like when written as a class, check out [subclass example](examples/2b-subclass_example.ipynb). This format is pretty useful when you want complex functionality - for example if you want to add extra supporting methods for processing data and updating parameters that require more complex logic or if your data processing requires some clever preprocessing to make plotting fast. 
 
-For some examples on how to handle data loading for syd viewers, check out the [data loading example](examples/3-data_loading.ipynb).
+#### Data loading
+Thinking about how to get data into a Syd viewer can be non-intuitive. For some examples that showcase different ways to get your data into a Syd viewer, check out the [data loading example](examples/3-data_loading.ipynb).
 
 ## Documentation
 
