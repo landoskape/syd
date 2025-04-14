@@ -137,6 +137,22 @@ def test_basic_add_and_update(param_type):
 
 
 @pytest.mark.parametrize("param_type", ParameterType)
+def test_remove_parameter(param_type):
+    viewer = MockViewer()
+    config = PARAM_CONFIGS[param_type]
+    add_method = getattr(viewer, f"add_{param_type.name}")
+    kwargs = config.get("extra_kwargs", {})
+    param_name = f"{param_type.name}_1"
+
+    add_method(param_name, value=config["basic_value"], **kwargs)
+    assert viewer.parameters[param_name].value == config["basic_value"]
+
+    viewer.remove_parameter(param_name)
+    assert param_name not in viewer.parameters
+    assert param_name not in viewer.state
+
+
+@pytest.mark.parametrize("param_type", ParameterType)
 def test_duplicate_parameter(param_type):
     viewer = MockViewer()
     config = PARAM_CONFIGS[param_type]
@@ -320,6 +336,14 @@ def test_selection_specific_operations(param_type):
         viewer.parameters[f"{param_type.name}_varied"].options
         == config["varied_options"]
     )
+
+    # Test that the options list can't be empty
+    with pytest.raises(ParameterAddError):
+        add_method(
+            f"{param_type.name}_empty_options",
+            value=config["basic_value"],
+            options=[],
+        )
 
     if param_type == ParameterType.multiple_selection:
         update_method(

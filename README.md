@@ -90,11 +90,8 @@ Please make sure to update tests as appropriate and adhere to the existing codin
     "recycle_figure: bool = False" flag be part of the deploy API. This way, an
     advanced user that wants snappy responsivity or complex figure management can
     do so, but the default is for the user to generate a new figure object each time.
-- I've updated some rules for parameters -- need to make tests for empty options on selection / multiple selections
 - Export options:
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
-- [ ] Testing for remove parameter method in Viewer class
 - [ ] Consider changing the *_range name to *_pair
-- [ ] Remove the label attribute from button parameters
-- [ ] Don't require a value to be set for parameters when adding them!!!
+- [ ] Don't require a value to be set for parameters when adding them!!! (Or label for the button parameters)
