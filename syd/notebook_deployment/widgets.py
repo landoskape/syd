@@ -31,7 +31,7 @@ class BaseWidget(Generic[T, W], ABC):
 
     _widget: W
     _callbacks: List[Dict[str, Union[Callable, Union[str, List[str]]]]]
-    _is_action: bool = False
+    is_action: bool = False
 
     def __init__(
         self,
@@ -465,7 +465,7 @@ class UnboundedFloatWidget(BaseWidget[UnboundedFloatParameter, widgets.FloatText
 class ButtonWidget(BaseWidget[ButtonAction, widgets.Button]):
     """Widget for button parameters."""
 
-    _is_action: bool = True
+    is_action: bool = True
 
     def _create_widget(
         self,
