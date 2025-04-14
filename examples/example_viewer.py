@@ -41,5 +41,9 @@ class ViewerWithData(Viewer):
         filtered_sample = self.filter_data(c_sample)
         fig = plt.figure(figsize=(4, 4))
         ax = plt.gca()
+
+        # HELLO USER
+        # TRY CHANGING THE COLOR OF THE LINE AND REDEPLOYING WITHOUT CONSTRUCTING THE NEW VIEWER OBJECT!!!
+        # (for 3-data_loading.ipynb)
         ax.plot(filtered_sample, color="k")
         return fig
