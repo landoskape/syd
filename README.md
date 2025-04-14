@@ -95,3 +95,4 @@ Please make sure to update tests as appropriate and adhere to the existing codin
 - [ ] Testing for remove parameter method in Viewer class
 - [ ] Consider changing the *_range name to *_pair
 - [ ] Remove the label attribute from button parameters
+- [ ] Don't require a value to be set for parameters when adding them!!!
