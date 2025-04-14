@@ -60,7 +60,7 @@ def test_method_signatures_match_parameters(param_type):
     add_method = getattr(viewer, f"add_{param_type.name}")
     add_params = get_method_parameters(add_method)
 
-    # For add methods, all parameters should be required (no _NoUpdate)
+    # For add methods, all parameters should be required (no NoUpdate)
     for attr_name in param_attrs:
         assert attr_name in add_params, f"Missing {attr_name} in add_{param_type.name}"
 
