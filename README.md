@@ -93,5 +93,3 @@ Please make sure to update tests as appropriate and adhere to the existing codin
 - Export options:
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
-- [ ] Consider changing the *_range name to *_pair
-- [ ] Don't require a value to be set for parameters when adding them!!! (Or label for the button parameters)

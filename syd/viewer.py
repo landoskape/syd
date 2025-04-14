@@ -4,36 +4,13 @@ import inspect
 from contextlib import contextmanager
 from matplotlib.figure import Figure
 
-from .parameters import (
-    ParameterType,
-    ActionType,
-    Parameter,
-    ParameterAddError,
-    ParameterUpdateError,
-)
+from .parameters import ParameterType, ActionType, Parameter
+from .support import NoUpdate, NoInitialValue, ParameterAddError, ParameterUpdateError
 
 
-class _NoUpdate:
-    """Singleton class to represent a non-update in parameter operations."""
-
-    _instance = None
-    _noupdate_identifier = "NO_UPDATE"
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __eq__(self, other):
-        """This makes sure all comparisons of _NoUpdate objects return True"""
-        return isinstance(other, _NoUpdate) or (
-            hasattr(other, "_noupdate_identifier")
-            and other._noupdate_identifier == self._noupdate_identifier
-        )
-
-
-# Create the singleton instance
-_NO_UPDATE = _NoUpdate()
+# Create the singleton instances
+NO_UPDATE = NoUpdate()
+NO_INITIAL_VALUE = NoInitialValue()
 
 
 def validate_parameter_operation(
@@ -491,7 +468,12 @@ class Viewer:
             del self.parameters[name]
 
     @validate_parameter_operation("add", ParameterType.text)
-    def add_text(self, name: str, *, value: str) -> None:
+    def add_text(
+        self,
+        name: str,
+        *,
+        value: str | NoInitialValue = NO_INITIAL_VALUE,
+    ) -> None:
         """
         Add a text input parameter to the viewer.
 
@@ -502,8 +484,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : str
+        value : str or NoInitialValue
             Initial text value
+            If not provided, the parameter will be empty.
 
         Examples
         --------
@@ -519,7 +502,12 @@ class Viewer:
             self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.boolean)
-    def add_boolean(self, name: str, *, value: bool) -> None:
+    def add_boolean(
+        self,
+        name: str,
+        *,
+        value: bool | NoInitialValue = NO_INITIAL_VALUE,
+    ) -> None:
         """
         Add a boolean parameter to the viewer.
 
@@ -530,8 +518,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : bool
+        value : bool or NoInitialValue
             Initial state (True=checked, False=unchecked)
+            If not provided, the parameter will be checked.
 
         Examples
         --------
@@ -547,7 +536,13 @@ class Viewer:
             self.parameters[name] = new_param
 
     @validate_parameter_operation("add", ParameterType.selection)
-    def add_selection(self, name: str, *, value: Any, options: List[Any]) -> None:
+    def add_selection(
+        self,
+        name: str,
+        *,
+        value: Any | NoInitialValue = NO_INITIAL_VALUE,
+        options: List[Any],
+    ) -> None:
         """
         Add a single-selection parameter to the viewer.
 
@@ -579,7 +574,11 @@ class Viewer:
 
     @validate_parameter_operation("add", ParameterType.multiple_selection)
     def add_multiple_selection(
-        self, name: str, *, value: List[Any], options: List[Any]
+        self,
+        name: str,
+        *,
+        value: List[Any] | NoInitialValue = NO_INITIAL_VALUE,
+        options: List[Any],
     ) -> None:
         """
         Add a multiple-selection parameter to the viewer.
@@ -592,8 +591,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : list
+        value : list or NoInitialValue
             Initially selected values (must all be in options)
+            If not provided, the parameter will be empty.
         options : list
             List of values that can be selected
 
@@ -617,7 +617,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, int],
+        value: Union[float, int] | NoInitialValue = NO_INITIAL_VALUE,
         min: Union[float, int],
         max: Union[float, int],
     ) -> None:
@@ -631,8 +631,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI and internal identifier)
-        value : int
+        value : int or NoInitialValue
             Initial value (default position of the slider)
+            If not provided, the parameter will be set to the minimum value.
         min : int
             Minimum allowed value
         max : int
@@ -645,9 +646,7 @@ class Viewer:
         >>> viewer.add_integer('year', value=2023, min=1900, max=2100)
         """
         try:
-            new_param = ParameterType.integer.value(
-                name, int(value), int(min), int(max)
-            )
+            new_param = ParameterType.integer.value(name, value, min, max)
         except Exception as e:
             raise ParameterAddError(name, "integer", str(e)) from e
         else:
@@ -658,7 +657,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, int],
+        value: Union[float, int] | NoInitialValue = NO_INITIAL_VALUE,
         min: Union[float, int],
         max: Union[float, int],
         step: float = 0.01,
@@ -673,8 +672,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (internal identifier)
-        value : float
+        value : float or NoInitialValue
             Initial value (default position of the slider)
+            If not provided, the parameter will be set to the minimum value.
         min : float
             Minimum allowed value
         max : float
@@ -689,9 +689,7 @@ class Viewer:
         >>> viewer.add_float('price', value=9.99, min=0.0, max=100.0, step=0.01)
         """
         try:
-            new_param = ParameterType.float.value(
-                name, float(value), float(min), float(max), float(step)
-            )
+            new_param = ParameterType.float.value(name, value, min, max, step)
         except Exception as e:
             raise ParameterAddError(name, "float", str(e)) from e
         else:
@@ -702,7 +700,9 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Tuple[Union[float, int], Union[float, int]],
+        value: (
+            Tuple[Union[float, int], Union[float, int]] | NoInitialValue
+        ) = NO_INITIAL_VALUE,
         min: Union[float, int],
         max: Union[float, int],
     ) -> None:
@@ -716,8 +716,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (internal identifier)
-        value : tuple[int, int]
+        value : tuple[int, int] or NoInitialValue
             Initial (low, high) values for the range
+            If not provided, the parameter will be set to the full range.
         min : int
             Minimum allowed value for the range
         max : int
@@ -730,10 +731,7 @@ class Viewer:
         >>> viewer.add_integer_range('year_range', value=(2000, 2020), min=1900, max=2100)
         """
         try:
-            val_low, val_high = value
-            new_param = ParameterType.integer_range.value(
-                name, (int(val_low), int(val_high)), int(min), int(max)
-            )
+            new_param = ParameterType.integer_range.value(name, value, min, max)
         except Exception as e:
             raise ParameterAddError(name, "integer_range", str(e)) from e
         else:
@@ -744,7 +742,9 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Tuple[Union[float, int], Union[float, int]],
+        value: (
+            Tuple[Union[float, int], Union[float, int]] | NoInitialValue
+        ) = NO_INITIAL_VALUE,
         min: Union[float, int],
         max: Union[float, int],
         step: float = 0.01,
@@ -759,8 +759,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (internal identifier)
-        value : tuple[float, float]
+        value : tuple[float, float] or NoInitialValue
             Initial (low, high) values for the range
+            If not provided, the parameter will be set to the full range.
         min : float
             Minimum allowed value for the range
         max : float
@@ -775,14 +776,7 @@ class Viewer:
         >>> viewer.add_float_range('price_range', value=(10.0, 50.0), min=0.0, max=100.0, step=0.01)
         """
         try:
-            val_low, val_high = value
-            new_param = ParameterType.float_range.value(
-                name,
-                (float(val_low), float(val_high)),
-                float(min),
-                float(max),
-                float(step),
-            )
+            new_param = ParameterType.float_range.value(name, value, min, max, step)
         except Exception as e:
             raise ParameterAddError(name, "float_range", str(e)) from e
         else:
@@ -793,7 +787,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, int],
+        value: Union[float, int] | NoInitialValue = NO_INITIAL_VALUE,
     ) -> None:
         """
         Add an unbounded integer parameter to the viewer.
@@ -806,8 +800,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : int
+        value : int or NoInitialValue
             Initial value
+            If not provided, the parameter will be set to 0.
 
         Examples
         --------
@@ -816,10 +811,7 @@ class Viewer:
         1000000
         """
         try:
-            new_param = ParameterType.unbounded_integer.value(
-                name,
-                value,
-            )
+            new_param = ParameterType.unbounded_integer.value(name, value)
         except Exception as e:
             raise ParameterAddError(name, "unbounded_integer", str(e)) from e
         else:
@@ -830,7 +822,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, int],
+        value: Union[float, int] | NoInitialValue = NO_INITIAL_VALUE,
         step: Optional[float] = None,
     ) -> None:
         """
@@ -845,8 +837,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : float
+        value : float or NoInitialValue
             Initial value
+            If not provided, the parameter will be set to 0.
         step : float, optional
             Size of each increment (or None for no rounding)
 
@@ -861,11 +854,7 @@ class Viewer:
         5.51e-07
         """
         try:
-            new_param = ParameterType.unbounded_float.value(
-                name,
-                value,
-                step,
-            )
+            new_param = ParameterType.unbounded_float.value(name, value, step)
         except Exception as e:
             raise ParameterAddError(name, "unbounded_float", str(e)) from e
         else:
@@ -876,7 +865,7 @@ class Viewer:
         self,
         name: str,
         *,
-        label: str,
+        label: str | NoInitialValue = NO_INITIAL_VALUE,
         callback: Callable[[], None],
     ) -> None:
         """
@@ -890,8 +879,9 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (internal identifier)
-        label : str
+        label : str or NoInitialValue
             Text to display on the button
+            If not provided, the parameter's label will be set to the name.
         callback : callable
             Function to call when the button is clicked (takes state as a single argument)
 
@@ -920,7 +910,7 @@ class Viewer:
     # -------------------- parameter update methods --------------------
     @validate_parameter_operation("update", ParameterType.text)
     def update_text(
-        self, name: str, *, value: Union[str, _NoUpdate] = _NO_UPDATE
+        self, name: str, *, value: Union[str, NoUpdate] = NO_UPDATE
     ) -> None:
         """
         Update a text parameter's value.
@@ -943,14 +933,14 @@ class Viewer:
         'New Title'
         """
         updates = {}
-        if not value == _NO_UPDATE:
+        if not value == NO_UPDATE:
             updates["value"] = value
         if updates:
             self.parameters[name].update(updates)
 
     @validate_parameter_operation("update", ParameterType.boolean)
     def update_boolean(
-        self, name: str, *, value: Union[bool, _NoUpdate] = _NO_UPDATE
+        self, name: str, *, value: Union[bool, NoUpdate] = NO_UPDATE
     ) -> None:
         """
         Update a boolean parameter's value.
@@ -973,7 +963,7 @@ class Viewer:
         False
         """
         updates = {}
-        if not value == _NO_UPDATE:
+        if not value == NO_UPDATE:
             updates["value"] = value
         if updates:
             self.parameters[name].update(updates)
@@ -983,8 +973,8 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[Any, _NoUpdate] = _NO_UPDATE,
-        options: Union[List[Any], _NoUpdate] = _NO_UPDATE,
+        value: Union[Any, NoUpdate] = NO_UPDATE,
+        options: Union[List[Any], NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update a selection parameter's value and/or options.
@@ -1013,9 +1003,9 @@ class Viewer:
         ...                        value='purple')
         """
         updates = {}
-        if not value == _NO_UPDATE:
+        if not value == NO_UPDATE:
             updates["value"] = value
-        if not options == _NO_UPDATE:
+        if not options == NO_UPDATE:
             updates["options"] = options
         if updates:
             self.parameters[name].update(updates)
@@ -1025,8 +1015,8 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[List[Any], _NoUpdate] = _NO_UPDATE,
-        options: Union[List[Any], _NoUpdate] = _NO_UPDATE,
+        value: Union[List[Any], NoUpdate] = NO_UPDATE,
+        options: Union[List[Any], NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update a multiple selection parameter's values and/or options.
@@ -1057,9 +1047,9 @@ class Viewer:
         ...     value=['cheese', 'bacon'])
         """
         updates = {}
-        if not value == _NO_UPDATE:
+        if not value == NO_UPDATE:
             updates["value"] = value
-        if not options == _NO_UPDATE:
+        if not options == NO_UPDATE:
             updates["options"] = options
         if updates:
             self.parameters[name].update(updates)
@@ -1069,9 +1059,9 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[int, _NoUpdate] = _NO_UPDATE,
-        min: Union[int, _NoUpdate] = _NO_UPDATE,
-        max: Union[int, _NoUpdate] = _NO_UPDATE,
+        value: Union[int, NoUpdate] = NO_UPDATE,
+        min: Union[int, NoUpdate] = NO_UPDATE,
+        max: Union[int, NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update an integer parameter.
@@ -1097,11 +1087,11 @@ class Viewer:
         >>> viewer.update_integer('year', min=2000, max=2023)  # Update just the bounds
         """
         updates = {}
-        if not isinstance(value, _NoUpdate):
+        if not isinstance(value, NoUpdate):
             updates["value"] = int(value)
-        if not isinstance(min, _NoUpdate):
+        if not isinstance(min, NoUpdate):
             updates["min"] = int(min)
-        if not isinstance(max, _NoUpdate):
+        if not isinstance(max, NoUpdate):
             updates["max"] = int(max)
 
         parameter = self.parameters[name]
@@ -1112,10 +1102,10 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, _NoUpdate] = _NO_UPDATE,
-        min: Union[float, _NoUpdate] = _NO_UPDATE,
-        max: Union[float, _NoUpdate] = _NO_UPDATE,
-        step: Union[float, _NoUpdate] = _NO_UPDATE,
+        value: Union[float, NoUpdate] = NO_UPDATE,
+        min: Union[float, NoUpdate] = NO_UPDATE,
+        max: Union[float, NoUpdate] = NO_UPDATE,
+        step: Union[float, NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update a float parameter.
@@ -1143,13 +1133,13 @@ class Viewer:
         >>> viewer.update_float('price', min=5.0, max=200.0, step=0.05)  # Update bounds and step
         """
         updates = {}
-        if not isinstance(value, _NoUpdate):
+        if not isinstance(value, NoUpdate):
             updates["value"] = float(value)
-        if not isinstance(min, _NoUpdate):
+        if not isinstance(min, NoUpdate):
             updates["min"] = float(min)
-        if not isinstance(max, _NoUpdate):
+        if not isinstance(max, NoUpdate):
             updates["max"] = float(max)
-        if not isinstance(step, _NoUpdate):
+        if not isinstance(step, NoUpdate):
             updates["step"] = float(step)
 
         parameter = self.parameters[name]
@@ -1160,9 +1150,9 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[Tuple[int, int], _NoUpdate] = _NO_UPDATE,
-        min: Union[int, _NoUpdate] = _NO_UPDATE,
-        max: Union[int, _NoUpdate] = _NO_UPDATE,
+        value: Union[Tuple[int, int], NoUpdate] = NO_UPDATE,
+        min: Union[int, NoUpdate] = NO_UPDATE,
+        max: Union[int, NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update an integer range parameter.
@@ -1188,12 +1178,12 @@ class Viewer:
         >>> viewer.update_integer_range('year_range', min=1950, max=2023)  # Update just the bounds
         """
         updates = {}
-        if not isinstance(value, _NoUpdate):
+        if not isinstance(value, NoUpdate):
             val_low, val_high = value
             updates["value"] = (int(val_low), int(val_high))
-        if not isinstance(min, _NoUpdate):
+        if not isinstance(min, NoUpdate):
             updates["min"] = int(min)
-        if not isinstance(max, _NoUpdate):
+        if not isinstance(max, NoUpdate):
             updates["max"] = int(max)
 
         parameter = self.parameters[name]
@@ -1204,10 +1194,10 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[Tuple[float, float], _NoUpdate] = _NO_UPDATE,
-        min: Union[float, _NoUpdate] = _NO_UPDATE,
-        max: Union[float, _NoUpdate] = _NO_UPDATE,
-        step: Union[float, _NoUpdate] = _NO_UPDATE,
+        value: Union[Tuple[float, float], NoUpdate] = NO_UPDATE,
+        min: Union[float, NoUpdate] = NO_UPDATE,
+        max: Union[float, NoUpdate] = NO_UPDATE,
+        step: Union[float, NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update a float range parameter.
@@ -1240,14 +1230,14 @@ class Viewer:
         ... )  # Update bounds and step
         """
         updates = {}
-        if not isinstance(value, _NoUpdate):
+        if not isinstance(value, NoUpdate):
             val_low, val_high = value
             updates["value"] = (float(val_low), float(val_high))
-        if not isinstance(min, _NoUpdate):
+        if not isinstance(min, NoUpdate):
             updates["min"] = float(min)
-        if not isinstance(max, _NoUpdate):
+        if not isinstance(max, NoUpdate):
             updates["max"] = float(max)
-        if not isinstance(step, _NoUpdate):
+        if not isinstance(step, NoUpdate):
             updates["step"] = float(step)
 
         parameter = self.parameters[name]
@@ -1258,7 +1248,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[int, _NoUpdate] = _NO_UPDATE,
+        value: Union[int, NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update an unbounded integer parameter's value and/or bounds.
@@ -1280,7 +1270,7 @@ class Viewer:
         >>> viewer.update_unbounded_integer('population', value=2000000)
         """
         updates = {}
-        if not value == _NO_UPDATE:
+        if not value == NO_UPDATE:
             updates["value"] = value
         if updates:
             self.parameters[name].update(updates)
@@ -1290,8 +1280,8 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, _NoUpdate] = _NO_UPDATE,
-        step: Union[Optional[float], _NoUpdate] = _NO_UPDATE,
+        value: Union[float, NoUpdate] = NO_UPDATE,
+        step: Union[Optional[float], NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update an unbounded float parameter's value, bounds, and/or step size.
@@ -1319,9 +1309,9 @@ class Viewer:
         >>> viewer.update_unbounded_float('wavelength', step=None)
         """
         updates = {}
-        if not value == _NO_UPDATE:
+        if not value == NO_UPDATE:
             updates["value"] = value
-        if not step == _NO_UPDATE:
+        if not step == NO_UPDATE:
             updates["step"] = step
         if updates:
             self.parameters[name].update(updates)
@@ -1331,8 +1321,8 @@ class Viewer:
         self,
         name: str,
         *,
-        label: Union[str, _NoUpdate] = _NO_UPDATE,
-        callback: Union[Callable[[], None], _NoUpdate] = _NO_UPDATE,
+        label: Union[str, NoUpdate] = NO_UPDATE,
+        callback: Union[Callable[[], None], NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update a button parameter's label and/or callback function.
@@ -1358,9 +1348,9 @@ class Viewer:
         ...                     callback=new_callback)
         """
         updates = {}
-        if not label == _NO_UPDATE:
+        if not label == NO_UPDATE:
             updates["label"] = label
-        if not callback == _NO_UPDATE:
+        if not callback == NO_UPDATE:
             callback = self._prepare_function(
                 callback,
                 context="Updating button callback:",

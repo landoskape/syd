@@ -1,12 +1,7 @@
 import pytest
 from itertools import combinations
-from syd.parameters import (
-    ParameterAddError,
-    ParameterUpdateError,
-    ParameterUpdateWarning,
-    ParameterType,
-    ActionType,
-)
+from syd.parameters import ParameterType, ActionType
+from syd.support import ParameterAddError, ParameterUpdateError, ParameterUpdateWarning
 from tests.support import MockViewer, check_no_change
 
 
@@ -20,15 +15,18 @@ PARAM_CONFIGS = {
         "basic_value": "hello",
         "updated_value": "world",
         "convert_values": [(123, "123"), (456.789, "456.789")],
+        "default_value": "",
     },
     ParameterType.boolean: {
         "basic_value": True,
         "updated_value": False,
         "convert_values": [(1, True), (0, False), ("hello", True), ([], False)],
+        "default_value": True,
     },
     ParameterType.selection: {
         "basic_value": "a",
         "updated_value": "b",
+        "default_value": "a",
         "options": ["a", "b", "c"],
         "extra_kwargs": {"options": ["a", "b", "c"]},
         "consistent_options": ["a", "b", "c", "d"],
@@ -42,6 +40,7 @@ PARAM_CONFIGS = {
     ParameterType.multiple_selection: {
         "basic_value": ["a"],
         "updated_value": ["b"],
+        "default_value": [],
         "options": ["a", "b", "c"],
         "extra_kwargs": {"options": ["a", "b", "c"]},
         "consistent_options": ["a", "b", "c", "d"],
@@ -56,6 +55,7 @@ PARAM_CONFIGS = {
     ParameterType.integer: {
         "basic_value": 1,
         "updated_value": 2,
+        "default_value": 0,
         "extra_kwargs": {"min": 0, "max": 10},
         "convert_values": [("5", 5)],
         "clamping_values": [(-100, 0), (100, 10)],
@@ -63,6 +63,7 @@ PARAM_CONFIGS = {
     ParameterType.float: {
         "basic_value": 1.5,
         "updated_value": 2.5,
+        "default_value": 0,
         "extra_kwargs": {"min": 0, "max": 10},
         "convert_values": [("5.5", 5.5)],
         "clamping_values": [(-100, 0), (100, 10)],
@@ -70,6 +71,7 @@ PARAM_CONFIGS = {
     ParameterType.integer_range: {
         "basic_value": (1, 5),
         "updated_value": (2, 6),
+        "default_value": (0, 10),
         "extra_kwargs": {"min": 0, "max": 10},
         "convert_values": [(("5", "8"), (5, 8))],
         "clamping_values": [((-100, 110), (0, 10))],
@@ -77,6 +79,7 @@ PARAM_CONFIGS = {
     ParameterType.float_range: {
         "basic_value": (1.5, 5.5),
         "updated_value": (2.5, 6.5),
+        "default_value": (0, 10),
         "extra_kwargs": {"min": 0, "max": 10},
         "convert_values": [(("5.5", "8.5"), (5.5, 8.5))],
         "clamping_values": [((-100, 110), (0, 10))],
@@ -84,12 +87,14 @@ PARAM_CONFIGS = {
     ParameterType.unbounded_integer: {
         "basic_value": 1,
         "updated_value": 2,
+        "default_value": 0,
         "extra_kwargs": {},
         "convert_values": [("5", 5)],
     },
     ParameterType.unbounded_float: {
         "basic_value": 1.5,
         "updated_value": 2.5,
+        "default_value": 0,
         "extra_kwargs": {"step": 0.1},
         "convert_values": [("5.5", 5.5)],
     },
@@ -409,6 +414,43 @@ def test_is_action_parameter(param_type):
     add_method(param_name, **kwargs)
     assert hasattr(viewer.parameters[param_name], "_is_action")
     assert viewer.parameters[param_name]._is_action
+
+
+@pytest.mark.parametrize("param_type", ParameterType)
+def test_not_is_action_parameter(param_type):
+    viewer = MockViewer()
+    config = PARAM_CONFIGS[param_type]
+    add_method = getattr(viewer, f"add_{param_type.name}")
+    value = config.get("basic_value", None)
+    kwargs = config.get("extra_kwargs", {})
+    param_name = f"{param_type.name}_1"
+
+    add_method(param_name, value=value, **kwargs)
+    assert hasattr(viewer.parameters[param_name], "_is_action")
+    assert not viewer.parameters[param_name]._is_action
+
+
+@pytest.mark.parametrize("param_type", ParameterType)
+def test_no_value_parameter(param_type):
+    viewer = MockViewer()
+    config = PARAM_CONFIGS[param_type]
+    add_method = getattr(viewer, f"add_{param_type.name}")
+    kwargs = config.get("extra_kwargs", {})
+    param_name = f"{param_type.name}_1"
+    add_method(param_name, **kwargs)
+    assert viewer.parameters[param_name].value == config["default_value"]
+
+
+def test_no_label_button_parameter():
+    param_type = ActionType.button
+    viewer = MockViewer()
+    config = PARAM_CONFIGS[param_type]
+    add_method = getattr(viewer, f"add_{param_type.name}")
+    kwargs = config.get("extra_kwargs", {})
+    kwargs.pop("label", None)
+    param_name = f"{param_type.name}_1"
+    add_method(param_name, **kwargs)
+    assert viewer.parameters[param_name].label == param_name
 
 
 def test_on_change_no_parameter():
