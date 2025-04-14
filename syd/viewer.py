@@ -464,7 +464,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: str | NoInitialValue = NO_INITIAL_VALUE,
+        value: Union[str, NoInitialValue] = NO_INITIAL_VALUE,
     ) -> None:
         """
         Add a text input parameter to the viewer.
@@ -476,7 +476,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : str or NoInitialValue
+        value : Union[str, NoInitialValue]
             Initial text value
             If not provided, the parameter will be empty.
 
@@ -498,7 +498,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: bool | NoInitialValue = NO_INITIAL_VALUE,
+        value: Union[bool, NoInitialValue] = NO_INITIAL_VALUE,
     ) -> None:
         """
         Add a boolean parameter to the viewer.
@@ -510,7 +510,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : bool or NoInitialValue
+        value : Union[bool, NoInitialValue]
             Initial state (True=checked, False=unchecked)
             If not provided, the parameter will be checked.
 
@@ -532,7 +532,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Any | NoInitialValue = NO_INITIAL_VALUE,
+        value: Union[Any, NoInitialValue] = NO_INITIAL_VALUE,
         options: List[Any],
     ) -> None:
         """
@@ -569,7 +569,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: List[Any] | NoInitialValue = NO_INITIAL_VALUE,
+        value: Union[List[Any], NoInitialValue] = NO_INITIAL_VALUE,
         options: List[Any],
     ) -> None:
         """
@@ -583,7 +583,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : list or NoInitialValue
+        value : Union[list, NoInitialValue]
             Initially selected values (must all be in options)
             If not provided, the parameter will be empty.
         options : list
@@ -609,7 +609,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, int] | NoInitialValue = NO_INITIAL_VALUE,
+        value: Union[Union[float, int], NoInitialValue] = NO_INITIAL_VALUE,
         min: Union[float, int],
         max: Union[float, int],
     ) -> None:
@@ -623,7 +623,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI and internal identifier)
-        value : int or NoInitialValue
+        value : Union[int, NoInitialValue]
             Initial value (default position of the slider)
             If not provided, the parameter will be set to the minimum value.
         min : int
@@ -649,7 +649,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, int] | NoInitialValue = NO_INITIAL_VALUE,
+        value: Union[Union[float, int], NoInitialValue] = NO_INITIAL_VALUE,
         min: Union[float, int],
         max: Union[float, int],
         step: float = 0.01,
@@ -664,7 +664,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (internal identifier)
-        value : float or NoInitialValue
+        value : Union[float, NoInitialValue]
             Initial value (default position of the slider)
             If not provided, the parameter will be set to the minimum value.
         min : float
@@ -692,9 +692,9 @@ class Viewer:
         self,
         name: str,
         *,
-        value: (
-            Tuple[Union[float, int], Union[float, int]] | NoInitialValue
-        ) = NO_INITIAL_VALUE,
+        value: Union[
+            Tuple[Union[float, int], Union[float, int]], NoInitialValue
+        ] = NO_INITIAL_VALUE,
         min: Union[float, int],
         max: Union[float, int],
     ) -> None:
@@ -708,7 +708,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (internal identifier)
-        value : tuple[int, int] or NoInitialValue
+        value : Union[tuple[int, int], NoInitialValue]
             Initial (low, high) values for the range
             If not provided, the parameter will be set to the full range.
         min : int
@@ -734,9 +734,9 @@ class Viewer:
         self,
         name: str,
         *,
-        value: (
-            Tuple[Union[float, int], Union[float, int]] | NoInitialValue
-        ) = NO_INITIAL_VALUE,
+        value: Union[
+            Tuple[Union[float, int], Union[float, int]], NoInitialValue
+        ] = NO_INITIAL_VALUE,
         min: Union[float, int],
         max: Union[float, int],
         step: float = 0.01,
@@ -751,7 +751,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (internal identifier)
-        value : tuple[float, float] or NoInitialValue
+        value : Union[tuple[float, float], NoInitialValue]
             Initial (low, high) values for the range
             If not provided, the parameter will be set to the full range.
         min : float
@@ -779,7 +779,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, int] | NoInitialValue = NO_INITIAL_VALUE,
+        value: Union[Union[float, int], NoInitialValue] = NO_INITIAL_VALUE,
     ) -> None:
         """
         Add an unbounded integer parameter to the viewer.
@@ -792,7 +792,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : int or NoInitialValue
+        value : Union[int, NoInitialValue]
             Initial value
             If not provided, the parameter will be set to 0.
 
@@ -814,7 +814,7 @@ class Viewer:
         self,
         name: str,
         *,
-        value: Union[float, int] | NoInitialValue = NO_INITIAL_VALUE,
+        value: Union[Union[float, int], NoInitialValue] = NO_INITIAL_VALUE,
         step: Optional[float] = None,
     ) -> None:
         """
@@ -829,7 +829,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (used as label in GUI)
-        value : float or NoInitialValue
+        value : Union[float, NoInitialValue]
             Initial value
             If not provided, the parameter will be set to 0.
         step : float, optional
@@ -857,7 +857,7 @@ class Viewer:
         self,
         name: str,
         *,
-        label: str | NoInitialValue = NO_INITIAL_VALUE,
+        label: Union[str, NoInitialValue] = NO_INITIAL_VALUE,
         callback: Callable[[], None],
     ) -> None:
         """
@@ -871,7 +871,7 @@ class Viewer:
         ----------
         name : str
             Name of the parameter (internal identifier)
-        label : str or NoInitialValue
+        label : Union[str, NoInitialValue]
             Text to display on the button
             If not provided, the parameter's label will be set to the name.
         callback : callable
@@ -914,7 +914,7 @@ class Viewer:
         ----------
         name : str
             Name of the text parameter to update
-        value : str, optional
+        value : Union[str, NoUpdate], optional
             New text value (if not provided, no change)
 
         Examples
@@ -944,7 +944,7 @@ class Viewer:
         ----------
         name : str
             Name of the boolean parameter to update
-        value : bool, optional
+        value : Union[bool, NoUpdate], optional
             New state (True/False) (if not provided, no change)
 
         Examples
@@ -978,9 +978,9 @@ class Viewer:
         ----------
         name : str
             Name of the selection parameter to update
-        value : Any, optional
+        value : Union[Any, NoUpdate], optional
             New selected value (must be in options) (if not provided, no change)
-        options : list, optional
+        options : Union[list, NoUpdate], optional
             New list of selectable options (if not provided, no change)
 
         Examples
@@ -1020,9 +1020,9 @@ class Viewer:
         ----------
         name : str
             Name of the multiple selection parameter to update
-        value : list, optional
+        value : Union[list, NoUpdate], optional
             New list of selected values (all must be in options) (if not provided, no change)
-        options : list, optional
+        options : Union[list, NoUpdate], optional
             New list of selectable options (if not provided, no change)
 
         Examples
@@ -1065,11 +1065,11 @@ class Viewer:
         ----------
         name : str
             Name of the parameter to update
-        value : int, optional
+        value : Union[int, NoUpdate], optional
             New value
-        min : int, optional
+        min : Union[int, NoUpdate], optional
             New minimum allowed value
-        max : int, optional
+        max : Union[int, NoUpdate], optional
             New maximum allowed value
 
         Examples
@@ -1109,13 +1109,13 @@ class Viewer:
         ----------
         name : str
             Name of the parameter to update
-        value : float, optional
+        value : Union[float, NoUpdate], optional
             New value
-        min : float, optional
+        min : Union[float, NoUpdate], optional
             New minimum allowed value
-        max : float, optional
+        max : Union[float, NoUpdate], optional
             New maximum allowed value
-        step : float, optional
+        step : Union[float, NoUpdate], optional
             New step size for the slider
 
         Examples
@@ -1156,11 +1156,11 @@ class Viewer:
         ----------
         name : str
             Name of the parameter to update
-        value : tuple[int, int], optional
+        value : Union[tuple[int, int], NoUpdate], optional
             New (low, high) values
-        min : int, optional
+        min : Union[int, NoUpdate], optional
             New minimum allowed value
-        max : int, optional
+        max : Union[int, NoUpdate], optional
             New maximum allowed value
 
         Examples
@@ -1201,13 +1201,13 @@ class Viewer:
         ----------
         name : str
             Name of the parameter to update
-        value : tuple[float, float], optional
+        value : Union[tuple[float, float], NoUpdate], optional
             New (low, high) values
-        min : float, optional
+        min : Union[float, NoUpdate], optional
             New minimum allowed value
-        max : float, optional
+        max : Union[float, NoUpdate], optional
             New maximum allowed value
-        step : float, optional
+        step : Union[float, NoUpdate], optional
             New step size for the slider
 
         Examples
@@ -1252,7 +1252,7 @@ class Viewer:
         ----------
         name : str
             Name of the unbounded integer parameter to update
-        value : int, optional
+        value : Union[int, NoUpdate], optional
             New value (if not provided, no change)
 
         Examples
@@ -1285,9 +1285,9 @@ class Viewer:
         ----------
         name : str
             Name of the unbounded float parameter to update
-        value : float, optional
+        value : Union[float, NoUpdate], optional
             New value (will be rounded if step is set) (if not provided, no change)
-        step : float or None, optional
+        step : Union[Optional[float], NoUpdate], optional
             New step size for rounding, or None for no rounding (if not provided, no change)
 
         Examples
@@ -1326,9 +1326,9 @@ class Viewer:
         ----------
         name : str
             Name of the button parameter to update
-        label : str, optional
+        label : Union[str, NoUpdate], optional
             New text to display on the button (if not provided, no change)
-        callback : callable, optional
+        callback : Union[callable, NoUpdate], optional
             New function to call when clicked (if not provided, no change)
 
         Examples

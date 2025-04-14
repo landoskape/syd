@@ -171,7 +171,7 @@ class TextParameter(Parameter[str]):
     ----------
     name : str
         The name of the parameter
-    value : str | NoInitialValue
+    value : Union[str, NoInitialValue]
         The initial text value
 
     Examples
@@ -184,7 +184,7 @@ class TextParameter(Parameter[str]):
     'Bob'
     """
 
-    def __init__(self, name: str, value: str | NoInitialValue):
+    def __init__(self, name: str, value: Union[str, NoInitialValue]):
         self.name = name
         if isinstance(value, NoInitialValue):
             value = ""
@@ -216,7 +216,7 @@ class BooleanParameter(Parameter[bool]):
     ----------
     name : str
         The name of the parameter
-    value : bool | NoInitialValue
+    value : Union[bool, NoInitialValue]
         The initial state (default is True)
 
     Examples
@@ -229,7 +229,7 @@ class BooleanParameter(Parameter[bool]):
     False
     """
 
-    def __init__(self, name: str, value: bool | NoInitialValue):
+    def __init__(self, name: str, value: Union[bool, NoInitialValue]):
         self.name = name
         if isinstance(value, NoInitialValue):
             value = True
@@ -261,7 +261,7 @@ class SelectionParameter(Parameter[Any]):
     ----------
     name : str
         The name of the parameter
-    value : Any | NoInitialValue
+    value : Union[Any, NoInitialValue]
         The initially selected value (must be one of the options)
     options : sequence
         List, tuple, or 1D numpy array of valid choices that can be selected
@@ -285,7 +285,7 @@ class SelectionParameter(Parameter[Any]):
     options: List[Any]
 
     def __init__(
-        self, name: str, value: Any | NoInitialValue, options: Union[List, Tuple]
+        self, name: str, value: Union[Any, NoInitialValue], options: Union[List, Tuple]
     ):
         self.name = name
         self.options = self._validate_options(options)
@@ -456,7 +456,7 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
     ----------
     name : str
         The name of the parameter
-    value : list | NoInitialValue
+    value : Union[List[Any], NoInitialValue]
         List of initially selected values (must all be from options, can be empty)
     options : sequence
         List, tuple, or 1D numpy array of valid choices that can be selected
@@ -482,7 +482,7 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
     def __init__(
         self,
         name: str,
-        value: List[Any] | NoInitialValue,
+        value: Union[List[Any], NoInitialValue],
         options: Union[List, Tuple],
     ):
         self.name = name
@@ -594,7 +594,7 @@ class IntegerParameter(Parameter[int]):
     ----------
     name : str
         The name of the parameter
-    value : int | NoInitialValue
+    value : Union[int, NoInitialValue]
         Initial value (will be clamped to fit between min and max)
     min : int
         Minimum allowed value
@@ -620,7 +620,7 @@ class IntegerParameter(Parameter[int]):
     def __init__(
         self,
         name: str,
-        value: int | NoInitialValue,
+        value: Union[int, NoInitialValue],
         min: int,
         max: int,
     ):
@@ -712,7 +712,7 @@ class FloatParameter(Parameter[float]):
     ----------
     name : str
         The name of the parameter
-    value : float | NoInitialValue
+    value : Union[float, NoInitialValue]
         Initial value (will be clamped to fit between min and max)
     min : float
         Minimum allowed value
@@ -749,7 +749,7 @@ class FloatParameter(Parameter[float]):
     def __init__(
         self,
         name: str,
-        value: float | NoInitialValue,
+        value: Union[float, NoInitialValue],
         min: float,
         max: float,
         step: float = 0.001,
@@ -849,7 +849,7 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
     ----------
     name : str
         The name of the parameter
-    value : tuple[int, int] | NoInitialValue
+    value : Union[Tuple[int, int], NoInitialValue]
         Initial (low, high) values
     min : int
         Minimum allowed value for both low and high
@@ -876,7 +876,7 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
     def __init__(
         self,
         name: str,
-        value: Tuple[int, int] | NoInitialValue,
+        value: Union[Tuple[int, int], NoInitialValue],
         min: int,
         max: int,
     ):
@@ -1003,7 +1003,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     ----------
     name : str
         The name of the parameter
-    value : tuple[float, float] | NoInitialValue
+    value : Union[Tuple[float, float], NoInitialValue]
         Initial (low, high) values
     min : float
         Minimum allowed value for both low and high
@@ -1040,7 +1040,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     def __init__(
         self,
         name: str,
-        value: Tuple[float, float] | NoInitialValue,
+        value: Union[Tuple[float, float], NoInitialValue],
         min: float,
         max: float,
         step: float = 0.001,
@@ -1173,7 +1173,7 @@ class UnboundedIntegerParameter(Parameter[int]):
     ----------
     name : str
         The name of the parameter
-    value : int | NoInitialValue
+    value : Union[int, NoInitialValue]
         Initial value
 
     Examples
@@ -1195,7 +1195,7 @@ class UnboundedIntegerParameter(Parameter[int]):
     def __init__(
         self,
         name: str,
-        value: int | NoInitialValue,
+        value: Union[int, NoInitialValue],
     ):
         self.name = name
         if isinstance(value, NoInitialValue):
@@ -1245,7 +1245,7 @@ class UnboundedFloatParameter(Parameter[float]):
     ----------
     name : str
         The name of the parameter
-    value : float | NoInitialValue
+    value : Union[float, NoInitialValue]
         Initial value
     step : float, optional
         Size of each increment (default is None, meaning no rounding)
@@ -1276,7 +1276,7 @@ class UnboundedFloatParameter(Parameter[float]):
     def __init__(
         self,
         name: str,
-        value: float | NoInitialValue,
+        value: Union[float, NoInitialValue],
         step: Optional[float] = None,
     ):
         self.name = name
@@ -1336,7 +1336,7 @@ class ButtonAction(Parameter[None]):
     ----------
     name : str
         The name of the parameter
-    label : str | NoInitialValue
+    label : Union[str, NoInitialValue]
         Text to display on the button (default is the button's name)
     callback : callable
         Function to execute when the button is clicked
@@ -1372,7 +1372,7 @@ class ButtonAction(Parameter[None]):
     def __init__(
         self,
         name: str,
-        label: str | NoInitialValue,
+        label: Union[str, NoInitialValue],
         callback: Callable,
     ):
         """
@@ -1382,7 +1382,7 @@ class ButtonAction(Parameter[None]):
         ----------
         name : str
             The name of the parameter
-        label : str | NoInitialValue
+        label : Union[str, NoInitialValue]
             Text to display on the button (default is the button's name)
         callback : callable
             Function to execute when the button is clicked
