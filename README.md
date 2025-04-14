@@ -36,8 +36,8 @@ def plot(viewer, state):
         
 viewer = make_viewer()
 viewer.set_plot(plot)
-viewer.add_float('amplitude', value=1.0, min_value=0, max_value=2)
-viewer.add_float('frequency', value=1.0, min_value=0.1, max_value=5)
+viewer.add_float('amplitude', value=1.0, min=0, max=2)
+viewer.add_float('frequency', value=1.0, min=0.1, max=5)
 
 # env = "notebook" # for viewing within a jupyter notebook
 env = "browser" # for viewing in a web browser
@@ -45,6 +45,8 @@ viewer.deploy(env=env)
 ```
 
 We have several examples of more complex viewers in the [examples](examples) folder. A good one to start with is the [simple example](examples/1-simple_example.ipynb) because this has detailed explanations of how to use the core elements of SYD. To see an example that showcases everything you can do with SYD, try [complex example](examples/2a-complex_example.ipynb). And to see what the same viewer looks like when written as a class, check out [subclass example](examples/2b-subclass_example.ipynb). This format is pretty useful when you want complex functionality - for example if you want to add extra supporting methods for processing data and updating parameters that require more complex logic or if your data processing requires some clever preprocessing to make plotting fast. 
+
+For some examples on how to handle data loading for syd viewers, check out the [data loading example](examples/3-data_loading.ipynb).
 
 ## Documentation
 
