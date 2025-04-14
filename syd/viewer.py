@@ -94,15 +94,7 @@ def validate_parameter_operation(
                     msg = f"Parameter called {name} was found but is registered as a different parameter type ({type(self.parameters[name])}). Expecting {parameter_type.value}."
                     raise ParameterUpdateError(name, parameter_type.name, msg)
 
-            try:
-                return func(self, name, *args, **kwargs)
-            except Exception as e:
-                if operation == "add":
-                    raise ParameterAddError(name, parameter_type.name, str(e))
-                elif operation == "update":
-                    raise ParameterUpdateError(name, parameter_type.name, str(e))
-                else:
-                    raise e
+            return func(self, name, *args, **kwargs)
 
         return wrapper
 
@@ -1351,10 +1343,18 @@ class Viewer:
         if not label == NO_UPDATE:
             updates["label"] = label
         if not callback == NO_UPDATE:
-            callback = self._prepare_function(
-                callback,
-                context="Updating button callback:",
-            )
-            updates["callback"] = callback
+            try:
+                callback = self._prepare_function(
+                    callback,
+                    context="Updating button callback:",
+                )
+            except Exception as e:
+                raise ParameterUpdateError(
+                    name,
+                    "button",
+                    str(e),
+                ) from e
+            else:
+                updates["callback"] = callback
         if updates:
             self.parameters[name].update(updates)
