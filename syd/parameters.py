@@ -1,140 +1,19 @@
 from typing import List, Any, Tuple, Generic, TypeVar, Optional, Dict, Callable, Union
 from dataclasses import dataclass, field
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from enum import Enum
 from copy import deepcopy
 from warnings import warn
-import numpy as np
+
+from .support import (
+    NoInitialValue,
+    ParameterMeta,
+    ParameterUpdateError,
+    ParameterUpdateWarning,
+    get_parameter_attributes,
+)
 
 T = TypeVar("T")
-
-
-# Keep original Parameter class and exceptions unchanged
-class ParameterAddError(Exception):
-    """
-    Exception raised when there is an error creating a new parameter.
-
-    Parameters
-    ----------
-    parameter_name : str
-        Name of the parameter that failed to be created
-    parameter_type : str
-        Type of the parameter that failed to be created
-    message : str, optional
-        Additional error details
-    """
-
-    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
-        self.parameter_name = parameter_name
-        self.parameter_type = parameter_type
-        super().__init__(
-            f"Failed to create {parameter_type} parameter '{parameter_name}'"
-            + (f": {message}" if message else "")
-        )
-
-
-class ParameterUpdateError(Exception):
-    """
-    Exception raised when there is an error updating an existing parameter.
-
-    Parameters
-    ----------
-    parameter_name : str
-        Name of the parameter that failed to update
-    parameter_type : str
-        Type of the parameter that failed to update
-    message : str, optional
-        Additional error details
-    """
-
-    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
-        self.parameter_name = parameter_name
-        self.parameter_type = parameter_type
-        super().__init__(
-            f"Failed to update {parameter_type} parameter '{parameter_name}'"
-            + (f": {message}" if message else "")
-        )
-
-
-class ParameterUpdateWarning(Warning):
-    """
-    Warning raised when there is a non-critical issue updating a parameter.
-
-    Parameters
-    ----------
-    parameter_name : str
-        Name of the parameter that had the warning
-    parameter_type : str
-        Type of the parameter
-    message : str, optional
-        Additional warning details
-    """
-
-    def __init__(self, parameter_name: str, parameter_type: str, message: str = None):
-        self.parameter_name = parameter_name
-        self.parameter_type = parameter_type
-        super().__init__(
-            f"Warning updating {parameter_type} parameter '{parameter_name}'"
-            + (f": {message}" if message else "")
-        )
-
-
-def get_parameter_attributes(param_class) -> List[str]:
-    """
-    Get all valid attributes for a parameter class.
-
-    Parameters
-    ----------
-    param_class : class
-        The parameter class to inspect
-
-    Returns
-    -------
-    list of str
-        Names of all valid attributes for the parameter class
-    """
-    attributes = []
-
-    # Walk through class hierarchy in reverse (most specific to most general)
-    for cls in reversed(param_class.__mro__):
-        if hasattr(cls, "__annotations__"):
-            # Only add annotations that haven't been specified by a more specific class
-            for name in cls.__annotations__:
-                if not name.startswith("_"):
-                    attributes.append(name)
-
-    return attributes
-
-
-class ParameterMeta(ABCMeta):
-    _parameter_types = {}
-    _parameter_ids = {}  # Store unique identifiers for our parameter types
-
-    def __new__(cls, name, bases, namespace):
-        parameter_class = super().__new__(cls, name, bases, namespace)
-        if name != "Parameter":
-            # Generate a unique ID for this parameter type
-            type_id = f"syd.parameters.{name}"  # Using fully qualified name
-            cls._parameter_ids[name] = type_id
-
-            # Add ID to the class
-            if not hasattr(parameter_class, "_parameter_type_id"):
-                setattr(parameter_class, "_parameter_type_id", type_id)
-            else:
-                if getattr(parameter_class, "_parameter_type_id") != type_id:
-                    raise ValueError(
-                        f"Parameter type {name} has multiple IDs: {type_id} and {getattr(parameter_class, '_parameter_type_id')}"
-                    )
-            cls._parameter_types[name] = parameter_class
-        return parameter_class
-
-    def __instancecheck__(cls, instance):
-        type_id = cls._parameter_ids.get(cls.__name__)
-        if not type_id:
-            return False
-
-        # Check if instance has our type ID
-        return getattr(instance.__class__, "_parameter_type_id", None) == type_id
 
 
 @dataclass
@@ -292,7 +171,7 @@ class TextParameter(Parameter[str]):
     ----------
     name : str
         The name of the parameter
-    value : str
+    value : str | NoInitialValue
         The initial text value
 
     Examples
@@ -305,8 +184,10 @@ class TextParameter(Parameter[str]):
     'Bob'
     """
 
-    def __init__(self, name: str, value: str):
+    def __init__(self, name: str, value: str | NoInitialValue):
         self.name = name
+        if isinstance(value, NoInitialValue):
+            value = ""
         self._value = self._validate(value)
 
     def _validate(self, new_value: Any) -> str:
@@ -335,7 +216,7 @@ class BooleanParameter(Parameter[bool]):
     ----------
     name : str
         The name of the parameter
-    value : bool, optional
+    value : bool | NoInitialValue
         The initial state (default is True)
 
     Examples
@@ -348,8 +229,10 @@ class BooleanParameter(Parameter[bool]):
     False
     """
 
-    def __init__(self, name: str, value: bool = True):
+    def __init__(self, name: str, value: bool | NoInitialValue):
         self.name = name
+        if isinstance(value, NoInitialValue):
+            value = True
         self._value = self._validate(value)
 
     def _validate(self, new_value: Any) -> bool:
@@ -378,7 +261,7 @@ class SelectionParameter(Parameter[Any]):
     ----------
     name : str
         The name of the parameter
-    value : Any
+    value : Any | NoInitialValue
         The initially selected value (must be one of the options)
     options : sequence
         List, tuple, or 1D numpy array of valid choices that can be selected
@@ -401,9 +284,13 @@ class SelectionParameter(Parameter[Any]):
 
     options: List[Any]
 
-    def __init__(self, name: str, value: Any, options: Union[List, Tuple]):
+    def __init__(
+        self, name: str, value: Any | NoInitialValue, options: Union[List, Tuple]
+    ):
         self.name = name
         self.options = self._validate_options(options)
+        if isinstance(value, NoInitialValue):
+            value = self.options[0]
         self._value = self._validate(value)
 
     def _validate_options(self, options: Any) -> List[Any]:
@@ -569,8 +456,8 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
     ----------
     name : str
         The name of the parameter
-    value : list
-        List of initially selected values (must all be from options)
+    value : list | NoInitialValue
+        List of initially selected values (must all be from options, can be empty)
     options : sequence
         List, tuple, or 1D numpy array of valid choices that can be selected
 
@@ -592,9 +479,16 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
 
     options: List[Any]
 
-    def __init__(self, name: str, value: List[Any], options: Union[List, Tuple]):
+    def __init__(
+        self,
+        name: str,
+        value: List[Any] | NoInitialValue,
+        options: Union[List, Tuple],
+    ):
         self.name = name
         self.options = self._validate_options(options)
+        if isinstance(value, NoInitialValue):
+            value = []
         self._value = self._validate(value)
 
     def _validate_options(self, options: Any) -> List[Any]:
@@ -700,7 +594,7 @@ class IntegerParameter(Parameter[int]):
     ----------
     name : str
         The name of the parameter
-    value : int
+    value : int | NoInitialValue
         Initial value (will be clamped to fit between min and max)
     min : int
         Minimum allowed value
@@ -726,13 +620,15 @@ class IntegerParameter(Parameter[int]):
     def __init__(
         self,
         name: str,
-        value: int,
+        value: int | NoInitialValue,
         min: int,
         max: int,
     ):
         self.name = name
         self.min = self._validate(min, compare_to_range=False)
         self.max = self._validate(max, compare_to_range=False)
+        if isinstance(value, NoInitialValue):
+            value = self.min
         self._value = self._validate(value)
 
     def _validate(self, new_value: Any, compare_to_range: bool = True) -> int:
@@ -816,7 +712,7 @@ class FloatParameter(Parameter[float]):
     ----------
     name : str
         The name of the parameter
-    value : float
+    value : float | NoInitialValue
         Initial value (will be clamped to fit between min and max)
     min : float
         Minimum allowed value
@@ -853,7 +749,7 @@ class FloatParameter(Parameter[float]):
     def __init__(
         self,
         name: str,
-        value: float,
+        value: float | NoInitialValue,
         min: float,
         max: float,
         step: float = 0.001,
@@ -862,6 +758,8 @@ class FloatParameter(Parameter[float]):
         self.step = step
         self.min = self._validate(min, compare_to_range=False)
         self.max = self._validate(max, compare_to_range=False)
+        if isinstance(value, NoInitialValue):
+            value = self.min
         self._value = self._validate(value)
 
     def _validate(self, new_value: Any, compare_to_range: bool = True) -> float:
@@ -951,7 +849,7 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
     ----------
     name : str
         The name of the parameter
-    value : tuple[int, int]
+    value : tuple[int, int] | NoInitialValue
         Initial (low, high) values
     min : int
         Minimum allowed value for both low and high
@@ -978,13 +876,15 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
     def __init__(
         self,
         name: str,
-        value: Tuple[int, int],
+        value: Tuple[int, int] | NoInitialValue,
         min: int,
         max: int,
     ):
         self.name = name
         self.min = self._validate_single(min, context="min")
         self.max = self._validate_single(max, context="max")
+        if isinstance(value, NoInitialValue):
+            value = (self.min, self.max)
         self._value = self._validate(value)
 
     def _validate_single(self, new_value: Any, context: Optional[str] = None) -> int:
@@ -1103,7 +1003,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     ----------
     name : str
         The name of the parameter
-    value : tuple[float, float]
+    value : tuple[float, float] | NoInitialValue
         Initial (low, high) values
     min : float
         Minimum allowed value for both low and high
@@ -1140,7 +1040,7 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
     def __init__(
         self,
         name: str,
-        value: Tuple[float, float],
+        value: Tuple[float, float] | NoInitialValue,
         min: float,
         max: float,
         step: float = 0.001,
@@ -1149,6 +1049,8 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
         self.step = step
         self.min = self._validate_single(min, context="min")
         self.max = self._validate_single(max, context="max")
+        if isinstance(value, NoInitialValue):
+            value = (self.min, self.max)
         self._value = self._validate(value)
 
     def _validate_single(self, new_value: Any, context: Optional[str] = None) -> float:
@@ -1271,7 +1173,7 @@ class UnboundedIntegerParameter(Parameter[int]):
     ----------
     name : str
         The name of the parameter
-    value : int
+    value : int | NoInitialValue
         Initial value
 
     Examples
@@ -1293,9 +1195,11 @@ class UnboundedIntegerParameter(Parameter[int]):
     def __init__(
         self,
         name: str,
-        value: int,
+        value: int | NoInitialValue,
     ):
         self.name = name
+        if isinstance(value, NoInitialValue):
+            value = 0
         self._value = self._validate(value)
 
     def _validate(self, new_value: Any) -> int:
@@ -1341,7 +1245,7 @@ class UnboundedFloatParameter(Parameter[float]):
     ----------
     name : str
         The name of the parameter
-    value : float
+    value : float | NoInitialValue
         Initial value
     step : float, optional
         Size of each increment (default is None, meaning no rounding)
@@ -1372,11 +1276,13 @@ class UnboundedFloatParameter(Parameter[float]):
     def __init__(
         self,
         name: str,
-        value: float,
+        value: float | NoInitialValue,
         step: Optional[float] = None,
     ):
         self.name = name
         self.step = step
+        if isinstance(value, NoInitialValue):
+            value = 0
         self._value = self._validate(value)
 
     def _validate(self, new_value: Any) -> float:
@@ -1430,8 +1336,8 @@ class ButtonAction(Parameter[None]):
     ----------
     name : str
         The name of the parameter
-    label : str
-        Text to display on the button
+    label : str | NoInitialValue
+        Text to display on the button (default is the button's name)
     callback : callable
         Function to execute when the button is clicked
 
@@ -1463,16 +1369,27 @@ class ButtonAction(Parameter[None]):
     value: None = field(default=None, repr=False)
     _is_action: bool = field(default=True, repr=False)
 
-    def __init__(self, name: str, label: str, callback: Callable):
+    def __init__(
+        self,
+        name: str,
+        label: str | NoInitialValue,
+        callback: Callable,
+    ):
         """
         Initialize a button.
 
-        Args:
-            name: Internal name of the parameter
-            label: Text to display on the button
-            callback: Function to call when button is clicked
+        Parameters
+        ----------
+        name : str
+            The name of the parameter
+        label : str | NoInitialValue
+            Text to display on the button (default is the button's name)
+        callback : callable
+            Function to execute when the button is clicked
         """
         self.name = name
+        if isinstance(label, NoInitialValue):
+            label = name
         self.label = label
         self.callback = callback
         self._value = None
