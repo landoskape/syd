@@ -1,5 +1,6 @@
 from abc import ABCMeta
 from typing import Any, List
+from warnings import warn
 
 
 class NoUpdate:
@@ -20,6 +21,9 @@ class NoUpdate:
             and other._noupdate_identifier == self._noupdate_identifier
         )
 
+    def __repr__(self):
+        return "NotUpdated"
+
 
 class NoInitialValue:
     """Singleton class to represent a non-initial value in parameter operations."""
@@ -38,6 +42,9 @@ class NoInitialValue:
             hasattr(other, "_noinitialvalue_identifier")
             and other._noinitialvalue_identifier == self._noinitialvalue_identifier
         )
+
+    def __repr__(self):
+        return "NotInitialized"
 
 
 # Keep original Parameter class and exceptions unchanged
@@ -108,6 +115,15 @@ class ParameterUpdateWarning(Warning):
             f"Warning updating {parameter_type} parameter '{parameter_name}'"
             + (f": {message}" if message else "")
         )
+
+
+def warn_parameter_update(
+    parameter_name: str, parameter_type: str, message: str = None
+):
+    """
+    Warn the user that a parameter has been updated to a value behind the scenes.
+    """
+    warn(ParameterUpdateWarning(parameter_name, parameter_type, message))
 
 
 def get_parameter_attributes(param_class) -> List[str]:

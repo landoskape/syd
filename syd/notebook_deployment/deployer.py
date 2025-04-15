@@ -10,7 +10,7 @@ from IPython.display import display
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from ..parameters import ParameterUpdateWarning
+from ..support import ParameterUpdateWarning
 from ..viewer import Viewer
 from .widgets import BaseWidget, create_widget
 
@@ -95,7 +95,7 @@ class NotebookDeployer:
         figure_height: float = 6.0,
         controls_width_percent: int = 20,
         continuous: bool = False,
-        suppress_warnings: bool = False,
+        suppress_warnings: bool = True,
     ):
         self.viewer = viewer
         self.config = LayoutConfig(

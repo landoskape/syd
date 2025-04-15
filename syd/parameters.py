@@ -3,14 +3,13 @@ from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from enum import Enum
 from copy import deepcopy
-from warnings import warn
 
 from .support import (
     NoInitialValue,
     ParameterMeta,
     ParameterUpdateError,
-    ParameterUpdateWarning,
     get_parameter_attributes,
+    warn_parameter_update,
 )
 
 T = TypeVar("T")
@@ -433,12 +432,10 @@ class SelectionParameter(Parameter[Any]):
 
         # If value is not found after all checks, reset to first option
         if not value_found:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Value {self.value} not in options, setting to first option ({self.options[0]})",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"Value {self.value} not in options, setting to first option ({self.options[0]})",
             )
             self.value = self.options[0]
 
@@ -558,22 +555,18 @@ class MultipleSelectionParameter(Parameter[List[Any]]):
     def _validate_update(self) -> None:
         self.options = self._validate_options(self.options)
         if not isinstance(self.value, (list, tuple)):
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"For parameter {self.name}, value {self.value} is not a list or tuple. Setting to empty list.",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"For parameter {self.name}, value {self.value} is not a list or tuple. Setting to empty list.",
             )
             self.value = []
         if not all(val in self.options for val in self.value):
             invalid = [val for val in self.value if val not in self.options]
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"For parameter {self.name}, value {self.value} contains invalid selections: {invalid}. Setting to empty list.",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"For parameter {self.name}, value {self.value} contains invalid selections: {invalid}. Setting to empty list.",
             )
             self.value = []
         # Keep only unique values while preserving order based on self.options
@@ -652,21 +645,17 @@ class IntegerParameter(Parameter[int]):
 
         if compare_to_range:
             if new_value < self.min:
-                warn(
-                    ParameterUpdateWarning(
-                        self.name,
-                        type(self).__name__,
-                        f"Value {new_value} below minimum {self.min}, clamping",
-                    )
+                warn_parameter_update(
+                    self.name,
+                    type(self).__name__,
+                    f"Value {new_value} below minimum {self.min}, clamping",
                 )
                 new_value = self.min
             if new_value > self.max:
-                warn(
-                    ParameterUpdateWarning(
-                        self.name,
-                        type(self).__name__,
-                        f"Value {new_value} above maximum {self.max}, clamping",
-                    )
+                warn_parameter_update(
+                    self.name,
+                    type(self).__name__,
+                    f"Value {new_value} above maximum {self.max}, clamping",
                 )
                 new_value = self.max
         return int(new_value)
@@ -688,12 +677,10 @@ class IntegerParameter(Parameter[int]):
                 "IntegerParameter must have both min and max bounds",
             )
         if self.min > self.max:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Min value greater than max value, swapping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"Min value greater than max value, swapping",
             )
             self.min, self.max = self.max, self.min
         self.value = self._validate(self.value)
@@ -788,21 +775,17 @@ class FloatParameter(Parameter[float]):
 
         if compare_to_range:
             if new_value < self.min:
-                warn(
-                    ParameterUpdateWarning(
-                        self.name,
-                        type(self).__name__,
-                        f"Value {new_value} below minimum {self.min}, clamping",
-                    )
+                warn_parameter_update(
+                    self.name,
+                    type(self).__name__,
+                    f"Value {new_value} below minimum {self.min}, clamping",
                 )
                 new_value = self.min
             if new_value > self.max:
-                warn(
-                    ParameterUpdateWarning(
-                        self.name,
-                        type(self).__name__,
-                        f"Value {new_value} above maximum {self.max}, clamping",
-                    )
+                warn_parameter_update(
+                    self.name,
+                    type(self).__name__,
+                    f"Value {new_value} above maximum {self.max}, clamping",
                 )
                 new_value = self.max
 
@@ -825,12 +808,10 @@ class FloatParameter(Parameter[float]):
                 "FloatParameter must have both min and max bounds",
             )
         if self.min > self.max:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Min value greater than max value, swapping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"Min value greater than max value, swapping",
             )
             self.min, self.max = self.max, self.min
         self.value = self._validate(self.value)
@@ -932,31 +913,25 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
         high = self._validate_single(new_value[1])
 
         if low > high:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Low value {low} greater than high value {high}, swapping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"Low value {low} greater than high value {high}, swapping",
             )
             low, high = high, low
 
         if low < self.min:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Low value {low} below minimum {self.min}, clamping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"Low value {low} below minimum {self.min}, clamping",
             )
             low = self.min
         if high > self.max:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"High value {high} above maximum {self.max}, clamping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"High value {high} above maximum {self.max}, clamping",
             )
             high = self.max
 
@@ -979,12 +954,10 @@ class IntegerRangeParameter(Parameter[Tuple[int, int]]):
                 "IntegerRangeParameter must have both min and max bounds",
             )
         if self.min > self.max:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Min value greater than max value, swapping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"Min value greater than max value, swapping",
             )
             self.min, self.max = self.max, self.min
         self.value = self._validate(self.value)
@@ -1102,31 +1075,25 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
         high = self._validate_single(new_value[1])
 
         if low > high:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Low value {low} greater than high value {high}, swapping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"Low value {low} greater than high value {high}, swapping",
             )
             low, high = high, low
 
         if low < self.min:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Low value {low} below minimum {self.min}, clamping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"Low value {low} below minimum {self.min}, clamping",
             )
             low = self.min
         if high > self.max:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"High value {high} above maximum {self.max}, clamping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"High value {high} above maximum {self.max}, clamping",
             )
             high = self.max
 
@@ -1149,12 +1116,10 @@ class FloatRangeParameter(Parameter[Tuple[float, float]]):
                 "FloatRangeParameter must have both min and max bounds",
             )
         if self.min > self.max:
-            warn(
-                ParameterUpdateWarning(
-                    self.name,
-                    type(self).__name__,
-                    f"Min value greater than max value, swapping",
-                )
+            warn_parameter_update(
+                self.name,
+                type(self).__name__,
+                f"Min value greater than max value, swapping",
             )
             self.min, self.max = self.max, self.min
         self.value = self._validate(self.value)
