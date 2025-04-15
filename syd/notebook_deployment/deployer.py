@@ -60,7 +60,7 @@ class NotebookDeployer(Deployer):
         for name, param in self.viewer.parameters.items():
             widget = create_widget(param, continuous=self.continuous)
             self.components[name] = widget
-            callback = lambda _, n=name: self.handle_widget_engagement(n)
+            callback = lambda _, n=name: self.handle_component_engagement(n)
             widget.observe(callback)
 
     def build_layout(self) -> None:
@@ -92,7 +92,7 @@ class NotebookDeployer(Deployer):
         if self.controls_position in ["left", "right"]:
             # Create layout controls section if horizontal (might include for vertical later when we have more permanent controls...)
             layout_box = widgets.VBox(
-                [widgets.HTML("<b>Layout Controls</b>")] + list(self.controls.values()),
+                [widgets.HTML("<b>Syd Controls</b>")] + list(self.controls.values()),
                 layout=widgets.Layout(margin="10px 0px"),
             )
 

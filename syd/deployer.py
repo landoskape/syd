@@ -100,8 +100,8 @@ class Deployer(ABC):
         self.update_plot()
 
     @debounce(0.1)
-    def handle_widget_engagement(self, name: str) -> None:
-        """Handle engagement with an interactive widget."""
+    def handle_component_engagement(self, name: str) -> None:
+        """Handle engagement with an interactive component."""
         if self._updating:
             print(
                 "Already updating -- there's a circular dependency!"
@@ -128,8 +128,8 @@ class Deployer(ABC):
                     # Otherwise, update the parameter value
                     self.viewer.set_parameter_value(name, component.value)
 
-                # Update any widgets that changed due to dependencies
-                self.sync_widgets_with_state()
+                # Update any components that changed due to dependencies
+                self.sync_components_with_state()
 
                 # Update the plot
                 self.update_plot()
@@ -137,8 +137,8 @@ class Deployer(ABC):
         finally:
             self._updating = False
 
-    def sync_widgets_with_state(self, exclude: Optional[str] = None) -> None:
-        """Sync widget values with viewer state."""
+    def sync_components_with_state(self, exclude: Optional[str] = None) -> None:
+        """Sync component values with viewer state."""
         for name, parameter in self.viewer.parameters.items():
             if name == exclude:
                 continue
@@ -154,8 +154,8 @@ class Deployer(ABC):
         with _plot_context():
             figure = self.viewer.plot(state)
 
-        # Update widgets if plot function updated a parameter
-        self.sync_widgets_with_state()
+        # Update components if plot function updated a parameter
+        self.sync_components_with_state()
 
         # Display the new plot (each deployer will have a different way of doing this)
         self.display_new_plot(figure)
