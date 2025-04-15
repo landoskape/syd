@@ -224,17 +224,20 @@ class Viewer:
             return self
 
         elif env == "browser" or env == "flask":
-            from .flask_deployment import deploy_flask
+            from .flask_deployment import FlaskDeployer
 
-            # Ensure port is None by default if not specified
             if "port" not in kwargs:
                 kwargs["port"] = None
+            if "continuous" in kwargs:
+                kwargs.pop("continuous")
 
-            deployer = deploy_flask(self, **kwargs)
+            deployer = FlaskDeployer(self, **kwargs)
+            deployer.deploy()
             return self
+
         else:
             raise ValueError(
-                f"Unsupported environment: {env}, only 'notebook', 'plotly', 'plotly-inline', and 'flask' are supported right now."
+                f"Unsupported environment: {env}, only 'notebook', 'flask'/'browser' are supported right now."
             )
 
     @contextmanager
