@@ -7,7 +7,6 @@ from matplotlib.figure import Figure
 from .parameters import ParameterType, ActionType, Parameter
 from .support import NoUpdate, NoInitialValue, ParameterAddError, ParameterUpdateError
 
-
 # Create the singleton instances
 NO_UPDATE = NoUpdate()
 NO_INITIAL_VALUE = NoInitialValue()
@@ -217,14 +216,16 @@ class Viewer:
         """Deploy the app in a notebook or standalone environment"""
         env = env.lower()
         if env == "notebook":
-            from .notebook_deployment import NotebookDeployer
+            # On demand import because the deployers need to import the viewer
+            from .notebook_deployment.deployer import NotebookDeployer
 
             deployer = NotebookDeployer(self, **kwargs)
             deployer.deploy()
             return self
 
         elif env == "browser" or env == "flask":
-            from .flask_deployment import FlaskDeployer
+            # On demand import because the deployers need to import the viewer
+            from .flask_deployment.deployer import FlaskDeployer
 
             if "port" not in kwargs:
                 kwargs["port"] = None
