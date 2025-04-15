@@ -7,7 +7,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import io
 import time
-from functools import wraps
 import webbrowser
 import threading
 import socket
@@ -24,7 +23,6 @@ from flask import (
 from werkzeug.serving import run_simple
 
 # Use Deployer base class
-from ..deployer import Deployer, _plot_context
 from ..viewer import Viewer
 from ..parameters import (
     Parameter,
@@ -39,8 +37,8 @@ from ..parameters import (
     UnboundedIntegerParameter,
     UnboundedFloatParameter,
     ButtonAction,
-    ParameterUpdateWarning,
 )
+from ..support import ParameterUpdateWarning, plot_context
 
 mpl.use("Agg")
 
@@ -64,8 +62,7 @@ class FlaskLayoutConfig:
         return self.controls_position == "left" or self.controls_position == "right"
 
 
-# Inherit from Deployer
-class FlaskDeployer(Deployer):
+class FlaskDeployer:
     """
     A deployment system for Viewer as a Flask web application using the Deployer base class.
     Creates a Flask app with routes for the UI, data API, and plot generation.
@@ -76,11 +73,12 @@ class FlaskDeployer(Deployer):
         viewer: Viewer,
         controls_position: str = "left",
         fig_dpi: int = 300,
-        controls_width_percent: int = 30,
-        static_folder: Optional[str] = None,
-        template_folder: Optional[str] = None,
-        suppress_warnings: bool = False,  # Added from base class
+        controls_width_percent: int = 20,
+        suppress_warnings: bool = True,
         debug: bool = False,
+        host: str = "127.0.0.1",
+        port: Optional[int] = None,
+        open_browser: bool = True,
     ):
         """
         Initialize the Flask deployer.
@@ -99,17 +97,20 @@ class FlaskDeployer(Deployer):
             Approximate height for template layout guidance (inches)
         controls_width_percent : int, optional
             Width of the controls panel as a percentage of the total width
-        static_folder : str, optional
-            Custom path to static files
-        template_folder : str, optional
-            Custom path to template files
         suppress_warnings : bool, optional
             Whether to suppress ParameterUpdateWarning during updates
         debug : bool, optional
             Whether to enable debug mode for Flask
+        host : str, optional
+            Host address for the server (default: '127.0.0.1')
+        port : int, optional
+            Port for the server. If None, finds an available port (default: None).
+        open_browser : bool, optional
+            Whether to open the web application in a browser tab (default: True).
         """
-        # Call base class constructor
-        super().__init__(viewer, suppress_warnings)
+        self.viewer = viewer
+        self.suppress_warnings = suppress_warnings
+        self._updating = False  # Flag to check circular updates
 
         # Flask specific configurations
         self.config = FlaskLayoutConfig(
@@ -121,22 +122,17 @@ class FlaskDeployer(Deployer):
 
         # Determine static and template folder paths
         package_dir = os.path.dirname(os.path.abspath(__file__))
-        self.static_folder = static_folder or os.path.join(package_dir, "static")
-        self.template_folder = template_folder or os.path.join(package_dir, "templates")
+        self.static_folder = os.path.join(package_dir, "static")
+        self.template_folder = os.path.join(package_dir, "templates")
 
         # Flask app instance - will be created in build_layout
         self.app: Optional[Flask] = None
 
         # Server details - will be set in display
-        self.host: Optional[str] = None
-        self.port: Optional[int] = None
+        self.host: Optional[str] = host
+        self.port: Optional[int] = port
         self.url: Optional[str] = None
-
-    def build_components(self) -> None:
-        """Builds components - No-op for Flask as components are in HTML."""
-        # In Flask, components are primarily defined in the HTML templates.
-        # The necessary parameter info is fetched via the /init-data endpoint.
-        pass
+        self.open_browser: bool = open_browser
 
     def build_layout(self) -> None:
         """Create and configure the Flask application and its routes."""
@@ -156,13 +152,11 @@ class FlaskDeployer(Deployer):
             log = logging.getLogger("werkzeug")
             log.setLevel(logging.ERROR)
 
-        # --- Define Flask Routes ---
-
         @app.route("/")
         def home():
             """Render the main page using the index.html template."""
             # Pass the layout config to the template
-            return render_template("index.html", config=self.config)
+            return render_template("index.html", title="Syd Viewer", config=self.config)
 
         @app.route("/init-data")
         def init_data():
@@ -171,8 +165,16 @@ class FlaskDeployer(Deployer):
                 name: self._get_parameter_info(param)
                 for name, param in self.viewer.parameters.items()
             }
+            # Get the order of parameters
+            param_order = list(self.viewer.parameters.keys())
             # Also include the initial state
-            return jsonify({"params": param_info, "state": self.viewer.state})
+            return jsonify(
+                {
+                    "params": param_info,
+                    "param_order": param_order,
+                    "state": self.viewer.state,
+                }
+            )
 
         @app.route("/plot")
         def plot():
@@ -186,7 +188,7 @@ class FlaskDeployer(Deployer):
             try:
                 # Generate the plot using the current state from the viewer instance
                 # The _plot_context ensures plt state is managed correctly.
-                with _plot_context():
+                with plot_context():
                     # Use the viewer's plot method with its current state
                     fig = self.viewer.plot(self.viewer.state)
                     if not isinstance(fig, mpl.figure.Figure):
@@ -222,8 +224,7 @@ class FlaskDeployer(Deployer):
                 app.logger.warning(
                     "Update requested while already processing an update."
                 )
-                # Return current state to avoid frontend hanging? Or an error?
-                # Returning current state might be safer.
+                # Return current state to avoid frontend hanging.
                 return (
                     jsonify(
                         {
@@ -240,8 +241,8 @@ class FlaskDeployer(Deployer):
 
                 data = request.get_json()
                 name = data.get("name")
-                value = data.get("value")
-                is_action = data.get("is_action", False)  # Check is_action flag
+                value = data.get("value", None)
+                action = data.get("action", False)
 
                 if not name or name not in self.viewer.parameters:
                     app.logger.error(f"Invalid parameter name received: {name}")
@@ -256,7 +257,7 @@ class FlaskDeployer(Deployer):
                             "ignore", category=ParameterUpdateWarning
                         )
 
-                    if is_action:
+                    if action:
                         # Handle button actions: directly call the callback
                         if isinstance(parameter, ButtonAction) and parameter.callback:
                             # Pass the current state dictionary to the callback
@@ -284,7 +285,13 @@ class FlaskDeployer(Deployer):
 
                 # State might have changed due to callbacks, return the *final* state
                 final_state = self.viewer.state
-                return jsonify({"success": True, "state": final_state})
+                final_param_info = {
+                    name: self._get_parameter_info(param)
+                    for name, param in self.viewer.parameters.items()
+                }
+                return jsonify(
+                    {"success": True, "state": final_state, "params": final_param_info}
+                )
 
             except Exception as e:
                 app.logger.error(
@@ -302,14 +309,6 @@ class FlaskDeployer(Deployer):
                 )
             finally:
                 self._updating = False  # Clear base class flag
-
-    def display_new_plot(self, figure: mpl.figure.Figure) -> None:
-        """Handles displaying a new plot - No-op for Flask."""
-        # In Flask, the plot is requested by the client via the /plot endpoint.
-        # The backend doesn't push the plot directly.
-        # The figure object passed here is generated by the base update_plot method,
-        # but we don't need to do anything with it here.
-        plt.close(figure)  # Close the figure generated by base update_plot
 
     def display(
         self,
@@ -331,11 +330,9 @@ class FlaskDeployer(Deployer):
         print(f" * Syd Flask server running on {self.url}")
 
         if open_browser:
-            print(f" * Opening browser...")
 
-            # Open browser in a separate thread after a small delay
             def open_browser_tab():
-                time.sleep(1.0)  # Slightly longer delay
+                time.sleep(1.0)
                 webbrowser.open(self.url)
 
             threading.Thread(target=open_browser_tab, daemon=True).start()
@@ -353,22 +350,13 @@ class FlaskDeployer(Deployer):
 
     # --- Overridden Methods ---
 
-    def deploy(
-        self,
-        host: str = "127.0.0.1",
-        port: Optional[int] = None,
-        open_browser: bool = True,
-        **kwargs,
-    ) -> None:
+    def deploy(self) -> None:
         """
         Deploy the viewer using Flask.
 
         Builds components (no-op), layout (Flask app/routes),
         and then starts the server.
         """
-        print("Building Flask components and layout...")
-        # build_components is intentionally simple for Flask
-        self.build_components()
         # build_layout creates the Flask app and routes
         self.build_layout()
 
@@ -379,7 +367,11 @@ class FlaskDeployer(Deployer):
 
         print("Starting Flask server...")
         # Display starts the server
-        self.display(host=host, port=port, open_browser=open_browser, **kwargs)
+        self.display(
+            host=self.host,
+            port=self.port,
+            open_browser=self.open_browser,
+        )
 
     def _get_parameter_info(self, param: Parameter) -> Dict[str, Any]:
         """
@@ -455,9 +447,6 @@ class FlaskDeployer(Deployer):
             )  # Keep value as string
 
         return info
-
-    # def _parse_request_args(self, args) -> Dict[str, Any]:
-    # ... (removed - /plot now uses self.viewer.state directly) ...
 
     def _parse_parameter_value(self, name: str, value: Any) -> Any:
         """
@@ -608,10 +597,6 @@ class FlaskDeployer(Deployer):
                 f"Failed to parse value '{value}' for parameter '{name}' ({type(param).__name__}): {e}"
             )
 
-    # run method is removed, replaced by display & deploy
-    # def run(self, host: str = "127.0.0.1", port: Optional[int] = None, **kwargs):
-    # ... (removed) ...
-
 
 def _find_available_port(start_port=5000, max_attempts=100):
     """
@@ -648,9 +633,9 @@ def deploy_flask(
     host: str = "127.0.0.1",
     port: Optional[int] = None,
     controls_position: str = "left",
-    controls_width_percent: int = 30,
-    fig_dpi: int = 300,  # Passed to FlaskDeployer constructor
-    suppress_warnings: bool = False,  # Passed to FlaskDeployer constructor
+    controls_width_percent: int = 20,
+    fig_dpi: int = 300,
+    suppress_warnings: bool = True,
     debug: bool = False,
     open_browser: bool = True,
     **kwargs,
@@ -669,11 +654,11 @@ def deploy_flask(
     controls_position : str, optional
         Layout position for controls ('left', 'top', 'right', 'bottom', default: 'left').
     controls_width_percent : int, optional
-        Percentage width of the controls panel (default: 30).
+        Percentage width of the controls panel (default: 20).
     fig_dpi : int, optional
         Resolution (dots per inch) for the generated plot images (default: 300).
     suppress_warnings : bool, optional
-        Suppress ParameterUpdateWarning during backend updates (default: False).
+        Suppress ParameterUpdateWarning during backend updates (default: True).
     debug : bool, optional
         Enable Flask debug mode (reloader, debugger, default: False).
     open_browser : bool, optional
@@ -694,9 +679,6 @@ def deploy_flask(
         fig_dpi=fig_dpi,
         suppress_warnings=suppress_warnings,
         debug=debug,
-        # static_folder and template_folder use defaults unless passed in kwargs?
-        # Let's assume defaults are fine unless user overrides via kwargs if needed.
-        # For now, not explicitly passing them from here.
     )
 
     if "continuous" in kwargs:

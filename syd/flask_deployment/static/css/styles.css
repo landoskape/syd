@@ -60,16 +60,16 @@ body {
 #controls-container {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 10px;
 }
 
 /* Control groups */
 .control-group {
     display: flex;
     flex-direction: column;
-    padding: 15px;
+    padding: 10px;
     border: 1px solid #eee;
-    border-radius: 8px;
+    border-radius: 4px;
     background-color: white;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
@@ -95,7 +95,6 @@ input[type="number"] {
 /* Range inputs */
 input[type="range"] {
     width: 100%;
-    -webkit-appearance: none;
     height: 6px;
     background: #ddd;
     border-radius: 3px;
@@ -205,29 +204,71 @@ button.active {
 
 .range-slider-container {
     position: relative;
-    height: 30px;
     margin: 10px 0;
+    background: linear-gradient(to right,
+        #ddd 0%,
+        #ddd var(--min-pos, 0%),
+        #3f51b5 var(--min-pos, 0%),
+        #3f51b5 var(--max-pos, 100%),
+        #ddd var(--max-pos, 100%),
+        #ddd 100%);
+    border-radius: 3px;
+    height: 18px;
 }
 
 .range-slider {
     position: absolute;
-    top: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
     width: 100%;
     pointer-events: none;
-    opacity: 0.7;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    margin: 0;
+    height: 18px;
+}
+
+/* Transparent Track for Webkit */
+.range-slider::-webkit-slider-runnable-track {
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+}
+
+/* Transparent Track for Firefox */
+.range-slider::-moz-range-track {
+    background: transparent;
+    border: none;
+    border-radius: 3px;
 }
 
 .range-slider.active {
-    opacity: 1;
     z-index: 2;
 }
 
 .range-slider::-webkit-slider-thumb {
     pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3f51b5;
+    cursor: pointer;
+    border: 1px solid #2c3e90;
 }
 
 .range-slider::-moz-range-thumb {
     pointer-events: auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3f51b5;
+    cursor: pointer;
+    border: 1px solid #2c3e90;
 }
 
 .min-slider {
@@ -237,10 +278,3 @@ button.active {
 .max-slider {
     z-index: 2;
 }
-
-.range-display {
-    text-align: center;
-    font-size: 13px;
-    margin-top: 5px;
-    color: #666;
-} 
