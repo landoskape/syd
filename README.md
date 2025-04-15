@@ -21,6 +21,10 @@ It's easy, just use pip install. The dependencies are light so it should work in
 pip install syd
 ```
 
+## Documentation
+Below, you'll find some Quick Start examples. But if you want to learn more, the full documentation is available at [shareyourdata.readthedocs.io](https://shareyourdata.readthedocs.io/). Let us know if you have any questions or want to suggest improvements to the docs on the [github issues page](https://github.com/landoskape/syd/issues)!
+
+
 ## Quick Start
 This is an example of a sine wave viewer which is about as simple as it gets. You can choose which env to use - if you use ``env="notebook"`` then the GUI will deploy as the output of a jupyter cell (this only works in jupyter!). If you use ``env="browser"`` then the GUI will open a page in your default web browser and you can interact with the data there (works in jupyter notebooks and also from python scripts!).
 ```python
@@ -45,10 +49,19 @@ viewer.deploy(env=env)
 ```
 
 ### More Examples
-We have several examples of more complex viewers in the [examples](examples) folder. A good one to start with is the [simple example](examples/1-simple_example.ipynb) because this has detailed explanations of how to use the core elements of Syd. To see an example that showcases everything you can do with Syd, try [complex example](examples/2a-complex_example.ipynb). And to see what the same viewer looks like when written as a class, check out [subclass example](examples/2b-subclass_example.ipynb). This format is pretty useful when you want complex functionality - for example if you want to add extra supporting methods for processing data and updating parameters that require more complex logic or if your data processing requires some clever preprocessing to make plotting fast. 
+We have several examples of more complex viewers with detailed explanations in the comments. Here are the links and descriptions to each of them:
+
+| Example | Description | View on Colab |
+|---------|-------------|---------------|
+| [Basic Tutorial](examples/1-simple_example.ipynb) | A good starting point with detailed explanations of how to use the core elements of Syd. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/1-simple_example.ipynb) |
+| [Comprehensive](examples/2a-complex_example.ipynb) | Showcases just about everything you can do with Syd. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/2a-complex_example.ipynb) |
+| [Making a Viewer Class](examples/2b-subclass_example.ipynb) | Rewrites the comprehensive example as a class, useful for complex functionality. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/2b-subclass_example.ipynb) |
+| [Data Loading](examples/3-data_loading.ipynb) | Showcases different ways to get your data into a Syd viewer. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/3-data_loading.ipynb) |
+| [Hierarchical Callbacks](examples/4-hierarchical_callbacks.ipynb) | Demonstrates how to handle complicated callback situations. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/4-hierarchical_callbacks.ipynb) |
+
 
 ### Data loading
-Thinking about how to get data into a Syd viewer can be non-intuitive. For some examples that showcase different ways to get your data into a Syd viewer, check out the [data loading example](examples/3-data_loading.ipynb). If you just want a quick example, check this out:
+Thinking about how to get data into a Syd viewer can be non-intuitive. For some examples that showcase different ways to get your data into a Syd viewer, check out the [data loading example](examples/3-data_loading.ipynb). Or, if you just want a quick example, check this out:
 ```python
 import numpy as np
 from matplotlib import pyplot as plt
@@ -73,9 +86,9 @@ viewer.deploy(env="browser")
 ```
 
 ### Handling Hierarchical Callbacks
-Syd dramatically reduces the amount of work you need to build a GUI for viewing your data. However, it can still be a bit complicated to think about callbacks. 
+Syd dramatically reduces the amount of work you need to do to build a GUI for viewing your data. However, it can still be a bit complicated to think about callbacks. Below is a quick demonstration, to try it yourself, check out the full example [here](examples/4-hierarchical_callbacks.ipynb).
 
-For example, suppose your dataset is composed of electrophysiology recordings from 3 mice, where each mouse has a different number of sesssions, and each session has a different number of neurons. You want to build a viewer to choose the mouse, then choose the session, and then view a particular neuron from within that session. The viewer will break if you try to index to session 5 for mouse 2 but mouse 2 only has 4 sessions!
+For example, suppose your dataset is composed of electrophysiology recordings from 3 mice, where each mouse has a different number of sesssions, and each session has a different number of neurons. You want to build a viewer to choose the mouse, then choose the session, and then view a particular neuron from within that session. But the viewer will break if you try to index to session 5 for mouse 2 but mouse 2 only has 4 sessions!
 
 This is where hierarchical callbacks come in. There's a straightforward pattern to handling this kind of situation that you can follow. You can write a callback for each **level** of the hierarchy. Then, each callback can call the next callback in the hierarchy. It looks like this: 
 ```python
@@ -138,11 +151,6 @@ class MouseViewer(Viewer):
 viewer = MouseViewer(["Mouse 1", "Mouse 2", "Mouse 3"])
 viewer.deploy(env="browser")
 ```
-
-
-## Documentation
-
-Full documentation is available at [shareyourdata.readthedocs.io](https://shareyourdata.readthedocs.io/).
 
 ## License
 
