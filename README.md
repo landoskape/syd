@@ -44,9 +44,10 @@ env = "notebook" # for viewing within a jupyter notebook
 viewer.deploy(env=env)
 ```
 
+### More Examples
 We have several examples of more complex viewers in the [examples](examples) folder. A good one to start with is the [simple example](examples/1-simple_example.ipynb) because this has detailed explanations of how to use the core elements of Syd. To see an example that showcases everything you can do with Syd, try [complex example](examples/2a-complex_example.ipynb). And to see what the same viewer looks like when written as a class, check out [subclass example](examples/2b-subclass_example.ipynb). This format is pretty useful when you want complex functionality - for example if you want to add extra supporting methods for processing data and updating parameters that require more complex logic or if your data processing requires some clever preprocessing to make plotting fast. 
 
-#### Data loading
+### Data loading
 Thinking about how to get data into a Syd viewer can be non-intuitive. For some examples that showcase different ways to get your data into a Syd viewer, check out the [data loading example](examples/3-data_loading.ipynb). If you just want a quick example, check this out:
 ```python
 import numpy as np
@@ -71,7 +72,7 @@ viewer = make_viewer(plot)
 viewer.deploy(env="browser")
 ```
 
-#### Handling Hierarchical Callbacks
+### Handling Hierarchical Callbacks
 Syd dramatically reduces the amount of work you need to build a GUI for viewing your data. However, it can still be a bit complicated to think about callbacks. 
 
 For example, suppose your dataset is composed of electrophysiology recordings from 3 mice, where each mouse has a different number of sesssions, and each session has a different number of neurons. You want to build a viewer to choose the mouse, then choose the session, and then view a particular neuron from within that session. The viewer will break if you try to index to session 5 for mouse 2 but mouse 2 only has 4 sessions!
@@ -85,9 +86,11 @@ class MouseViewer(Viewer):
     def __init__(self, mice_names):
         self.mice_names = mice_names
 
-        self.add_selection("mouse", options=list(mice_names)) # Options have to be a list...
-        self.add_integer("session", min=0, max=1) # We don't know how many sessions to pick from yet!
-        self.add_integer("neuron", min=0, max=1) # We don't know how many neurons to pick from yet!
+        self.add_selection("mouse", options=list(mice_names))
+
+        # We don't know how many sessions or neurons to pick from yet!
+        self.add_integer("session", min=0, max=1)
+        self.add_integer("neuron", min=0, max=1)
         
         # Any time the mouse changes, update the sessions to pick from
         self.on_change("mouse", self.update_mouse)
@@ -95,23 +98,24 @@ class MouseViewer(Viewer):
         # Any time the session changes, update the neurons to pick from
         self.on_change("session", self.update_session)
 
-        # Since we build callbacks for setting the range of the session and neuron parameters, 
-        # we can use them here!
-        # To get the state, we can use self.state, which is the current state of the viewer (in the 
-        # init function, it'll just be the default value for each parameter you've added already).
+        # Since we built callbacks for setting the range of the session
+        # and neuron parameters, we can use them here!
+        # To get the state, we can use self.state, which is the current
+        # state of the viewer (in the init function, it'll just be the
+        # default value for each parameter you've added already).
         self.update_mouse(self.state)
 
     def update_mouse(self, state):
         # Pseudo code for getting the number of sessions for a given mouse
-        num_sessions = get_num_sessions_from_mouse_name(state["mouse"])
+        num_sessions = get_num_sessions(state["mouse"])
 
         # Now we update the number of sessions to pick from
         self.update_integer("session", max=num_sessions - 1)
 
         # Now we need to update the neurons to choose from ....
-        # But! Updating the session parameter might trigger a change to the session value. 
-        # So, instead of using the state dictionary that was passed into the function, we 
-        # can get the ~NEW~ state dictionary like this:
+        # But! Updating the session parameter might trigger a change to the
+        # session value. So, instead of using the state dictionary that was
+        # passed into the function, we can get the ~NEW~ state dictionary like this:
         new_state = self.state
 
         # Then perform the session update callback!
@@ -119,14 +123,14 @@ class MouseViewer(Viewer):
 
     def update_session(self, state):
         # Pseudo code for getting the number of neurons for a given mouse and session
-        num_neurons = get_num_neurons_from_mouse_name_and_session(state["mouse"], state["session"])
+        num_neurons = get_num_neurons(state["mouse"], state["session"])
 
         # Now we update the number of neurons to pick from
         self.update_integer("neuron", max=num_neurons - 1)
 
     def plot(self, state):
         # Pseudo code for plotting the data
-        data = get_data_from_mouse_name_and_session_and_neuron(state["mouse"], state["session"], state["neuron"])
+        data = get_data(state["mouse"], state["session"], state["neuron"])
         fig = plot_the_data(data)
         return fig
 
