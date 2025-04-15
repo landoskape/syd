@@ -1,22 +1,13 @@
-/**
- * Syd Viewer JavaScript for Flask deployment
- * Handles dynamic creation of UI components and interaction with the Flask backend
- */
-
-// State object to store current values
 let state = {};
 let paramInfo = {};
+let paramOrder = [];
+let isUpdating = false;
 
 // Config object parsed from HTML data attributes
 const config = {
-    figureWidth: parseFloat(document.getElementById('viewer-config').dataset.figureWidth || 8.0),
-    figureHeight: parseFloat(document.getElementById('viewer-config').dataset.figureHeight || 6.0),
     controlsPosition: document.getElementById('viewer-config').dataset.controlsPosition || 'left',
-    controlsWidthPercent: parseInt(document.getElementById('viewer-config').dataset.controlsWidthPercent || 30)
+    controlsWidthPercent: parseInt(document.getElementById('viewer-config').dataset.controlsWidthPercent || 20)
 };
-
-// Track whether we're currently in an update operation
-let isUpdating = false;
 
 // Initialize the viewer
 document.addEventListener('DOMContentLoaded', function() {
@@ -25,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             paramInfo = data.params;
+            paramOrder = data.param_order;
             
             // Initialize state from parameter info
             for (const [name, param] of Object.entries(paramInfo)) {
@@ -51,8 +43,14 @@ function createControls() {
     // Clear any existing controls
     controlsContainer.innerHTML = '';
     
-    // Create controls for each parameter
-    for (const [name, param] of Object.entries(paramInfo)) {
+    // Create controls for each parameter in the order specified by the viewer
+    paramOrder.forEach(name => {
+        const param = paramInfo[name];
+        if (!param) {
+            console.warn(`Parameter info not found for ${name} during control creation.`);
+            return; // Skip if param info is missing for some reason
+        }
+        
         // Create control group
         const controlGroup = createControlGroup(name, param);
         
@@ -60,7 +58,7 @@ function createControls() {
         if (controlGroup) {
             controlsContainer.appendChild(controlGroup);
         }
-    }
+    });
 }
 
 /**
@@ -188,7 +186,7 @@ function createIntegerControl(name, param) {
     input.value = param.value;
     
     // Add event listeners
-    slider.addEventListener('input', function() {
+    slider.addEventListener('change', function() {
         const value = parseInt(this.value, 10);
         input.value = value;
         updateParameter(name, value);
@@ -235,7 +233,7 @@ function createFloatControl(name, param) {
     input.value = param.value;
     
     // Add event listeners
-    slider.addEventListener('input', function() {
+    slider.addEventListener('change', function() {
         const value = parseFloat(this.value);
         input.value = value;
         updateParameter(name, value);
@@ -378,7 +376,7 @@ function createRangeControl(name, param, converter) {
     minInput.className = 'range-input';
     minInput.min = param.min;
     minInput.max = param.max;
-    minInput.step = param.step || 1;
+    minInput.step = param.step || (converter === parseInt ? 1 : 0.01); // Default step
     minInput.value = param.value[0];
     
     // Create slider container
@@ -392,7 +390,7 @@ function createRangeControl(name, param, converter) {
     minSlider.className = 'range-slider min-slider';
     minSlider.min = param.min;
     minSlider.max = param.max;
-    minSlider.step = param.step || 1;
+    minSlider.step = param.step || (converter === parseInt ? 1 : 0.01); // Default step
     minSlider.value = param.value[0];
     
     // Create max slider
@@ -402,7 +400,7 @@ function createRangeControl(name, param, converter) {
     maxSlider.className = 'range-slider max-slider';
     maxSlider.min = param.min;
     maxSlider.max = param.max;
-    maxSlider.step = param.step || 1;
+    maxSlider.step = param.step || (converter === parseInt ? 1 : 0.01); // Default step
     maxSlider.value = param.value[1];
     
     // Create max input
@@ -412,41 +410,39 @@ function createRangeControl(name, param, converter) {
     maxInput.className = 'range-input';
     maxInput.min = param.min;
     maxInput.max = param.max;
-    maxInput.step = param.step || 1;
+    maxInput.step = param.step || (converter === parseInt ? 1 : 0.01); // Default step
     maxInput.value = param.value[1];
     
-    // Range display
-    const rangeDisplay = document.createElement('div');
-    rangeDisplay.className = 'range-display';
-    rangeDisplay.id = `${name}-range-display`;
-    rangeDisplay.textContent = `Range: ${param.value[0]} - ${param.value[1]}`;
-    
     // Add event listeners
-    minSlider.addEventListener('input', function() {
+    minSlider.addEventListener('change', function() {
         const minVal = converter(this.value);
         const maxVal = converter(maxSlider.value);
         
         if (minVal <= maxVal) {
             state[name] = [minVal, maxVal];
             minInput.value = minVal;
-            updateRangeDisplay(rangeDisplay, minVal, maxVal);
+            updateSliderGradient(minSlider, maxSlider, sliderContainer); // Update gradient
             updateParameter(name, [minVal, maxVal]);
         } else {
-            this.value = maxVal;
+            this.value = maxVal; // Snap to maxVal if crossing
+            minInput.value = maxVal; // Also update input
+            updateSliderGradient(minSlider, maxSlider, sliderContainer); // Update gradient
         }
     });
     
-    maxSlider.addEventListener('input', function() {
+    maxSlider.addEventListener('change', function() {
         const minVal = converter(minSlider.value);
         const maxVal = converter(this.value);
         
         if (maxVal >= minVal) {
             state[name] = [minVal, maxVal];
             maxInput.value = maxVal;
-            updateRangeDisplay(rangeDisplay, minVal, maxVal);
+            updateSliderGradient(minSlider, maxSlider, sliderContainer); // Update gradient
             updateParameter(name, [minVal, maxVal]);
         } else {
-            this.value = minVal;
+            this.value = minVal; // Snap to minVal if crossing
+            maxInput.value = minVal; // Also update input
+            updateSliderGradient(minSlider, maxSlider, sliderContainer); // Update gradient
         }
     });
     
@@ -457,10 +453,13 @@ function createRangeControl(name, param, converter) {
         if (!isNaN(minVal) && minVal >= param.min && minVal <= maxVal) {
             state[name] = [minVal, maxVal];
             minSlider.value = minVal;
-            updateRangeDisplay(rangeDisplay, minVal, maxVal);
+            updateSliderGradient(minSlider, maxSlider, sliderContainer); // Update gradient
             updateParameter(name, [minVal, maxVal]);
         } else {
-            this.value = state[name][0];
+            // Revert input value and ensure gradient matches state
+            this.value = state[name][0]; 
+            minSlider.value = state[name][0];
+            updateSliderGradient(minSlider, maxSlider, sliderContainer); 
         }
     });
     
@@ -471,10 +470,13 @@ function createRangeControl(name, param, converter) {
         if (!isNaN(maxVal) && maxVal <= param.max && maxVal >= minVal) {
             state[name] = [minVal, maxVal];
             maxSlider.value = maxVal;
-            updateRangeDisplay(rangeDisplay, minVal, maxVal);
+            updateSliderGradient(minSlider, maxSlider, sliderContainer); // Update gradient
             updateParameter(name, [minVal, maxVal]);
         } else {
+            // Revert input value and ensure gradient matches state
             this.value = state[name][1];
+            maxSlider.value = state[name][1];
+            updateSliderGradient(minSlider, maxSlider, sliderContainer);
         }
     });
     
@@ -487,16 +489,11 @@ function createRangeControl(name, param, converter) {
     
     container.appendChild(inputsContainer);
     container.appendChild(sliderContainer);
-    container.appendChild(rangeDisplay);
+    
+    // Set initial gradient state
+    updateSliderGradient(minSlider, maxSlider, sliderContainer);
     
     return container;
-}
-
-/**
- * Update range display text
- */
-function updateRangeDisplay(displayElement, min, max) {
-    displayElement.textContent = `Range: ${min} - ${max}`;
 }
 
 /**
@@ -576,7 +573,7 @@ function createButtonControl(name, param) {
                 console.error('Error:', data.error);
             } else {
                 // Update state with any changes from callbacks
-                updateStateFromServer(data.state);
+                updateStateFromServer(data.state, data.params);
                 // Update plot if needed
                 updatePlot();
             }
@@ -611,7 +608,8 @@ function updateParameter(name, value) {
         },
         body: JSON.stringify({
             name: name,
-            value: value
+            value: value,
+            action: false
         }),
     })
     .then(response => response.json())
@@ -620,7 +618,7 @@ function updateParameter(name, value) {
             console.error('Error:', data.error);
         } else {
             // Update state with any changes from callbacks
-            updateStateFromServer(data.state);
+            updateStateFromServer(data.state, data.params);
             // Update plot
             updatePlot();
         }
@@ -633,16 +631,16 @@ function updateParameter(name, value) {
 /**
  * Update local state from server response
  */
-function updateStateFromServer(serverState) {
+function updateStateFromServer(serverState, serverParamInfo) {
     // Set updating flag to prevent recursive updates
     isUpdating = true;
     
     try {
         // Update any parameters that changed due to callbacks
         for (const [name, value] of Object.entries(serverState)) {
-            if (JSON.stringify(state[name]) !== JSON.stringify(value)) {
+            if (JSON.stringify(state[name]) !== JSON.stringify(value) || JSON.stringify(paramInfo[name]) !== JSON.stringify(serverParamInfo[name])) {
                 state[name] = value;
-                updateControlValue(name, value);
+                updateControlValue(name, value, serverParamInfo[name]);
             }
         }
     } finally {
@@ -654,11 +652,9 @@ function updateStateFromServer(serverState) {
 /**
  * Update a control's value in the UI
  */
-function updateControlValue(name, value) {
+function updateControlValue(name, value, param) {
     if (!paramInfo[name]) return;
-    
-    const param = paramInfo[name];
-    
+
     switch (param.type) {
         case 'text':
             document.getElementById(`${name}-input`).value = value;
@@ -668,29 +664,97 @@ function updateControlValue(name, value) {
             break;
         case 'integer':
         case 'float':
-            document.getElementById(`${name}-slider`).value = value;
-            document.getElementById(`${name}-input`).value = value;
+            const slider = document.getElementById(`${name}-slider`);
+            slider.value = value;
+            slider.min = param.min;
+            slider.max = param.max;
+            slider.step = param.step;
+            const input = document.getElementById(`${name}-input`);
+            input.value = value;
+            input.min = param.min;
+            input.max = param.max;
+            input.step = param.step;
             break;
         case 'selection':
-            document.getElementById(`${name}-select`).value = value;
+            const selectElement = document.getElementById(`${name}-select`);
+            if (selectElement) {
+                // 1. Clear existing options
+                selectElement.innerHTML = '';
+
+                // 2. Add new options from the updated param info
+                if (param.options && Array.isArray(param.options)) {
+                    param.options.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option;
+                        optionElement.textContent = formatLabel(String(option));
+                        // Store original type/value info
+                        optionElement.dataset.originalType = typeof option;
+                        if (typeof option === 'number') {
+                            optionElement.dataset.originalValue = option;
+                        }
+                        selectElement.appendChild(optionElement);
+                    });
+                } else {
+                    console.warn(`No options found or options is not an array for parameter: ${name}`);
+                }
+
+                selectElement.value = value;
+            } else {
+                console.warn(`No select element found for parameter: ${name}`);
+            }
             break;
         case 'multiple-selection':
-            const select = document.getElementById(`${name}-select`);
-            if (select) {
-                Array.from(select.options).forEach(option => {
+            const multiSelect = document.getElementById(`${name}-select`);
+            if (multiSelect) {
+                multiSelect.innerHTML = '';
+
+                if (param.options && Array.isArray(param.options)) {
+                    param.options.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option;
+                        optionElement.textContent = formatLabel(String(option));
+                        multiSelect.appendChild(optionElement);
+                    });
+                } else {
+                    console.warn(`No options found or options is not an array for parameter: ${name}`);
+                }
+
+                Array.from(multiSelect.options).forEach(option => {
                     option.selected = value.includes(option.value);
                 });
             }
             break;
         case 'integer-range':
         case 'float-range':
-            document.getElementById(`${name}-min-slider`).value = value[0];
-            document.getElementById(`${name}-max-slider`).value = value[1];
-            document.getElementById(`${name}-min-input`).value = value[0];
-            document.getElementById(`${name}-max-input`).value = value[1];
-            const display = document.getElementById(`${name}-range-display`);
-            if (display) {
-                updateRangeDisplay(display, value[0], value[1]);
+            const minSlider = document.getElementById(`${name}-min-slider`);
+            const maxSlider = document.getElementById(`${name}-max-slider`);
+            const minInput = document.getElementById(`${name}-min-input`);
+            const maxInput = document.getElementById(`${name}-max-input`);
+
+            minSlider.min = param.min;
+            minSlider.max = param.max;
+            minSlider.step = param.step;
+            maxSlider.min = param.min;
+            maxSlider.max = param.max;
+            maxSlider.step = param.step;
+            minInput.min = param.min;
+            minInput.max = param.max;
+            minInput.step = param.step;
+            maxInput.min = param.min;
+            maxInput.max = param.max;
+            maxInput.step = param.step;
+            
+            minSlider.value = value[0];
+            maxSlider.value = value[1];
+            minInput.value = value[0];
+            maxInput.value = value[1];
+            
+            // Update the gradient background
+            const sliderContainer = minSlider ? minSlider.closest('.range-slider-container') : null;
+            if (sliderContainer) {
+                updateSliderGradient(minSlider, maxSlider, sliderContainer);
+            } else {
+                 console.warn(`Could not find slider container for range control: ${name}`);
             }
             break;
         case 'unbounded-integer':
@@ -698,6 +762,29 @@ function updateControlValue(name, value) {
             document.getElementById(`${name}-input`).value = value;
             break;
     }
+}
+
+/**
+ * Updates the background gradient for the dual range slider.
+ * @param {HTMLInputElement} minSlider - The minimum value slider element.
+ * @param {HTMLInputElement} maxSlider - The maximum value slider element.
+ * @param {HTMLElement} container - The container element holding the sliders.
+ */
+function updateSliderGradient(minSlider, maxSlider, container) {
+    const rangeMin = parseFloat(minSlider.min);
+    const rangeMax = parseFloat(minSlider.max);
+    const minVal = parseFloat(minSlider.value);
+    const maxVal = parseFloat(maxSlider.value);
+    
+    // Calculate percentages
+    const range = rangeMax - rangeMin;
+    // Prevent division by zero if min === max
+    const minPercent = range === 0 ? 0 : ((minVal - rangeMin) / range) * 100; 
+    const maxPercent = range === 0 ? 100 : ((maxVal - rangeMin) / range) * 100;
+    
+    // Update CSS custom properties
+    container.style.setProperty('--min-pos', `${minPercent}%`);
+    container.style.setProperty('--max-pos', `${maxPercent}%`);
 }
 
 /**

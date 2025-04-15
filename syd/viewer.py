@@ -7,7 +7,6 @@ from matplotlib.figure import Figure
 from .parameters import ParameterType, ActionType, Parameter
 from .support import NoUpdate, NoInitialValue, ParameterAddError, ParameterUpdateError
 
-
 # Create the singleton instances
 NO_UPDATE = NoUpdate()
 NO_INITIAL_VALUE = NoInitialValue()
@@ -217,24 +216,29 @@ class Viewer:
         """Deploy the app in a notebook or standalone environment"""
         env = env.lower()
         if env == "notebook":
-            from .notebook_deployment import NotebookDeployer
+            # On demand import because the deployers need to import the viewer
+            from .notebook_deployment.deployer import NotebookDeployer
 
             deployer = NotebookDeployer(self, **kwargs)
             deployer.deploy()
             return self
 
         elif env == "browser" or env == "flask":
-            from .flask_deployment import deploy_flask
+            # On demand import because the deployers need to import the viewer
+            from .flask_deployment.deployer import FlaskDeployer
 
-            # Ensure port is None by default if not specified
             if "port" not in kwargs:
                 kwargs["port"] = None
+            if "continuous" in kwargs:
+                kwargs.pop("continuous")
 
-            deployer = deploy_flask(self, **kwargs)
+            deployer = FlaskDeployer(self, **kwargs)
+            deployer.deploy()
             return self
+
         else:
             raise ValueError(
-                f"Unsupported environment: {env}, only 'notebook', 'plotly', 'plotly-inline', and 'flask' are supported right now."
+                f"Unsupported environment: {env}, only 'notebook', 'flask'/'browser' are supported right now."
             )
 
     @contextmanager

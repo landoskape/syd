@@ -1,6 +1,17 @@
 from abc import ABCMeta
 from typing import Any, List
 from warnings import warn
+from contextlib import contextmanager
+import matplotlib.pyplot as plt
+
+
+@contextmanager
+def plot_context():
+    plt.ioff()
+    try:
+        yield
+    finally:
+        plt.ion()
 
 
 class NoUpdate:
