@@ -62,14 +62,3 @@ Action Parameters
 .. autoclass:: ButtonAction
    :members:
    :show-inheritance:
-
-Exceptions
-----------
-
-.. autoexception:: ParameterAddError
-   :members:
-   :show-inheritance:
-
-.. autoexception:: ParameterUpdateError
-   :members:
-   :show-inheritance: 

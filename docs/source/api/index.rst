@@ -5,4 +5,5 @@ API Reference
    :maxdepth: 2
 
    viewer
-   parameters 
+   parameters
+   support
