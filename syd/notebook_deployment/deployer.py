@@ -1,15 +1,13 @@
-from typing import Literal
+from typing import Literal, Optional
 import warnings
-from dataclasses import dataclass
 import ipywidgets as widgets
 from IPython.display import display
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from ..support import ParameterUpdateWarning
+from ..support import ParameterUpdateWarning, plot_context
 from ..viewer import Viewer
-from ..deployer import Deployer
-from .widgets import create_widget
+from .widgets import create_widget, BaseWidget
 
 
 def get_backend_type():
@@ -28,7 +26,7 @@ def get_backend_type():
         return "other"
 
 
-class NotebookDeployer(Deployer):
+class NotebookDeployer:
     """
     A deployment system for Viewer in Jupyter notebooks using ipywidgets.
     Built around the parameter widget system for clean separation of concerns.
@@ -42,7 +40,10 @@ class NotebookDeployer(Deployer):
         continuous: bool = False,
         suppress_warnings: bool = True,
     ):
-        super().__init__(viewer, suppress_warnings)
+        self.viewer = viewer
+        self.components: dict[str, BaseWidget] = {}
+        self.suppress_warnings = suppress_warnings
+        self._updating = False  # Flag to check circular updates
         self.controls_position = controls_position
         self.controls_width_percent = controls_width_percent
         self.continuous = continuous
@@ -55,6 +56,14 @@ class NotebookDeployer(Deployer):
                 "The behavior of the viewer will almost definitely not work as expected!"
             )
         self._last_figure = None
+
+    def deploy(self) -> None:
+        """Deploy the viewer."""
+        self.build_components()
+        self.build_layout()
+        self.backend_type = get_backend_type()
+        display(self.layout)
+        self.update_plot()
 
     def build_components(self) -> None:
         """Create widget instances for all parameters and equip callbacks."""
@@ -145,15 +154,64 @@ class NotebookDeployer(Deployer):
         else:
             self.layout = widgets.VBox([self.widgets_container, self.plot_container])
 
-    def display(self) -> None:
-        """Display the layout -- pretty easy since it's just a widget layout in a notebook!"""
-        self.backend_type = get_backend_type()
-        display(self.layout)
+    def handle_component_engagement(self, name: str) -> None:
+        """Handle engagement with an interactive component."""
+        if self._updating:
+            print(
+                "Already updating -- there's a circular dependency!"
+                "This is probably caused by failing to disable callbacks for a parameter."
+                "It's a bug --- tell the developer on github issues please."
+            )
+            return
 
-    def display_new_plot(self, figure: mpl.figure.Figure) -> None:
-        """Display a new plot."""
+        try:
+            self._updating = True
+
+            # Optionally suppress warnings during parameter updates
+            with warnings.catch_warnings():
+                if self.suppress_warnings:
+                    warnings.filterwarnings("ignore", category=ParameterUpdateWarning)
+
+                # Get the component
+                component = self.components[name]
+                if component.is_action:
+                    # If the component is an action, call the callback
+                    parameter = self.viewer.parameters[name]
+                    parameter.callback(self.viewer.state)
+                else:
+                    # Otherwise, update the parameter value
+                    self.viewer.set_parameter_value(name, component.value)
+
+                # Update any components that changed due to dependencies
+                self.sync_components_with_state()
+
+                # Update the plot
+                self.update_plot()
+
+        finally:
+            self._updating = False
+
+    def sync_components_with_state(self, exclude: Optional[str] = None) -> None:
+        """Sync component values with viewer state."""
+        for name, parameter in self.viewer.parameters.items():
+            if name == exclude:
+                continue
+
+            component = self.components[name]
+            if not component.matches_parameter(parameter):
+                component.update_from_parameter(parameter)
+
+    def update_plot(self) -> None:
+        """Update the plot with current state."""
+        state = self.viewer.state
+
+        with plot_context():
+            figure = self.viewer.plot(state)
+
+        # Update components if plot function updated a parameter
+        self.sync_components_with_state()
+
         # Close the last figure if it exists to keep matplotlib clean
-        # (just moved this from after clear_output.... noting!)
         if self._last_figure is not None:
             plt.close(self._last_figure)
 
