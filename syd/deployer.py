@@ -6,7 +6,8 @@ from contextlib import contextmanager
 from time import time
 import matplotlib.pyplot as plt
 
-from .parameters import ParameterUpdateWarning, Parameter
+from .support import ParameterUpdateWarning
+from .parameters import Parameter
 from .viewer import Viewer
 
 
