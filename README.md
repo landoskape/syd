@@ -50,7 +50,7 @@ viewer.deploy(env=env)
 ### More Examples
 We have several examples of more complex viewers with detailed explanations in the comments. Here are the links and descriptions to each of them:
 
-| Example | Description | View on Colab |
+| Example | Description | Try It! |
 |---------|-------------|---------------|
 | [Basic Tutorial](examples/1-simple_example.ipynb) | A good starting point with detailed explanations of how to use the core elements of Syd. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/1-simple_example.ipynb) |
 | [Comprehensive](examples/2a-complex_example.ipynb) | Showcases just about everything you can do with Syd. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/2a-complex_example.ipynb) |
@@ -178,12 +178,7 @@ Please make sure to update tests as appropriate and adhere to the existing codin
   - [ ] Add a "freeze" button that allows the user to update state variables without updating the plot until unfreezing
   - [ ] Add a window for capturing any error messages that might be thrown by the plot function. Maybe we could have a little interface for looking at each one (up to a point) and the user could press a button to throw an error for the traceback. 
 - [ ] Consider "app_deployed" context for each deployer...
-- [ ] Consider the error messages and if they can be more informative and less opaque -- especially when debugging (e.g. when we always get routed to the decorators that check things...)
-- Notebook deployment debouncer: 
-  - [ ] Probably make this dependent on whether the user is in %matplotlib widget mode or not
-  - [ ] Also probably make it dependent on whether the deployer is in continuous mode or not
-  - [ ] Potentially make the wait_time dynamic depending on how fast the plot method is and how frequently the no comm messages show up... (if we can catch them)
-- [ ] Consider adding a step to the integer parameter...
+- [ ] Consider adding a step to the integer parameters...
 - Idea for figure management:
   - [ ] We could make fig=?, ax=? arguments optional for the plot function and add a
     "recycle_figure: bool = False" flag be part of the deploy API. This way, an
