@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Support for web browser viewing alongside Jupyter notebooks.
-- New parameter types and improved parameter handling, including `NoInitialValue` for default parameter values so it's possible to create a parameter without defining the initial value. 
+- New parameter types and improved parameter handling, including `NoInitialValue` for default parameter values so it's possible to create a parameter without defining the initial value.
 
 ### Changed
 - Refactored parameter validation and update logic for better consistency and error handling.
