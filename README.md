@@ -47,7 +47,94 @@ viewer.deploy(env=env)
 We have several examples of more complex viewers in the [examples](examples) folder. A good one to start with is the [simple example](examples/1-simple_example.ipynb) because this has detailed explanations of how to use the core elements of Syd. To see an example that showcases everything you can do with Syd, try [complex example](examples/2a-complex_example.ipynb). And to see what the same viewer looks like when written as a class, check out [subclass example](examples/2b-subclass_example.ipynb). This format is pretty useful when you want complex functionality - for example if you want to add extra supporting methods for processing data and updating parameters that require more complex logic or if your data processing requires some clever preprocessing to make plotting fast. 
 
 #### Data loading
-Thinking about how to get data into a Syd viewer can be non-intuitive. For some examples that showcase different ways to get your data into a Syd viewer, check out the [data loading example](examples/3-data_loading.ipynb).
+Thinking about how to get data into a Syd viewer can be non-intuitive. For some examples that showcase different ways to get your data into a Syd viewer, check out the [data loading example](examples/3-data_loading.ipynb). If you just want a quick example, check this out:
+```python
+import numpy as np
+from matplotlib import pyplot as plt
+from syd import make_viewer
+
+# Suppose you computed some data somewhere (in a script or in a jupyter notebook)
+data = np.random.randn(100, 1000)
+
+# When you write a plot function like this, it'll be able to access the data variable
+def plot(state):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    # plot indexes to the data that you created outside the plot function
+    ax.imshow(data[state["index"]])
+    return fig
+
+# Since plot "knows" about the data variable, all you need to do is pass the plot
+# function to the syd viewer and it'll be able to access the data once deployed!
+viewer = make_viewer(plot)
+viewer.deploy(env="browser")
+```
+
+#### Handling Hierarchical Callbacks
+Syd dramatically reduces the amount of work you need to build a GUI for viewing your data. However, it can still be a bit complicated to think about callbacks. 
+
+For example, suppose your dataset is composed of electrophysiology recordings from 3 mice, where each mouse has a different number of sesssions, and each session has a different number of neurons. You want to build a viewer to choose the mouse, then choose the session, and then view a particular neuron from within that session. The viewer will break if you try to index to session 5 for mouse 2 but mouse 2 only has 4 sessions!
+
+This is where hierarchical callbacks come in. There's a straightforward pattern to handling this kind of situation that you can follow. You can write a callback for each **level** of the hierarchy. Then, each callback can call the next callback in the hierarchy. It looks like this: 
+```python
+import numpy as np
+from syd import Viewer # Much easier to build a Viewer class for hierarchical callbacks
+
+class MouseViewer(Viewer):
+    def __init__(self, mice_names):
+        self.mice_names = mice_names
+
+        self.add_selection("mouse", options=list(mice_names)) # Options have to be a list...
+        self.add_integer("session", min=0, max=1) # We don't know how many sessions to pick from yet!
+        self.add_integer("neuron", min=0, max=1) # We don't know how many neurons to pick from yet!
+        
+        # Any time the mouse changes, update the sessions to pick from
+        self.on_change("mouse", self.update_mouse)
+
+        # Any time the session changes, update the neurons to pick from
+        self.on_change("session", self.update_session)
+
+        # Since we build callbacks for setting the range of the session and neuron parameters, 
+        # we can use them here!
+        # To get the state, we can use self.state, which is the current state of the viewer (in the 
+        # init function, it'll just be the default value for each parameter you've added already).
+        self.update_mouse(self.state)
+
+    def update_mouse(self, state):
+        # Pseudo code for getting the number of sessions for a given mouse
+        num_sessions = get_num_sessions_from_mouse_name(state["mouse"])
+
+        # Now we update the number of sessions to pick from
+        self.update_integer("session", max=num_sessions - 1)
+
+        # Now we need to update the neurons to choose from ....
+        # But! Updating the session parameter might trigger a change to the session value. 
+        # So, instead of using the state dictionary that was passed into the function, we 
+        # can get the ~NEW~ state dictionary like this:
+        new_state = self.state
+
+        # Then perform the session update callback!
+        self.update_session(new_state)
+
+    def update_session(self, state):
+        # Pseudo code for getting the number of neurons for a given mouse and session
+        num_neurons = get_num_neurons_from_mouse_name_and_session(state["mouse"], state["session"])
+
+        # Now we update the number of neurons to pick from
+        self.update_integer("neuron", max=num_neurons - 1)
+
+    def plot(self, state):
+        # Pseudo code for plotting the data
+        data = get_data_from_mouse_name_and_session_and_neuron(state["mouse"], state["session"], state["neuron"])
+        fig = plot_the_data(data)
+        return fig
+
+# Now we can create a viewer and deploy it
+viewer = MouseViewer(["Mouse 1", "Mouse 2", "Mouse 3"])
+viewer.deploy(env="browser")
+```
+
 
 ## Documentation
 
