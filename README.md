@@ -46,7 +46,8 @@ env = "notebook" # for viewing within a jupyter notebook
 viewer.deploy(env=env)
 ```
 
-<img alt="Quick Start Viewer" src="./docs/assets/viewer_screenshots/readme_example.png" width="700">
+![Quick Start Viewer](./docs/assets/viewer_screenshots/readme_example.png)
+<!-- <img alt="Quick Start Viewer" src="./docs/assets/viewer_screenshots/readme_example.png" width="700"> -->
 
 ### More Examples
 We have several examples of more complex viewers with detailed explanations in the comments. Here are the links and descriptions to each of them:
