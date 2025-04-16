@@ -17,7 +17,7 @@ Have you ever wanted to look through all your data really quickly interactively?
 
 Syd is a system for creating a data viewing GUI that you can view in a jupyter notebook or in a web browser. And guess what? Since it can open in a web browser, you can even open it on any other computer on your local network! For example, your PI's computer. Gone are the days of single random examples that they make infinitely stubborn conclusions about. Now, you can look at all the examples, quickly and easily, on their computer. And that's why Syd stands for share your data!
 
-Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This means you only have to think about _**what**_ you want to plot and _**which**_ parameters you want to be interactive. Syd handles all the behind-the-scenes action required to make an interface. And guess what? That means you get to spend your time _thinking_ about your data, rather than writing code to look at it. And that's why Syd stands for Science, Yes! Dayummmm!
+Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This means you only have to think about what you want to _**plot**_ and which _**parameters**_ you want to be interactive. Syd handles all the behind-the-scenes action required to make an interface. And guess what? That means you get to spend your time _**thinking**_ about your data, rather than writing code to look at it. And that's why Syd stands for Science, Yes! Dayummmm!
 
 ## Installation
 It's easy, just use pip install. The dependencies are light so it should work in most environments.
@@ -29,10 +29,6 @@ pip install syd
 The full documentation is available at [shareyourdata.readthedocs.io](https://shareyourdata.readthedocs.io/). It includes a quick start guide, a comprehensive tutorial, and an API reference for the different elements of Syd. If you have any questions or want to suggest improvements to the docs, please let us know on the [github issues page](https://github.com/landoskape/syd/issues)!
 
 ## Quick Start
-<!-- <div style="float: right; margin-left: 100px; margin-bottom: 10px;">
-    <img src="./docs/assets/viewer_screenshots/readme_example_gif.gif" alt="Syd" width="300" align="right"/>
-</div> -->
-
 This is an example of a sine wave viewer which is about as simple as it gets. You can choose which env to use - if you use ``env="notebook"`` then the GUI will deploy as the output of a jupyter cell (this only works in jupyter!). If you use ``env="browser"`` then the GUI will open a page in your default web browser and you can interact with the data there (works in jupyter notebooks and also from python scripts!).
 
 ```python
@@ -52,12 +48,13 @@ viewer.add_float("amplitude", value=1.0, min=0.1, max=2.0)
 viewer.add_float("frequency", value=1.0, min=0.1, max=5.0)
 viewer.add_selection("color", value="red", options=["red", "blue", "green", "black"])
 
-# env = "browser" # for viewing in a web browser (accessible via an IP address)
+# env = "browser" # for viewing in a web browser
 env = "notebook" # for viewing within a jupyter notebook
 viewer = viewer.deploy(env=env)
 ```
 
 ![Quick Start Viewer](./docs/assets/viewer_screenshots/readme_example_gif.gif)
+
 ### More Examples
 We have several examples of more complex viewers with detailed explanations in the comments. Here are the links and descriptions to each of them:
 
@@ -71,7 +68,7 @@ We have several examples of more complex viewers with detailed explanations in t
 
 
 ### Data loading
-Thinking about how to get data into a Syd viewer can be non-intuitive. For some examples that showcase different ways to get your data into a Syd viewer, check out the [data loading example](examples/3-data_loading.ipynb). Or, if you just want a quick example, check this out:
+Thinking about how to get data into a Syd viewer can be non-intuitive. For some examples that showcase different ways to get your data into a Syd viewer, check out the [data loading example](examples/3-data_loading.ipynb). Or, if you just want a quick and fast example, check this one out:
 ```python
 import numpy as np
 from matplotlib import pyplot as plt
@@ -96,11 +93,11 @@ viewer.deploy(env="browser")
 ```
 
 ### Handling Hierarchical Callbacks
-Syd dramatically reduces the amount of work you need to do to build a GUI for viewing your data. However, it can still be a bit complicated to think about callbacks. Below is a quick demonstration, to try it yourself, check out the full example [here](examples/4-hierarchical_callbacks.ipynb).
+Syd dramatically reduces the amount of work you need to do to build a GUI for viewing your data. However, it can still be a bit complicated to think about callbacks. Below is a quick demonstration. To try it yourself, check out the full example [here](examples/4-hierarchical_callbacks.ipynb) or open it in colab [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/4-hierarchical_callbacks.ipynb).
 
-For example, suppose your dataset is composed of electrophysiology recordings from 3 mice, where each mouse has a different number of sesssions, and each session has a different number of neurons. You want to build a viewer to choose the mouse, then choose the session, and then view a particular neuron from within that session. But the viewer will break if you try to index to session 5 for mouse 2 but mouse 2 only has 4 sessions!
+For example, suppose your dataset is composed of electrophysiology recordings from 3 mice, where each mouse has a different number of sesssions, and each session has a different number of neurons. You want to build a viewer to view a particular neuron from a particular session from a particular mouse. But the viewer will break if you try to index to session 5 for mouse 2 when mouse 2 has less than 5 sessions!
 
-This is where hierarchical callbacks come in. There's a straightforward pattern to handling this kind of situation that you can follow. You can write a callback for each **level** of the hierarchy. Then, each callback can call the next callback in the hierarchy. It looks like this: 
+This is where hierarchical callbacks come in. There's a straightforward pattern to handling this kind of situation that you can follow. You can write a callback for each **level** of the hierarchy. Then, each callback can **update** the state and call the next callback in the hierarchy once it's finished. It looks like this: 
 ```python
 import numpy as np
 from syd import Viewer # Much easier to build a Viewer class for hierarchical callbacks
@@ -111,19 +108,22 @@ class MouseViewer(Viewer):
 
         self.add_selection("mouse", options=list(mice_names))
 
-        # We don't know how many sessions or neurons to pick from yet!
+        # We don't know how many sessions or neurons to pick from yet,
+        # so just set the max to 1 for now.
         self.add_integer("session", min=0, max=1)
         self.add_integer("neuron", min=0, max=1)
         
-        # Any time the mouse changes, update the sessions to pick from
+        # Any time the mouse changes, update the sessions to pick from!
         self.on_change("mouse", self.update_mouse)
 
-        # Any time the session changes, update the neurons to pick from
+        # Any time the session changes, update the neurons to pick from!
         self.on_change("session", self.update_session)
 
         # Since we built callbacks for setting the range of the session
-        # and neuron parameters, we can use them here!
-        # To get the state, we can use self.state, which is the current
+        # and neuron parameters, we can use them here so the viewer is
+        # fully ready and up to date.
+
+        # To get the state, use self.state, which is the current
         # state of the viewer (in the init function, it'll just be the
         # default value for each parameter you've added already).
         self.update_mouse(self.state)
@@ -136,9 +136,13 @@ class MouseViewer(Viewer):
         self.update_integer("session", max=num_sessions - 1)
 
         # Now we need to update the neurons to choose from ....
-        # But! Updating the session parameter might trigger a change to the
-        # session value. So, instead of using the state dictionary that was
-        # passed into the function, we can get the ~NEW~ state dictionary like this:
+
+        # But! Updating the session parameter's max value might trigger a change
+        # to the current session value. This ~won't be reflected~ in the state 
+        # dictionary that was passed to this function.
+        
+        # So, we need to load the ~NEW~ state dictionary, which is always 
+        # accessible as self.state (or viewer.state if you're not using a class).
         new_state = self.state
 
         # Then perform the session update callback!
@@ -159,7 +163,7 @@ class MouseViewer(Viewer):
 
 # Now we can create a viewer and deploy it
 viewer = MouseViewer(["Mouse 1", "Mouse 2", "Mouse 3"])
-viewer.deploy(env="browser")
+viewer.show()
 ```
 
 ## License
@@ -195,4 +199,3 @@ black . # from the root directory of the repo
 - Export options:
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
-- [ ] Keep deploy() for backwards compatibility, but deprecate it in favor of show() and share() (for notebook and browser, respectively)

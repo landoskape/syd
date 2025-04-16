@@ -1,4 +1,4 @@
-from typing import List, Any, Callable, Dict, Tuple, Union, Optional
+from typing import List, Any, Callable, Dict, Tuple, Union, Optional, Literal
 from functools import wraps, partial
 import inspect
 from contextlib import contextmanager
@@ -212,6 +212,54 @@ class Viewer:
         """Set the plot method for the viewer"""
         self.plot = self._prepare_function(func, context="Setting plot:")
 
+    def show(
+        self,
+        controls_position: Literal["left", "top", "right", "bottom"] = "left",
+        controls_width_percent: int = 20,
+        continuous: bool = False,
+        suppress_warnings: bool = True,
+        update_threshold: float = 1.0,
+    ):
+        """Show the viewer in a notebook
+
+        Same as deploy(env="notebook") except it doesn't return the viewer object.
+        """
+        _ = self.deploy(
+            env="notebook",
+            controls_position=controls_position,
+            controls_width_percent=controls_width_percent,
+            continuous=continuous,
+            suppress_warnings=suppress_warnings,
+            update_threshold=update_threshold,
+        )
+
+    def share(
+        self,
+        controls_position: str = "left",
+        fig_dpi: int = 300,
+        controls_width_percent: int = 20,
+        suppress_warnings: bool = True,
+        debug: bool = False,
+        host: str = "127.0.0.1",
+        port: Optional[int] = None,
+        open_browser: bool = True,
+    ):
+        """Share the viewer on a web browser using Flask
+
+        Same as deploy(env="browser") except it doesn't return the viewer object.
+        """
+        _ = self.deploy(
+            env="browser",
+            controls_position=controls_position,
+            fig_dpi=fig_dpi,
+            controls_width_percent=controls_width_percent,
+            suppress_warnings=suppress_warnings,
+            debug=debug,
+            host=host,
+            port=port,
+            open_browser=open_browser,
+        )
+
     def deploy(self, env: str = "notebook", **kwargs):
         """Deploy the app in a notebook or standalone environment"""
         env = env.lower()
@@ -223,7 +271,7 @@ class Viewer:
             deployer.deploy()
             return self
 
-        elif env == "browser" or env == "flask":
+        elif env == "browser":
             # On demand import because the deployers need to import the viewer
             from .flask_deployment.deployer import FlaskDeployer
 
@@ -238,7 +286,7 @@ class Viewer:
 
         else:
             raise ValueError(
-                f"Unsupported environment: {env}, only 'notebook', 'flask'/'browser' are supported right now."
+                f"Unsupported environment: {env}, only 'notebook', 'browser' are supported right now."
             )
 
     @contextmanager
