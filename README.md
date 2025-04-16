@@ -8,7 +8,7 @@
 
 
 <div>
-    <img src="./docs/assets/syd-logo-white.png" alt="Syd" width="350" align="right" style="margin-left: 10px"/>
+    <img src="./docs/assets/syd-logo-white.png" alt="Syd" width="350" align="right" style="margin-left: 15px; margin-bottom: 15px;"/>
 </div>
 
 A package to help you share your data!
@@ -29,6 +29,9 @@ pip install syd
 The full documentation is available at [shareyourdata.readthedocs.io](https://shareyourdata.readthedocs.io/). It includes a quick start guide, a comprehensive tutorial, and an API reference for the different elements of Syd. If you have any questions or want to suggest improvements to the docs, please let us know on the [github issues page](https://github.com/landoskape/syd/issues)!
 
 ## Quick Start
+<div>
+    <img src="./docs/assets/viewer_screenshots/readme_example_gif.gif" alt="Syd" width="400" align="right" style="margin-left: 10px"/>
+</div>
 This is an example of a sine wave viewer which is about as simple as it gets. You can choose which env to use - if you use ``env="notebook"`` then the GUI will deploy as the output of a jupyter cell (this only works in jupyter!). If you use ``env="browser"`` then the GUI will open a page in your default web browser and you can interact with the data there (works in jupyter notebooks and also from python scripts!).
 ```python
 import numpy as np
@@ -51,8 +54,6 @@ viewer.add_selection("color", value="red", options=["red", "blue", "green", "bla
 env = "notebook" # for viewing within a jupyter notebook
 viewer = viewer.deploy(env=env)
 ```
-
-![Quick Start Viewer](./docs/assets/viewer_screenshots/readme_example_gif.gif)
 
 ### More Examples
 We have several examples of more complex viewers with detailed explanations in the comments. Here are the links and descriptions to each of them:
