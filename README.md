@@ -50,7 +50,7 @@ viewer.add_selection("color", value="red", options=["red", "blue", "green", "bla
 
 # env = "browser" # for viewing in a web browser
 env = "notebook" # for viewing within a jupyter notebook
-viewer = viewer.deploy(env=env)
+viewer.show()
 ```
 
 ![Quick Start Viewer](./docs/assets/viewer_screenshots/readme_example_gif.gif)
@@ -89,7 +89,7 @@ def plot(state):
 # Since plot "knows" about the data variable, all you need to do is pass the plot
 # function to the syd viewer and it'll be able to access the data once deployed!
 viewer = make_viewer(plot)
-viewer.deploy(env="browser")
+viewer.show()
 ```
 
 ### Handling Hierarchical Callbacks
