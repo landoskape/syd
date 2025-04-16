@@ -27,27 +27,28 @@ The full documentation is available at [shareyourdata.readthedocs.io](https://sh
 ## Quick Start
 This is an example of a sine wave viewer which is about as simple as it gets. You can choose which env to use - if you use ``env="notebook"`` then the GUI will deploy as the output of a jupyter cell (this only works in jupyter!). If you use ``env="browser"`` then the GUI will open a page in your default web browser and you can interact with the data there (works in jupyter notebooks and also from python scripts!).
 ```python
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 from syd import make_viewer
 def plot(state):
-    fig, ax = plt.subplots()
-    x = np.linspace(0, 10, 1000)
-    y = state['amplitude'] * np.sin(state['frequency'] * x)
-    ax.plot(x, y)
+    # Here's a simple plot function that plots a sine wave
+    fig = plt.figure()
+    t = np.linspace(0, 2 * np.pi, 1000)
+    ax = plt.gca()
+    ax.plot(t, state["amplitude"] * np.sin(state["frequency"] * t), color=state["color"])
     return fig
-        
-viewer = make_viewer(plot)
-viewer.add_float('amplitude', value=1.0, min=0, max=2)
-viewer.add_float('frequency', value=1.0, min=0.1, max=5)
 
-# env = "browser" # for viewing in a web browser
+viewer = make_viewer(plot)
+viewer.add_float("amplitude", value=1.0, min=0.1, max=2.0)
+viewer.add_float("frequency", value=1.0, min=0.1, max=5.0)
+viewer.add_selection("color", value="red", options=["red", "blue", "green", "black"])
+
+# env = "browser" # for viewing in a web browser (available from an IP address on your local network)
 env = "notebook" # for viewing within a jupyter notebook
-viewer.deploy(env=env)
+viewer = viewer.deploy(env=env)
 ```
 
-![Quick Start Viewer](./docs/assets/viewer_screenshots/readme_example.png)
-<!-- <img alt="Quick Start Viewer" src="./docs/assets/viewer_screenshots/readme_example.png" width="700"> -->
+![Quick Start Viewer](./docs/assets/viewer_screenshots/readme_example_gif.gif)
 
 ### More Examples
 We have several examples of more complex viewers with detailed explanations in the comments. Here are the links and descriptions to each of them:
