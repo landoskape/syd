@@ -52,7 +52,7 @@ viewer.add_float("amplitude", value=1.0, min=0.1, max=2.0)
 viewer.add_float("frequency", value=1.0, min=0.1, max=5.0)
 viewer.add_selection("color", value="red", options=["red", "blue", "green", "black"])
 
-# env = "browser" # for viewing in a web browser (available from an IP address on your local network)
+# env = "browser" # for viewing in a web browser (accessible via an IP address)
 env = "notebook" # for viewing within a jupyter notebook
 viewer = viewer.deploy(env=env)
 ```
