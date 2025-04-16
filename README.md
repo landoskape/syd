@@ -7,13 +7,15 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 
+![Syd Logo](./docs/assets/syd_logo.png)
+
 A package to help you share your data!
 
 Have you ever wanted to look through all your data really quickly interactively? Of course you have. Mo data mo problems, but only if you don't know what to do with it. And that's why Syd stands for show your data! 
 
 Syd is a system for creating a data viewing GUI that you can view in a jupyter notebook or in a web browser. And guess what? Since it can open in a web browser, you can even open it on any other computer on your local network! For example, your PI's computer. Gone are the days of single random examples that they make infinitely stubborn conclusions about. Now, you can look at all the examples, quickly and easily, on their computer. And that's why Syd stands for share your data!
 
-Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This means you only have to think about _**what**_ you want to plot and _**which**_ parameters you want to be interactive. Syd handles all the behind-the-scenes action required to make an interface. And do you know what that means? It means you get to spend your time _thinking_ about your data, rather than writing code to look at it. And that's why Syd stands for Science, Yes! Dayummmm!
+Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This means you only have to think about _**what**_ you want to plot and _**which**_ parameters you want to be interactive. Syd handles all the behind-the-scenes action required to make an interface. And guess what? That means you get to spend your time _thinking_ about your data, rather than writing code to look at it. And that's why Syd stands for Science, Yes! Dayummmm!
 
 ## Installation
 It's easy, just use pip install. The dependencies are light so it should work in most environments.
@@ -170,8 +172,11 @@ Contributions are welcome! Here's how you can help:
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request online
 
-Please make sure to update tests as appropriate and adhere to the existing coding style (black, line-length=88, other style guidelines not capture by black, generally following pep8 guidelines).
-
+Please make sure to update tests as appropriate and adhere to the existing coding style (black, line-length=88, other style guidelines not capture by black, generally following pep8 guidelines). Try to make the code coverage report improve or stay the same rather than decrease (right now the deployment system isn't covered by tests). I don't have any precommit hooks or anything so you're responsible for checking this yourself. You can process the code with black as follows:
+```bash
+pip install black
+black . # from the root directory of the repo
+```
 
 ## To-Do List
 - Layout controls
@@ -181,12 +186,12 @@ Please make sure to update tests as appropriate and adhere to the existing codin
   - [ ] Add a "freeze" button that allows the user to update state variables without updating the plot until unfreezing
   - [ ] Add a window for capturing any error messages that might be thrown by the plot function. Maybe we could have a little interface for looking at each one (up to a point) and the user could press a button to throw an error for the traceback. 
 - [ ] Consider "app_deployed" context for each deployer...
-- [ ] Consider adding a step to the integer parameters...
-- Idea for figure management:
-  - [ ] We could make fig=?, ax=? arguments optional for the plot function and add a
+- [ ] Idea for figure management:
+  - We could make fig=?, ax=? arguments optional for the plot function and add a
     "recycle_figure: bool = False" flag be part of the deploy API. This way, an
     advanced user that wants snappy responsivity or complex figure management can
     do so, but the default is for the user to generate a new figure object each time.
 - Export options:
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
+- [ ] Keep deploy() for backwards compatibility, but deprecate it in favor of show() and share() (for notebook and browser, respectively)
