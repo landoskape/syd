@@ -1,5 +1,7 @@
 from typing import Literal, Optional
 import warnings
+import threading
+from contextlib import contextmanager
 import ipywidgets as widgets
 from IPython.display import display
 import matplotlib as mpl
@@ -39,6 +41,7 @@ class NotebookDeployer:
         controls_width_percent: int = 20,
         continuous: bool = False,
         suppress_warnings: bool = True,
+        update_threshold: float = 1.0,
     ):
         self.viewer = viewer
         self.components: dict[str, BaseWidget] = {}
@@ -56,12 +59,58 @@ class NotebookDeployer:
                 "The behavior of the viewer will almost definitely not work as expected!"
             )
         self._last_figure = None
+        self._update_event = threading.Event()
+        self.update_threshold = update_threshold
+        self._slow_loading_figure = None
+        self._display_lock = threading.Lock()  # Lock for synchronizing display updates
+
+    def _show_slow_loading(self):
+        if self.backend_type == "inline":
+            if not self._update_event.wait(self.update_threshold):
+                if self._slow_loading_figure is None:
+                    fig = plt.figure()
+                    ax = fig.add_subplot(111)
+                    ax.text(
+                        0.5,
+                        0.5,
+                        "waiting for next figure...",
+                        ha="center",
+                        va="center",
+                        fontsize=12,
+                        weight="bold",
+                        color="black",
+                    )
+                    ax.axis("off")
+                    self._slow_loading_figure = fig
+                if not self._showing_new_figure:
+                    self._display_figure(self._slow_loading_figure, store_figure=False)
+                    self._showing_slow_loading_figure = True
+
+    @contextmanager
+    def _perform_update(self):
+        self._updating = True
+        self._showing_new_figure = False
+        self._showing_slow_loading_figure = False
+        self._update_event.clear()
+
+        thread = threading.Thread(target=self._show_slow_loading, daemon=True)
+        thread.start()
+
+        try:
+            yield
+        finally:
+            self._updating = False
+            self._update_event.set()
+            thread.join()
+            if self._showing_slow_loading_figure:
+                self._display_figure(self._last_figure)
+            self._update_status("Ready!")
 
     def deploy(self) -> None:
         """Deploy the viewer."""
+        self.backend_type = get_backend_type()
         self.build_components()
         self.build_layout()
-        self.backend_type = get_backend_type()
         display(self.layout)
         self.update_plot()
 
@@ -80,6 +129,10 @@ class NotebookDeployer:
 
         # Controls width slider for horizontal layouts
         self.controls = {}
+        self.controls["status"] = widgets.HTML(
+            value="<b>Syd Controls</b>",
+            layout=widgets.Layout(width="95%"),
+        )
         if self.controls_position in ["left", "right"]:
             self.controls["controls_width"] = widgets.IntSlider(
                 value=self.controls_width_percent,
@@ -87,6 +140,15 @@ class NotebookDeployer:
                 max=50,
                 description="Controls Width %",
                 continuous=True,
+                layout=widgets.Layout(width="95%"),
+                style={"description_width": "initial"},
+            )
+        if self.backend_type == "inline":
+            self.controls["update_threshold"] = widgets.FloatSlider(
+                value=self.update_threshold,
+                min=0.1,
+                max=10.0,
+                description="Update Threshold",
                 layout=widgets.Layout(width="95%"),
                 style={"description_width": "initial"},
             )
@@ -102,7 +164,7 @@ class NotebookDeployer:
         if self.controls_position in ["left", "right"]:
             # Create layout controls section if horizontal (might include for vertical later when we have more permanent controls...)
             layout_box = widgets.VBox(
-                [widgets.HTML("<b>Syd Controls</b>")] + list(self.controls.values()),
+                list(self.controls.values()),
                 layout=widgets.Layout(margin="10px 0px"),
             )
 
@@ -110,6 +172,11 @@ class NotebookDeployer:
             if "controls_width" in self.controls:
                 self.controls["controls_width"].observe(
                     self._handle_container_width_change, names="value"
+                )
+
+            if "update_threshold" in self.controls:
+                self.controls["update_threshold"].observe(
+                    self._handle_update_threshold_change, names="value"
                 )
 
             widgets_elements = [param_box, layout_box]
@@ -154,6 +221,8 @@ class NotebookDeployer:
         else:
             self.layout = widgets.VBox([self.widgets_container, self.plot_container])
 
+        self._update_status("Ready!")
+
     def handle_component_engagement(self, name: str) -> None:
         """Handle engagement with an interactive component."""
         if self._updating:
@@ -164,9 +233,8 @@ class NotebookDeployer:
             )
             return
 
-        try:
-            self._updating = True
-
+        with self._perform_update():
+            self._update_status(f"Updating {name}")
             # Optionally suppress warnings during parameter updates
             with warnings.catch_warnings():
                 if self.suppress_warnings:
@@ -188,9 +256,6 @@ class NotebookDeployer:
                 # Update the plot
                 self.update_plot()
 
-        finally:
-            self._updating = False
-
     def sync_components_with_state(self, exclude: Optional[str] = None) -> None:
         """Sync component values with viewer state."""
         for name, parameter in self.viewer.parameters.items():
@@ -211,25 +276,32 @@ class NotebookDeployer:
         # Update components if plot function updated a parameter
         self.sync_components_with_state()
 
-        # Close the last figure if it exists to keep matplotlib clean
-        if self._last_figure is not None:
-            plt.close(self._last_figure)
+        self._display_figure(figure)
 
-        self.plot_output.clear_output(wait=True)
-        with self.plot_output:
-            if self.backend_type == "inline":
-                display(figure)
+        self._showing_new_figure = True
 
-                # Also required to make sure a second figure window isn't opened
-                plt.close(figure)
+    def _display_figure(self, figure: plt.Figure, store_figure: bool = True) -> None:
+        with self._display_lock:
+            # Close the last figure if it exists to keep matplotlib clean
+            if self._last_figure is not None:
+                plt.close(self._last_figure)
 
-            elif self.backend_type == "widget":
-                display(figure.canvas)
+            self.plot_output.clear_output(wait=True)
+            with self.plot_output:
+                if self.backend_type == "inline":
+                    display(figure)
 
-            else:
-                raise ValueError(f"Unsupported backend type: {self.backend_type}")
+                    # Also required to make sure a second figure window isn't opened
+                    plt.close(figure)
 
-        self._last_figure = figure
+                elif self.backend_type == "widget":
+                    display(figure.canvas)
+
+                else:
+                    raise ValueError(f"Unsupported backend type: {self.backend_type}")
+
+            if store_figure:
+                self._last_figure = figure
 
     def _handle_container_width_change(self, _) -> None:
         """Handle changes to container width proportions."""
@@ -239,3 +311,15 @@ class NotebookDeployer:
         # Update container widths
         self.widgets_container.layout.width = f"{width_percent}%"
         self.plot_container.layout.width = f"{100 - width_percent}%"
+
+    def _handle_update_threshold_change(self, _) -> None:
+        """Handle changes to update threshold."""
+        self.update_threshold = self.controls["update_threshold"].value
+
+    def _update_status(self, status: str) -> None:
+        """Update the status text."""
+        value = "<b>Syd Controls</b>  "
+        value += "<span style='background-color: #e0e0e0; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 90%;'>"
+        value += f"Status: {status}"
+        value += "</span>"
+        self.controls["status"].value = value
