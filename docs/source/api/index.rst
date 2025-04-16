@@ -6,5 +6,4 @@ API Reference
 
    viewer
    parameters
-   deployer
    support
