@@ -7,7 +7,9 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 
-![Syd Logo](./docs/assets/syd-logo.png)
+<div>
+    <img src="./docs/assets/syd-logo-white.png" alt="Syd" width="350" align="right" style="margin-left: 10px"/>
+</div>
 
 A package to help you share your data!
 

@@ -16,7 +16,9 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_copybutton",
 ]
+autosummary_generate = True
 
+html_static_path = ["_static"]
 html_theme_options = {
     "footer_icons": [
         {
@@ -33,5 +35,9 @@ html_theme_options = {
     "source_repository": "https://github.com/landoskape/syd/",
     "source_branch": "main",
     "source_directory": "docs/source",
+    "light_logo": "syd-monogram.png",
+    "dark_logo": "syd-monogram-white.png",
 }
 html_theme = "furo"
+html_title = "Syd"
+html_favicon = "_static/syd-monogram-favicon.png"
