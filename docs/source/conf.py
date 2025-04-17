@@ -40,4 +40,4 @@ html_theme_options = {
 }
 html_theme = "furo"
 html_title = "Syd"
-html_favicon = "_static/syd-monogram-favicon.png"
+html_favicon = "_static/syd-monogram-white.png"
