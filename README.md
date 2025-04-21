@@ -17,7 +17,7 @@ Have you ever wanted to look through all your data really quickly interactively?
 
 Syd is a system for creating a data viewing GUI that you can view in a jupyter notebook or in a web browser. And guess what? Since it can open in a web browser, you can even open it on any other computer on your local network! For example, your PI's computer. Gone are the days of single random examples that they make infinitely stubborn conclusions about. Now, you can look at all the examples, quickly and easily, on their computer. And that's why Syd stands for share your data!
 
-Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This means you only have to think about _**what you want to plot**_ and _**which parameters**_ you want to be interactive. Syd handles all the behind-the-scenes action required to make an interface. And guess what? That means you get to spend your time _**thinking**_ about your data, rather than writing code to look at it. And that's why Syd stands for Science, Yes! Dayummmm!
+Okay, so what is it? Syd is an automated system to convert some basic python plotting code into an interactive GUI. This means you only have to think about _**what you want to plot**_ and _**which parameters**_ you want to be interactive. Syd handles all the behind-the-scenes action required to make an interface. And guess what? That means you get to _**spend your time thinking**_ about your data, rather than writing code to look at it. And that's why Syd stands for Science, Yes! Dayummmm!
 
 ## Installation
 It's easy, just use pip install. The dependencies are light so it should work in most environments.
