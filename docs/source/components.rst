@@ -6,42 +6,43 @@ Available Parameter Types
 
 The SYD package offers a rich variety of parameter types to make your interactive visualizations! Here's your toolkit:
 
-Text & Numbers
-"""""""""""""""""
-* **Text Input**
-    - Your classic text field for any string input
-    - Perfect for labels, names, or free-form text
+.. list-table:: 
+   :widths: 40 40 40
+   :header-rows: 1
 
-* **Unbounded Inputs**
-    - **Integer**: When you need any whole number under the sun
-    - **Float**: For those decimal values that know no bounds
-
-Sliders & Ranges
-"""""""""""""""""""
-* **Single-Value Sliders**
-    - **Integer Slider**: Slide through whole numbers with style
-    - **Float Slider**: Smooth sailing through decimal values
-
-* **Range Sliders**
-    - **Integer Range**: Pick two integers to define your bounds
-    - **Float Range**: Select a continuous range with decimal precision
-
-Selection Controls
-"""""""""""""""""""""
-* **Dropdown Menu**
-    - Choose one option from your curated list
-    - Keep your interface clean and choices clear
-
-* **Multi-Select Menu**
-    - Why choose one when you can have many?
-    - Perfect for multiple filters or combined options
-
-Toggle Controls
-"""""""""""""""""""
-* **Checkbox**
-    - Simple true/false decisions
-    - Toggle features on and off with a click
-
+   * - Parameter Type
+     - Description
+     - Use Cases
+   * - Text input
+     - A classic text field for any string input
+     - Labels, names, free-form text
+   * - Checkboxes
+     - Simple true/false decisions
+     - Toggle features, settings
+   * - Dropdown menus
+     - Choose one option from a list
+     - Single selection, filters
+   * - Multi-select menus
+     - Select multiple options
+     - Multiple filters, combined options
+   * - Integer sliders
+     - Slide through whole numbers
+     - Range selection, adjustments
+   * - Float sliders
+     - Smooth sailing through decimal values
+     - Precision adjustments, fine-tuning
+   * - Integer Range sliders
+     - Pick two integers to define bounds
+     - Range limits, boundary settings
+   * - Float Range sliders
+     - Select a continuous range with decimal precision
+     - Continuous range selection, precision limits
+   * - Unbounded integer inputs
+     - Any whole number input
+     - Large number inputs, calculations
+   * - Unbounded float inputs
+     - Decimal values without bounds
+     - Scientific calculations, precise measurements
 
 Adding and updating parameters
 ------------------------------

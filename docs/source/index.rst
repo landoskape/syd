@@ -4,23 +4,43 @@ Welcome to Syd's documentation!
 Syd is a Python library for creating interactive matplotlib visualizations with minimal boilerplate.
 Add GUI controls to your plots with just a few lines of code!
 
-.. code-block:: python
+.. view-mode:: notebook
 
-   from syd import make_viewer
-   import matplotlib.pyplot as plt
-   import numpy as np
+   .. code-block:: python
 
-   def plot(state):
-      x = np.linspace(0, 2*np.pi, 100)
-      y = np.sin(x * state["frequency"])
-      fig = plt.figure()
-      plt.plot(x, y)
-      return fig
+      from syd import make_viewer
+      import matplotlib.pyplot as plt
+      import numpy as np
 
-   viewer = make_viewer(plot)
-   viewer.add_float('frequency', value=1.0, min=0, max=3.0)
-   viewer.deploy(continuous=True)
+      def plot(state):
+         x = np.linspace(0, 2*np.pi, 100)
+         y = np.sin(x * state["frequency"])
+         fig = plt.figure()
+         plt.plot(x, y)
+         return fig
 
+      viewer = make_viewer(plot)
+      viewer.add_float('frequency', value=1.0, min=0, max=3.0)
+      viewer.show() # for viewing in a jupyter notebook
+
+.. view-mode:: browser
+
+   .. code-block:: python
+
+      from syd import make_viewer
+      import matplotlib.pyplot as plt
+      import numpy as np
+
+      def plot(state):
+         x = np.linspace(0, 2*np.pi, 100)
+         y = np.sin(x * state["frequency"])
+         fig = plt.figure()
+         plt.plot(x, y)
+         return fig
+
+      viewer = make_viewer(plot)
+      viewer.add_float('frequency', value=1.0, min=0, max=3.0)
+      viewer.share() # for viewing in a web browser
 
 Installation
 ============

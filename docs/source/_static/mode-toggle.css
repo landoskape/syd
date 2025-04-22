@@ -1,0 +1,25 @@
+#view-mode-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: #f8f9fa;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+#view-mode-toggle button.active {
+    text-decoration: underline;
+}
+#view-mode-toggle .notebook-button.active {
+    background-color: blue;
+    color: white;
+}
+#view-mode-toggle .browser-button.active {
+    background-color: green;
+    color: white;
+}
+[data-view-mode="notebook"] .only-browser,
+[data-view-mode="browser"] .only-notebook {
+    display: none;
+}

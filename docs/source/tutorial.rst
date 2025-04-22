@@ -64,7 +64,6 @@ there if you want more details.
             if state["show_legend"]:
                 ax.legend()
             return fig
-        
 
     viewer = SimpleWaveformViewer()
     viewer.deploy(continuous=True)

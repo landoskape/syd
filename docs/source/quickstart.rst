@@ -67,18 +67,26 @@ and a dropdown menu.
 
 4. **Deploy the viewer!**
 
-Right now, the only way to deploy the viewer is within a jupyter notebook (or colab).
-Soon we'll provide support for standalone applications and deployment to a web browser
-that you can share from within your local network. Bug us on github if you want this 
-sooner!
+You can view your GUI ("deploy" in Syd lingo) in a jupyter notebook or on a web-browser. There's
+two commands you can use for each environment, :func:`~syd.viewer.Viewer.show` and 
+:func:`~syd.viewer.Viewer.share` for notebook and browsers, respectively. Use the toggle in the
+top-right corner of the page to see what it looks like in each environment. 
 
-.. code-block:: python
+.. view-mode:: notebook
 
-    viewer.deploy()
+    .. code-block:: python
 
-.. image:: ../assets/viewer_screenshots/1-simple_example.png
-   :alt: Quick Start Example
-   :align: center
+        viewer.show() # for viewing in a jupyter notebook
+    
+    .. image:: ../assets/viewer_screenshots/1-simple_example.png
+        :alt: Quick Start Example
+        :align: center
+
+.. view-mode:: browser
+
+    .. code-block:: python
+
+        viewer.share() # for viewing in a web browser
 
 
 You can check out the above example in a notebook `here <https://github.com/landoskape/syd/blob/main/examples/1-simple_example.ipynb>`_ 
