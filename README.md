@@ -48,9 +48,8 @@ viewer.add_float("amplitude", value=1.0, min=0.1, max=2.0)
 viewer.add_float("frequency", value=1.0, min=0.1, max=5.0)
 viewer.add_selection("color", value="red", options=["red", "blue", "green", "black"])
 
-# env = "browser" # for viewing in a web browser
-env = "notebook" # for viewing within a jupyter notebook
-viewer.show()
+viewer.show() # for viewing in a jupyter notebook
+# viewer.share() # for viewing in a web browser
 ```
 
 ![Quick Start Viewer](./docs/assets/viewer_screenshots/readme_example_gif.gif)
