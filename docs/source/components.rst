@@ -51,7 +51,7 @@ Each parameter type has a corresponding method in the viewer class. For example,
 The methods have conveniently simple and obvious names, the format is always ``add_<parameter_type>``.
 
 .. list-table:: 
-   :widths: 60 60 60
+   :widths: 40 40 40
    :header-rows: 1
 
    * - Parameter Type

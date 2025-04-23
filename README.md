@@ -198,4 +198,4 @@ black . # from the root directory of the repo
 - Export options:
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
-- [ ] In docs, get rid of the special notebook/browser toggle and use the tabs system instead where relevant. 
+- [ ] Idea for sharing: https://github.com/analyticalmonk/awesome-neuroscience, https://github.com/fasouto/awesome-dataviz

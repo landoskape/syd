@@ -1,3 +1,5 @@
+.. _tutorial:
+
 Tutorial
 ========
 
@@ -66,7 +68,7 @@ there if you want more details.
             return fig
 
     viewer = SimpleWaveformViewer()
-    viewer.deploy(continuous=True)
+    viewer.show()
 
 .. image:: ../examples/assets/simple_waveform_viewer.png
    :alt: Simple Waveform Viewer

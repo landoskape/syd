@@ -17,14 +17,10 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
-    "view_modes",
 ]
 autosummary_generate = True
 
 html_static_path = ["_static"]
-html_js_files = ["mode-toggle.js"]  # your custom JS file
-html_css_files = ["mode-toggle.css"]  # optional styling
-
 html_theme_options = {
     "footer_icons": [
         {
