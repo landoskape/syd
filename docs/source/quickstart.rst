@@ -82,7 +82,8 @@ two commands you can use for each environment, :func:`~syd.viewer.Viewer.show` a
 top-right corner of the page to see what it looks like in each environment. 
 
 .. tabs::
-   .. tab:: Notebook
+  
+  .. tab:: Notebook
 
     .. code-block:: python
 
@@ -92,11 +93,15 @@ top-right corner of the page to see what it looks like in each environment.
         :alt: Quick Start Example
         :align: center
 
-   .. tab:: Browser
+  .. tab:: Browser
 
-      .. code-block:: python
+    .. code-block:: python
 
-        viewer.share() # for viewing in a web browser
+      viewer.share() # for viewing in a web browser
+
+    .. image:: ../assets/viewer_screenshots/1-simple_example_browser.png
+        :alt: Quick Start Example
+        :align: center
 
 
 You can check out the above example in a notebook `here <https://github.com/landoskape/syd/blob/main/examples/1-simple_example.ipynb>`_ 

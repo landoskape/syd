@@ -68,6 +68,10 @@ To understand the mechanics of how it works, check out a thorough explanation of
          viewer.add_selection("color", value="red", options=["red", "blue", "green"])
          viewer.share() # for viewing in a web browser
 
+      .. image:: ../assets/viewer_screenshots/1-simple_example_browser.png
+        :alt: Quick Start Example
+        :align: center
+
 Installation
 ============
 
