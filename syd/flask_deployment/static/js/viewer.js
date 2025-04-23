@@ -9,7 +9,8 @@ let slowLoadingImage = null;  // Cache for slow loading image
 // Config object parsed from HTML data attributes
 const config = {
     controlsPosition: document.getElementById('viewer-config').dataset.controlsPosition || 'left',
-    controlsWidthPercent: parseInt(document.getElementById('viewer-config').dataset.controlsWidthPercent || 20)
+    controlsWidthPercent: parseInt(document.getElementById('viewer-config').dataset.controlsWidthPercent || 20),
+    plotMarginPercent: parseInt(document.getElementById('viewer-config').dataset.plotMarginPercent || 0)
 };
 
 // Initialize the viewer
@@ -80,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function createSystemControls(container) {
     // Create controls width slider
-    const widthControl = createFloatControl('controls_width', {
+    const widthControl = createFloatController('controls_width', {
         type: 'float',
         value: config.controlsWidthPercent,
         min: 10,
@@ -100,7 +101,7 @@ function createSystemControls(container) {
     widthGroup.appendChild(widthControl);
 
     // Create update threshold slider
-    const thresholdControl = createFloatControl('update_threshold', {
+    const thresholdControl = createFloatController('update_threshold', {
         type: 'float',
         value: updateThreshold,
         min: 0.1,
@@ -119,36 +120,140 @@ function createSystemControls(container) {
     thresholdGroup.appendChild(thresholdLabel);
     thresholdGroup.appendChild(thresholdControl);
 
+    // Create plot margin slider
+    const plotMarginControl = createFloatController('plot_margin', {
+        type: 'float',
+        value: config.plotMarginPercent,
+        min: 0,
+        max: 50, 
+        step: 1
+    });
+    plotMarginControl.className = 'numeric-control system-control';
+
+    // Add label for margin control
+    const marginLabel = document.createElement('span');
+    marginLabel.className = 'control-label';
+    marginLabel.textContent = 'Plot Margin %';
+
+    const marginGroup = document.createElement('div');
+    marginGroup.className = 'control-group';
+    marginGroup.appendChild(marginLabel);
+    marginGroup.appendChild(plotMarginControl);
+
     // Add custom event listeners
-    widthControl.querySelector('input[type="range"]').addEventListener('change', function() {
+    // Width Control Listeners
+    const widthSlider = widthControl.querySelector('input[type="range"]');
+    const widthInput = widthControl.querySelector('input[type="number"]');
+    
+    widthSlider.addEventListener('input', function() { // Real-time update for number input
+        widthInput.value = this.value;
+    });
+
+    widthSlider.addEventListener('change', function() {
         const width = parseFloat(this.value);
         config.controlsWidthPercent = width;
         
-        // Update the root containers
-        const rootContainer = document.getElementById('viewer-container');
-        const controlsContainer = document.getElementById('controls-container');
-        const plotContainer = document.getElementById('plot-container');
-        
+        // Update the root containers using querySelector for classes
+        const rootContainer = document.querySelector('.viewer-container');
+        const controlsContainer = document.querySelector('.controls-container'); // Select the outer div by class
+        const plotContainer = document.querySelector('.plot-container');
+
         if (rootContainer && controlsContainer && plotContainer) {
             if (config.controlsPosition === 'left' || config.controlsPosition === 'right') {
                 controlsContainer.style.width = `${width}%`;
                 plotContainer.style.width = `${100 - width}%`;
-                // Also update the root container's flex properties
-                rootContainer.style.display = 'flex';
-                rootContainer.style.flexDirection = config.controlsPosition === 'left' ? 'row' : 'row-reverse';
             }
         }
         
-        widthControl.querySelector('input[type="number"]').value = width;
+        // Update the slider to match
+        widthSlider.value = width;
     });
 
-    thresholdControl.querySelector('input[type="range"]').addEventListener('change', function() {
-        updateThreshold = parseFloat(this.value);
-        thresholdControl.querySelector('input[type="number"]').value = updateThreshold;
+    // Threshold Control Listeners
+    const thresholdSlider = thresholdControl.querySelector('input[type="range"]');
+    const thresholdInput = thresholdControl.querySelector('input[type="number"]');
+
+    thresholdSlider.addEventListener('input', function() { // Real-time update for number input
+        thresholdInput.value = this.value;
     });
+
+    thresholdSlider.addEventListener('change', function() {
+        updateThreshold = parseFloat(this.value);
+        thresholdInput.value = updateThreshold; // Ensure input matches final value
+    });
+
+    // Plot Margin Control Listeners
+    const marginSlider = plotMarginControl.querySelector('input[type="range"]');
+    const marginInput = plotMarginControl.querySelector('input[type="number"]');
+    const plotContainer = document.querySelector('.plot-container');
+
+    // Function to apply margin and adjust size of the plot image
+    function applyPlotMargin(marginPercent) {
+        const plotImage = document.getElementById('plot-image'); // Get the image element
+        if (plotImage) {
+            const effectiveMargin = parseFloat(marginPercent); // Ensure it's a number
+            // Apply margin to the image
+            plotImage.style.margin = `${effectiveMargin}%`;
+            // Adjust width and height to account for the margin
+            plotImage.style.width = `calc(100% - ${2 * effectiveMargin}%)`;
+            plotImage.style.height = `calc(100% - ${2 * effectiveMargin}%)`;
+            // Reset container padding just in case
+            if (plotContainer) {
+                 plotContainer.style.padding = '0';
+            }
+            config.plotMarginPercent = effectiveMargin; // Update config
+        } else {
+            console.warn('Plot image element not found when applying margin.');
+        }
+    }
+
+    marginSlider.addEventListener('input', function() { // Real-time update for number input
+        marginInput.value = this.value;
+    });
+
+    marginSlider.addEventListener('change', function() {
+        const margin = parseFloat(this.value);
+        marginInput.value = margin; // Ensure input matches final value
+        applyPlotMargin(margin);
+    });
+
+    // Add wheel event listener to plot container for margin control
+    if (plotContainer) {
+        plotContainer.addEventListener('wheel', function(event) {
+            event.preventDefault(); // Prevent page scrolling
+
+            const currentValue = parseFloat(marginSlider.value);
+            const step = parseFloat(marginSlider.step) || 1;
+            const min = parseFloat(marginSlider.min);
+            const max = parseFloat(marginSlider.max);
+
+            let newValue;
+            if (event.deltaY < 0) {
+                // Scrolling up (or zoom in) -> decrease margin
+                newValue = currentValue - step;
+            } else {
+                // Scrolling down (or zoom out) -> increase margin
+                newValue = currentValue + step;
+            }
+
+            // Clamp the value within min/max bounds
+            newValue = Math.max(min, Math.min(max, newValue));
+
+            // Only update if the value actually changed
+            if (newValue !== currentValue) {
+                marginSlider.value = newValue;
+                marginInput.value = newValue;
+                applyPlotMargin(newValue);
+            }
+        }, { passive: false }); // Need passive: false to call preventDefault()
+    }
+
+    // Apply initial margin
+    applyPlotMargin(config.plotMarginPercent);
 
     container.appendChild(widthGroup);
     container.appendChild(thresholdGroup);
+    container.appendChild(marginGroup);
 }
 
 /**
@@ -364,6 +469,10 @@ function createIntegerControl(name, param) {
     input.value = param.value;
     
     // Add event listeners
+    slider.addEventListener('input', function() {
+        input.value = this.value;
+    });
+    
     slider.addEventListener('change', function() {
         const value = parseInt(this.value, 10);
         input.value = value;
@@ -376,7 +485,7 @@ function createIntegerControl(name, param) {
             slider.value = value;
             updateParameter(name, value);
         } else {
-            this.value = state[name]; // Revert to current state
+            this.value = state[name];
         }
     });
     
@@ -389,6 +498,40 @@ function createIntegerControl(name, param) {
  * Create float control with slider and number input
  */
 function createFloatControl(name, param) {
+    // create a container with the slider and input
+    const container = createFloatController(name, param);
+    const slider = container.querySelector('input[type="range"]');
+    const input = container.querySelector('input[type="number"]');
+    
+    // Add event listeners
+    slider.addEventListener('input', function() {
+        input.value = this.value;
+    });
+
+    slider.addEventListener('change', function() {
+        const value = parseFloat(this.value);
+        input.value = value;
+        updateParameter(name, value);
+    });
+    
+    input.addEventListener('change', function() {
+        const value = parseFloat(this.value);
+        if (!isNaN(value) && value >= param.min && value <= param.max) {
+            slider.value = value;
+            updateParameter(name, value);
+        } else {
+            this.value = state[name]; // Revert to current state
+        }
+    });
+
+    return container;
+}
+
+/**
+ * Create float object with slider and number input
+ * Without the elements specific to "parameters"
+ */
+function createFloatController(name, param) {
     const container = document.createElement('div');
     container.className = 'numeric-control';
     
@@ -410,23 +553,7 @@ function createFloatControl(name, param) {
     input.step = param.step || 0.01;
     input.value = param.value;
     
-    // Add event listeners
-    slider.addEventListener('change', function() {
-        const value = parseFloat(this.value);
-        input.value = value;
-        updateParameter(name, value);
-    });
-    
-    input.addEventListener('change', function() {
-        const value = parseFloat(this.value);
-        if (!isNaN(value) && value >= param.min && value <= param.max) {
-            slider.value = value;
-            updateParameter(name, value);
-        } else {
-            this.value = state[name]; // Revert to current state
-        }
-    });
-    
+    // return the container with the slider and input
     container.appendChild(slider);
     container.appendChild(input);
     return container;
@@ -592,6 +719,34 @@ function createRangeControl(name, param, converter) {
     maxInput.value = param.value[1];
     
     // Add event listeners
+    // Input listeners for real-time updates of number inputs and gradient
+    minSlider.addEventListener('input', function() {
+        const minVal = converter(this.value);
+        const maxVal = converter(maxSlider.value);
+        if (minVal <= maxVal) {
+            minInput.value = minVal;
+        } else {
+            // Prevent slider crossing visually, update input to maxVal
+            this.value = maxVal; 
+            minInput.value = maxVal;
+        }
+        updateSliderGradient(minSlider, maxSlider, sliderContainer); // Update gradient
+    });
+
+    maxSlider.addEventListener('input', function() {
+        const minVal = converter(minSlider.value);
+        const maxVal = converter(this.value);
+        if (maxVal >= minVal) {
+            maxInput.value = maxVal;
+        } else {
+            // Prevent slider crossing visually, update input to minVal
+            this.value = minVal;
+            maxInput.value = minVal;
+        }
+        updateSliderGradient(minSlider, maxSlider, sliderContainer); // Update gradient
+    });
+
+    // Change listeners for updating state and triggering backend calls
     minSlider.addEventListener('change', function() {
         const minVal = converter(this.value);
         const maxVal = converter(maxSlider.value);

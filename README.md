@@ -26,7 +26,7 @@ pip install syd
 ```
 
 ## Documentation
-The full documentation is available at [shareyourdata.readthedocs.io](https://shareyourdata.readthedocs.io/). It includes a quick start guide, a comprehensive tutorial, and an API reference for the different elements of Syd. If you have any questions or want to suggest improvements to the docs, please let us know on the [github issues page](https://github.com/landoskape/syd/issues)!
+The full documentation is available [here](https://shareyourdata.readthedocs.io/). It includes a quick start guide, a comprehensive tutorial, and an API reference for the different elements of Syd. If you have any questions or want to suggest improvements to the docs, please let us know on the [github issues page](https://github.com/landoskape/syd/issues)!
 
 ## Quick Start
 This is an example of a sine wave viewer which is about as simple as it gets. You can choose which env to use - if you use ``env="notebook"`` then the GUI will deploy as the output of a jupyter cell (this only works in jupyter!). If you use ``env="browser"`` then the GUI will open a page in your default web browser and you can interact with the data there (works in jupyter notebooks and also from python scripts!).
@@ -189,7 +189,6 @@ black . # from the root directory of the repo
 
 ## To-Do List
 - Layout controls
-  - [ ] Improve the display and make it look better
   - [ ] Add a "save" button that saves the current state of the viewer to a json file
   - [ ] Add a "load" button that loads the viewer state from a json file
   - [ ] Add a "freeze" button that allows the user to update state variables without updating the plot until unfreezing
@@ -199,11 +198,3 @@ black . # from the root directory of the repo
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
 - [ ] Idea for sharing: https://github.com/analyticalmonk/awesome-neuroscience, https://github.com/fasouto/awesome-dataviz
-
-
-- Layout Controls Flask Viewer:
-  - [ ] Create a simple floatSlider that can be used by FloatParameters and by the LayoutControls
-  - [ ] Make sure that the LayoutControls callbacks work correctly!
-  - [ ] Add system for changing the size of the plot within the plot container... (scrollable? or an additional float slider?)
-  - [ ] Adjust the spacing between the Status bar and the layout controls
-  - [ ] Also see if we can make the controls smaller?

@@ -48,7 +48,7 @@ class FlaskLayoutConfig:
     """Configuration for the Flask viewer layout."""
 
     controls_position: str = "left"  # Options are: 'left', 'top', 'right', 'bottom'
-    controls_width_percent: int = 30
+    controls_width_percent: int = 15
 
     def __post_init__(self):
         valid_positions = ["left", "top", "right", "bottom"]
@@ -73,7 +73,7 @@ class FlaskDeployer:
         viewer: Viewer,
         controls_position: str = "left",
         fig_dpi: int = 300,
-        controls_width_percent: int = 20,
+        controls_width_percent: int = 15,
         suppress_warnings: bool = True,
         debug: bool = False,
         host: str = "127.0.0.1",
