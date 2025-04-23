@@ -199,3 +199,11 @@ black . # from the root directory of the repo
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
 - [ ] Idea for sharing: https://github.com/analyticalmonk/awesome-neuroscience, https://github.com/fasouto/awesome-dataviz
+
+
+- Layout Controls Flask Viewer:
+  - [ ] Create a simple floatSlider that can be used by FloatParameters and by the LayoutControls
+  - [ ] Make sure that the LayoutControls callbacks work correctly!
+  - [ ] Add system for changing the size of the plot within the plot container... (scrollable? or an additional float slider?)
+  - [ ] Adjust the spacing between the Status bar and the layout controls
+  - [ ] Also see if we can make the controls smaller?

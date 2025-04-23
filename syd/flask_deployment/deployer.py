@@ -79,6 +79,7 @@ class FlaskDeployer:
         host: str = "127.0.0.1",
         port: Optional[int] = None,
         open_browser: bool = True,
+        update_threshold: float = 1.0,
     ):
         """
         Initialize the Flask deployer.
@@ -107,10 +108,13 @@ class FlaskDeployer:
             Port for the server. If None, finds an available port (default: None).
         open_browser : bool, optional
             Whether to open the web application in a browser tab (default: True).
+        update_threshold : float, optional
+            Time in seconds to wait before showing the loading indicator (default: 1.0)
         """
         self.viewer = viewer
         self.suppress_warnings = suppress_warnings
         self._updating = False  # Flag to check circular updates
+        self.update_threshold = update_threshold  # Store update threshold
 
         # Flask specific configurations
         self.config = FlaskLayoutConfig(
@@ -167,12 +171,17 @@ class FlaskDeployer:
             }
             # Get the order of parameters
             param_order = list(self.viewer.parameters.keys())
-            # Also include the initial state
+            # Also include the initial state and configuration
             return jsonify(
                 {
                     "params": param_info,
                     "param_order": param_order,
                     "state": self.viewer.state,
+                    "config": {
+                        "controls_position": self.config.controls_position,
+                        "controls_width_percent": self.config.controls_width_percent,
+                        "update_threshold": self.update_threshold,
+                    },
                 }
             )
 

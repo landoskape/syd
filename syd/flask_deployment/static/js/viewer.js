@@ -2,6 +2,9 @@ let state = {};
 let paramInfo = {};
 let paramOrder = [];
 let isUpdating = false;
+let updateThreshold = 1.0;  // Default update threshold
+let loadingTimeout = null;  // Timeout for showing loading state
+let slowLoadingImage = null;  // Cache for slow loading image
 
 // Config object parsed from HTML data attributes
 const config = {
@@ -11,12 +14,43 @@ const config = {
 
 // Initialize the viewer
 document.addEventListener('DOMContentLoaded', function() {
+    // Create main controls container if it doesn't exist
+    const mainContainer = document.getElementById('controls-container');
+    
+    // Create parameter controls section first
+    const paramControls = document.createElement('div');
+    paramControls.id = 'parameter-controls';
+    paramControls.className = 'parameter-controls';
+
+    // Add Parameters header
+    const paramHeader = document.createElement('div');
+    paramHeader.className = 'section-header';
+    paramHeader.innerHTML = '<b>Parameters</b>';
+    paramControls.appendChild(paramHeader);
+    
+    // Create system controls section
+    const systemControls = document.createElement('div');
+    systemControls.id = 'system-controls';
+    systemControls.className = 'system-controls';
+    
+    // Create status element
+    const statusElement = document.createElement('div');
+    statusElement.id = 'status-display';
+    statusElement.className = 'status-display';
+    systemControls.appendChild(statusElement);
+    updateStatus('Initializing...');
+
+    // Add sections to main container in the desired order
+    mainContainer.appendChild(paramControls);
+    mainContainer.appendChild(systemControls);
+
     // Fetch initial parameter information from server
     fetch('/init-data')
         .then(response => response.json())
         .then(data => {
             paramInfo = data.params;
             paramOrder = data.param_order;
+            updateThreshold = data.config.update_threshold;
             
             // Initialize state from parameter info
             for (const [name, param] of Object.entries(paramInfo)) {
@@ -25,23 +59,167 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Create UI controls for each parameter
             createControls();
+
+            // Create system controls if horizontal layout
+            if (config.controlsPosition === 'left' || config.controlsPosition === 'right') {
+                createSystemControls(systemControls);
+            }
             
             // Generate initial plot
             updatePlot();
+            updateStatus('Ready!');
         })
         .catch(error => {
             console.error('Error initializing viewer:', error);
+            updateStatus('Error initializing viewer');
         });
 });
+
+/**
+ * Create system controls (width and threshold)
+ */
+function createSystemControls(container) {
+    // Create controls width slider
+    const widthControl = createFloatControl('controls_width', {
+        type: 'float',
+        value: config.controlsWidthPercent,
+        min: 10,
+        max: 50,
+        step: 1
+    });
+    widthControl.className = 'numeric-control system-control';
+    
+    // Add label for width control
+    const widthLabel = document.createElement('span');
+    widthLabel.className = 'control-label';
+    widthLabel.textContent = 'Controls Width %';
+    
+    const widthGroup = document.createElement('div');
+    widthGroup.className = 'control-group';
+    widthGroup.appendChild(widthLabel);
+    widthGroup.appendChild(widthControl);
+
+    // Create update threshold slider
+    const thresholdControl = createFloatControl('update_threshold', {
+        type: 'float',
+        value: updateThreshold,
+        min: 0.1,
+        max: 10.0,
+        step: 0.1
+    });
+    thresholdControl.className = 'numeric-control system-control';
+    
+    // Add label for threshold control
+    const thresholdLabel = document.createElement('span');
+    thresholdLabel.className = 'control-label';
+    thresholdLabel.textContent = 'Update Threshold';
+    
+    const thresholdGroup = document.createElement('div');
+    thresholdGroup.className = 'control-group';
+    thresholdGroup.appendChild(thresholdLabel);
+    thresholdGroup.appendChild(thresholdControl);
+
+    // Add custom event listeners
+    widthControl.querySelector('input[type="range"]').addEventListener('change', function() {
+        const width = parseFloat(this.value);
+        config.controlsWidthPercent = width;
+        
+        // Update the root containers
+        const rootContainer = document.getElementById('viewer-container');
+        const controlsContainer = document.getElementById('controls-container');
+        const plotContainer = document.getElementById('plot-container');
+        
+        if (rootContainer && controlsContainer && plotContainer) {
+            if (config.controlsPosition === 'left' || config.controlsPosition === 'right') {
+                controlsContainer.style.width = `${width}%`;
+                plotContainer.style.width = `${100 - width}%`;
+                // Also update the root container's flex properties
+                rootContainer.style.display = 'flex';
+                rootContainer.style.flexDirection = config.controlsPosition === 'left' ? 'row' : 'row-reverse';
+            }
+        }
+        
+        widthControl.querySelector('input[type="number"]').value = width;
+    });
+
+    thresholdControl.querySelector('input[type="range"]').addEventListener('change', function() {
+        updateThreshold = parseFloat(this.value);
+        thresholdControl.querySelector('input[type="number"]').value = updateThreshold;
+    });
+
+    container.appendChild(widthGroup);
+    container.appendChild(thresholdGroup);
+}
+
+/**
+ * Create update threshold control
+ */
+function createUpdateThresholdControl() {
+    const container = document.createElement('div');
+    container.className = 'control-group';
+    
+    const label = document.createElement('span');
+    label.className = 'control-label';
+    label.textContent = 'Update Threshold';
+    
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = '0.1';
+    input.max = '10.0';
+    input.step = '0.1';
+    input.value = updateThreshold;
+    input.className = 'update-threshold-slider';
+    
+    input.addEventListener('change', function() {
+        updateThreshold = parseFloat(this.value);
+    });
+    
+    container.appendChild(label);
+    container.appendChild(input);
+    return container;
+}
+
+/**
+ * Update the status display
+ */
+function updateStatus(message) {
+    const statusElement = document.getElementById('status-display');
+    if (statusElement) {
+        statusElement.innerHTML = `<b>Syd Controls</b> <span class="status-message">Status: ${message}</span>`;
+    }
+}
+
+/**
+ * Create and cache the slow loading image
+ */
+function createSlowLoadingImage() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 900;
+    const ctx = canvas.getContext('2d');
+    
+    // Fill background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Add loading text
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('waiting for next figure...', canvas.width/2, canvas.height/2);
+    
+    return canvas.toDataURL();
+}
 
 /**
  * Create UI controls based on parameter types
  */
 function createControls() {
-    const controlsContainer = document.getElementById('controls-container');
+    const paramControls = document.getElementById('parameter-controls');
     
-    // Clear any existing controls
-    controlsContainer.innerHTML = '';
+    // Clear any existing parameter controls
+    paramControls.innerHTML = '';
     
     // Create controls for each parameter in the order specified by the viewer
     paramOrder.forEach(name => {
@@ -56,7 +234,7 @@ function createControls() {
         
         // Add to container
         if (controlGroup) {
-            controlsContainer.appendChild(controlGroup);
+            paramControls.appendChild(controlGroup);
         }
     });
 }
@@ -596,7 +774,9 @@ function updateParameter(name, value) {
     if (isUpdating) {
         return;
     }
-    
+    // Indicate status update
+    updateStatus('Updating ' + name + '...');
+
     // Update local state
     state[name] = value;
     
@@ -626,6 +806,9 @@ function updateParameter(name, value) {
     .catch(error => {
         console.error('Error:', error);
     });
+
+    // Indicate status update
+    updateStatus('Ready!');
 }
 
 /**
@@ -802,11 +985,27 @@ function formatLabel(name) {
  * Update the plot with current state
  */
 function updatePlot() {
+    const plotImage = document.getElementById('plot-image');
+    if (!plotImage) return;
+
+    // Clear any existing loading timeout
+    if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+    }
+
+    // Show loading state after threshold
+    loadingTimeout = setTimeout(() => {
+        // Create slow loading image if not cached
+        if (!slowLoadingImage) {
+            slowLoadingImage = createSlowLoadingImage();
+        }
+        plotImage.src = slowLoadingImage;
+        plotImage.style.opacity = '0.5';
+    }, updateThreshold * 1000);
+
     // Build query string from state
     const queryParams = new URLSearchParams();
-    
     for (const [name, value] of Object.entries(state)) {
-        // Handle arrays and special types by serializing to JSON
         if (Array.isArray(value) || typeof value === 'object') {
             queryParams.append(name, JSON.stringify(value));
         } else {
@@ -816,15 +1015,25 @@ function updatePlot() {
     
     // Set the image source to the plot endpoint with parameters
     const url = `/plot?${queryParams.toString()}`;
-    const plotImage = document.getElementById('plot-image');
-    
-    // Show loading indicator
-    plotImage.style.opacity = 0.5;
     
     // Create a new image object
     const newImage = new Image();
     newImage.onload = function() {
+        // Clear loading timeout
+        if (loadingTimeout) {
+            clearTimeout(loadingTimeout);
+            loadingTimeout = null;
+        }
         plotImage.src = url;
+        plotImage.style.opacity = 1;
+    };
+    newImage.onerror = function() {
+        // Clear loading timeout
+        if (loadingTimeout) {
+            clearTimeout(loadingTimeout);
+            loadingTimeout = null;
+        }
+        updateStatus('Error loading plot');
         plotImage.style.opacity = 1;
     };
     newImage.src = url;

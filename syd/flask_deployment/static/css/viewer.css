@@ -1,0 +1,125 @@
+#viewer-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    display: flex;
+}
+
+#controls-container {
+    padding: 15px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    max-height: 100vh;
+}
+
+#plot-container {
+    padding: 15px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#plot-container img {
+    max-width: 100%;
+    height: auto;
+}
+
+.system-controls {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+}
+
+.parameter-controls {
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+}
+
+.section-header {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.status-display {
+    margin-bottom: 15px;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+}
+
+.status-message {
+    background-color: #e0e0e0;
+    color: #000;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 90%;
+    margin-left: 8px;
+}
+
+/* Style all numeric controls consistently */
+.numeric-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.numeric-control input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: #ddd;
+    outline: none;
+    border-radius: 3px;
+}
+
+.numeric-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #4a90e2;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.numeric-control input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #4a90e2;
+    cursor: pointer;
+    border-radius: 50%;
+    border: none;
+}
+
+.numeric-control input[type="number"] {
+    width: 60px;
+    padding: 2px 4px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+/* Control group styling */
+.control-group {
+    margin-bottom: 15px;
+}
+
+.control-label {
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+/* System control specific styling */
+.system-control {
+    margin-top: 8px;
+}
