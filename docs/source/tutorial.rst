@@ -6,7 +6,7 @@ Tutorial
 This tutorial contains a complete example that shows you how to use all the features of Syd. It will show
 you how to: 
 
-* Make a viewer with the factory method (:func:`~syd.viewer.make_viewer`) or by creating a subclass of :class:`~syd.viewer.Viewer`.
+* Make a viewer with the factory method :func:`~syd.viewer.make_viewer` or by creating a subclass of :class:`~syd.viewer.Viewer`.
 * Add all the different types of parameters. 
 * Make hierarchical and inter-related callbacks. 
 * Get your data into the viewer.
@@ -61,9 +61,11 @@ data in a Syd viewer.
 As in the quickstart section, you will always start by making a viewer object. There are two ways to do this:
 
 1. Factory-based Viewer (simple and flexible)
+
 Use the :func:`~syd.viewer.make_viewer` function to instantiate an empty viewer object, then customize it by adding components programmatically.
 
 2. Subclass-based Viewer (for advanced customization)
+
 Subclass the :class:`~syd.viewer.Viewer` base class to create an integrated viewer object for your specific use case. This approach is recommended when you need to encapsulate complex viewer behavior or reuse the same configuration across different contexts.
 
 .. tabs::
@@ -90,7 +92,7 @@ Subclass the :class:`~syd.viewer.Viewer` base class to create an integrated view
             pass
             # We'll expand on this later...
 
-        # Then initialize the viewer with your custom class
+        # Then initialize your custom viewer class
         viewer = MyViewer()
 
 
@@ -102,7 +104,17 @@ a new viewer. (For a reference to all the components, see :doc:`components`.) Wh
 viewer, you should consider what parameters you need to control your plot, and then add the appropriate
 components to the viewer.
 
-For example, in the dataset above, we have two parameters that we can control: the amplitude and the frequency.
+Each parameter has a set of attributes that you need to set when you add it to the viewer. For example, 
+the ``add_integer`` method has the following attributes:
+
+* ``name``: The name of the parameter.
+* ``min``: The minimum value of the parameter.
+* ``max``: The maximum value of the parameter.
+* ``value``: The initial value of the parameter (only one not required). 
+
+For a full reference, see the :doc:`components` page or the :doc:`api/viewer` page.
+
+In the dataset above, we have two parameters that we can control: the amplitude and the frequency.
 The dataset is composed of specific amplitudes and frequencies, so we can use an integer index to select which
 amplitude and frequency we want to plot.
 
@@ -117,8 +129,6 @@ amplitude and frequency we want to plot.
         num_amplitudes = len(dataset["amplitudes"])
         num_frequencies = len(dataset["frequencies"])
         
-        # When you don't specify a value for an integer, 
-        # it will be initialized to the minimum value (0). 
         viewer = make_viewer()
         viewer.add_integer("amplitude", min=0, max=num_amplitudes-1)
         viewer.add_integer("frequency", min=0, max=num_frequencies-1)
@@ -134,20 +144,44 @@ amplitude and frequency we want to plot.
 
         class MyViewer(Viewer):
             def __init__(self):
-                # When you don't specify a value for an integer, 
-                # it will be initialized to the minimum value (0). 
                 self.add_integer("amplitude", min=0, max=num_amplitudes-1)
                 self.add_integer("frequency", min=0, max=num_frequencies-1)
 
+.. note::
+    When you don't specify a value for an integer (or a float or integer/float range),
+    then it will be initialized to the minimum value (or (min, max) for a range). 
+
 Now, let's say we also want to control a few other things about the plot:
 
-* The color of the plot (we'll use a dropdown menu of color strings).
-* A horizontal line indicating a particular value (we'll use a float slider).
-* The offset of the plot (we'll use an unbounded float).
-* The xlimits of the plot (we'll use a float range slider).
-* The ylimits of the plot (we'll use a float range slider).
-* Which labels to show (we'll use a multi-select menu).
-* Whether or not to show a grid (we'll use a boolean checkbox).
+
+.. list-table::
+  :widths: 50 50 50
+  :header-rows: 1
+
+  * - Thing to control in the plot
+    - How we'll control it
+    - Add method
+  * - The color of the plot
+    - We'll use a dropdown menu of color strings
+    - :func:`~syd.viewer.add_selection`
+  * - A horizontal line indicating a particular value
+    - We'll use a float slider
+    - :func:`~syd.viewer.add_float`
+  * - The vertical y-axis offset of the plot
+    - We'll use an unbounded float
+    - :func:`~syd.viewer.add_unbounded_float`
+  * - The x-axis limits of the plot
+    - We'll use a float range slider
+    - :func:`~syd.viewer.add_float_range`
+  * - The y-axis limits of the plot
+    - We'll use a float range slider
+    - :func:`~syd.viewer.add_float_range`
+  * - Which labels to show
+    - We'll use a multi-select menu
+    - :func:`~syd.viewer.add_multiple_selection`
+  * - Whether or not to show a grid
+    - We'll use a boolean checkbox
+    - :func:`~syd.viewer.add_boolean`
 
 .. tabs::
 
@@ -193,7 +227,7 @@ Now, let's say we also want to control a few other things about the plot:
                 self.add_unbounded_float("offset", value=0.0)
                 self.add_float_range("xlimits", value=(0.0, 1.0), min=-10.0, max=1.0)
                 self.add_float_range("ylimits", value=(-1.0, 1.0), min=-10, max=10)
-                self.add_multiple_selection("labels", value=["title", "legend"], options=["x", "y", "title", "legend"])
+                self.add_multiple_selection("labels", value=["x", "y", "title", "legend"], options=["x", "y", "title", "legend"])
                 self.add_boolean("show_grid", value=True)
 
 3. The state of the viewer
@@ -238,7 +272,7 @@ were to retrieve the state of the viewer right now, it would look like this:
             "offset": 0.0,
             "xlimits": (0.0, 1.0),
             "ylimits": (-1.0, 1.0),
-            "labels": ["title", "legend"],
+            "labels": ["x", "y", "title", "legend"],
             "show_grid": True,
         }
 
@@ -260,7 +294,7 @@ were to retrieve the state of the viewer right now, it would look like this:
                 self.add_unbounded_float("offset", value=0.0)
                 self.add_float_range("xlimits", value=(0.0, 1.0), min=-10.0, max=1.0)
                 self.add_float_range("ylimits", value=(-1.0, 1.0), min=-10, max=10)
-                self.add_multiple_selection("labels", value=["title", "legend"], options=["x", "y", "title", "legend"])
+                self.add_multiple_selection("labels", value=["x", "y", "title", "legend"], options=["x", "y", "title", "legend"])
                 self.add_boolean("show_grid", value=True)
 
                 # self.state will enable you to access the state of the viewer
@@ -278,7 +312,7 @@ were to retrieve the state of the viewer right now, it would look like this:
             "offset": 0.0,
             "xlimits": (0.0, 1.0),
             "ylimits": (-1.0, 1.0),
-            "labels": ["title", "legend"],
+            "labels": ["x", "y", "title", "legend"],
             "show_grid": True,
         }
 
@@ -294,32 +328,37 @@ There are some key rules about the plot method:
 
 .. important::
 
-    * Plot methods should accept a single argument, which is the current state of the viewer.
+    Plot methods should accept a single argument, which is the current state of the viewer.
         
-        .. code-block:: python
+    .. code-block:: python
 
-            # For factory-based viewers, the signature should look like this:
-            def plot(state):
+        # For factory-based viewers, the signature should look like this:
+        def plot(state):
 
-            # For subclass-based viewers, the signature should look like this:
-            class YourViewer(Viewer):
-                def plot(self, state):
+        # For subclass-based viewers, the signature should look like this:
+        class YourViewer(Viewer):
+            def plot(self, state):
 
-    * Plot methods should create and return a matplotlib figure.
+.. important::
+    
+    Plot methods should create and return a matplotlib figure.
 
-        .. code-block:: python
+    .. code-block:: python
 
-            def plot(state):
-                # Make a new figure in your plot function
-                fig = plt.figure()
-                # ... do some stuff to make your plot ...
+        def plot(state):
+            # Make a new figure in your plot function
+            fig = plt.figure()
+            # ... do some stuff to make your plot ...
 
-                # Then return the figure object!!!!
-                return fig
+            # Then return the figure object!!!!
+            return fig
 
-    * Plot methods should not call ``plt.show()``!
-        Syd will handle displaying the figure for you. Calling ``plt.show()`` will cause your plot to be displayed twice
-        and other unexpected behavior. 
+.. important::
+    
+    Plot methods should not call ``plt.show()``! 
+    
+    Syd will handle displaying the figure for you. Calling ``plt.show()`` will cause your plot to be displayed twice
+    and other unexpected behavior. 
 
 Let's make our plot method! 
 
@@ -453,6 +492,7 @@ Let's think about what callbacks this viewer might need.
 * This means that the y-values of the data can be anything. 
 * But, the horizontal line and the y-limits have specified min/max values, which might not overlap with our data. 
 * So, we'll need a callback that changes the range of the horizontal line and the y-limits to be the same as the data.
+* This will need to be changed whenever the amplitude or offset is updated.
 
 .. tabs::
 
@@ -480,7 +520,12 @@ Let's think about what callbacks this viewer might need.
             max_plot_data = np.max(data + offset)
 
             # Update the min/max values of the horizontal line and the y-limits to match the plot data
-            viewer.update_float_range("ylimits", value=(min_plot_data, max_plot_data), min=min_plot_data, max=max_plot_data)
+            viewer.update_float_range(
+                "ylimits",
+                value=(min_plot_data, max_plot_data),
+                min=min_plot_data,
+                max=max_plot_data
+            )
             viewer.update_float("horizontal", value=offset, min=min_plot_data, max=max_plot_data)
 
         # Add the callback to the viewer
@@ -488,7 +533,7 @@ Let's think about what callbacks this viewer might need.
         # viewer.on_change("parameter_name", callback_function)
         # Or if multiple parameters require the same callback, you can do this:
         # viewer.on_change(["parameter_name_1", "parameter_name_2"], callback_function)
-        viewer.on_change("offset", update_offset)
+        viewer.on_change(["amplitude", "offset"], update_offset)
 
   .. tab:: Subclass-based
 
@@ -505,7 +550,7 @@ Let's think about what callbacks this viewer might need.
                 # self.on_change("parameter_name", callback_function)
                 # Or if multiple parameters require the same callback, you can do this:
                 # self.on_change(["parameter_name_1", "parameter_name_2"], callback_function)
-                self.on_change("offset", self.update_offset)
+                self.on_change(["amplitude", "offset"], self.update_offset)
 
             def plot(self, state):
                 # ... all the plot code ...
@@ -523,7 +568,12 @@ Let's think about what callbacks this viewer might need.
                 max_plot_data = np.max(data + offset)
 
                 # Update the min/max values of the horizontal line and the y-limits to match the plot data
-                self.update_float_range("ylimits", value=(min_plot_data, max_plot_data), min=min_plot_data, max=max_plot_data)
+                self.update_float_range(
+                    "ylimits",
+                    value=(min_plot_data, max_plot_data),
+                    min=min_plot_data,
+                    max=max_plot_data
+                )
                 self.update_float("horizontal", value=offset, min=min_plot_data, max=max_plot_data)
 
         viewer = MyViewer()
@@ -556,8 +606,8 @@ hosted at your computers IP address, so you can send a link to your PI and have 
 
         viewer.show() # for viewing in a jupyter notebook
     
-    .. image:: ../assets/viewer_screenshots/1-simple_example.png
-        :alt: Quick Start Example
+    .. image:: ../assets/viewer_screenshots/tutorial_notebook.png
+        :alt: Tutorial Example in Notebook
         :align: center
 
   .. tab:: Browser
@@ -566,8 +616,8 @@ hosted at your computers IP address, so you can send a link to your PI and have 
 
       viewer.share() # for viewing in a web browser
 
-    .. image:: ../assets/viewer_screenshots/1-simple_example_browser.png
-        :alt: Quick Start Example
+    .. image:: ../assets/viewer_screenshots/tutorial_browser.png
+        :alt: Tutorial Example in Browser
         :align: center
 
 
@@ -583,8 +633,8 @@ want to see them in action, you can check out the examples in a notebook or on c
 
   .. tab:: Factory-based
 
-    Check out the full example in a notebook `here <https://github.com/landoskape/syd/blob/main/docs/examples/tutorial_factory.ipynb>`_ 
-    or run it yourself in colab:
+    Check out the full `factory example <https://github.com/landoskape/syd/blob/main/docs/examples/tutorial_factory.ipynb>`_ 
+    in a notebook, or run it yourself in colab:
 
     .. image:: https://colab.research.google.com/assets/colab-badge.svg
         :target: https://colab.research.google.com/github/landoskape/syd/blob/main/docs/examples/tutorial_factory.ipynb
@@ -705,8 +755,8 @@ want to see them in action, you can check out the examples in a notebook or on c
 
   .. tab:: Subclass-based
 
-    Check out the full example in a notebook `here <https://github.com/landoskape/syd/blob/main/docs/examples/tutorial_subclass.ipynb>`_ 
-    or run it yourself in colab:
+    Check out the full `subclass example <https://github.com/landoskape/syd/blob/main/docs/examples/tutorial_subclass.ipynb>`_ 
+    in a notebook, or run it yourself in colab:
 
     .. image:: https://colab.research.google.com/assets/colab-badge.svg
         :target: https://colab.research.google.com/github/landoskape/syd/blob/main/docs/examples/tutorial_subclass.ipynb
@@ -826,4 +876,4 @@ want to see them in action, you can check out the examples in a notebook or on c
         viewer.show() # for viewing in a jupyter notebook
         # viewer.share() # for viewing in a web browser
     
-.. image:: ../assets/viewer_screenshots/tutorial_factory.png
+.. image:: ../assets/viewer_screenshots/tutorial_notebook.png

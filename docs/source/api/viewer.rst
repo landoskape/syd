@@ -3,8 +3,11 @@ Viewer
 
 .. currentmodule:: syd.viewer
 
+.. autofunction:: make_viewer
+
+
 Viewer
------------------
+------
 
 .. autoclass:: Viewer
    :members:
