@@ -12,6 +12,36 @@ NO_UPDATE = NoUpdate()
 NO_INITIAL_VALUE = NoInitialValue()
 
 
+def make_viewer(plot_func: Optional[Callable] = None) -> "Viewer":
+    """Create an empty viewer object.
+
+    Parameters
+    ----------
+    plot_func : Callable, optional
+        A function that takes a state dictionary and returns a matplotlib figure.
+
+    Returns
+    -------
+    viewer : Viewer
+        A new viewer object
+
+    Examples
+    --------
+    >>> from syd import make_viewer
+    >>> def plot(state):
+    >>>     ... generate figure, plot stuff ...
+    >>>     return fig
+    >>> viewer = make_viewer(plot)
+    >>> viewer.add_float('x', value=1.0, min=0, max=10)
+    >>> viewer.on_change('x', viewer.update_based_on_x)
+    >>> viewer.show()
+    """
+    viewer = Viewer()
+    if plot_func is not None:
+        viewer.set_plot(plot_func)
+    return viewer
+
+
 def validate_parameter_operation(
     operation: str,
     parameter_type: Union[ParameterType, ActionType],
