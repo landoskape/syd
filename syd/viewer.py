@@ -455,9 +455,8 @@ class Viewer:
         try:
             self._in_callbacks = True
             if name in self.callbacks:
-                state = self.state
                 for callback in self.callbacks[name]:
-                    callback(state)
+                    callback(self.state)
         finally:
             self._in_callbacks = False
 
