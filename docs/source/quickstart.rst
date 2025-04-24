@@ -128,5 +128,7 @@ There's a lot more you can do with SYD. To learn more, check out the following s
     - Learn how to create more complex interactive plots with SYD.
   * - :doc:`examples`
     - See more fleshed out examples of how to use SYD.
+  * - :doc:`faq`
+    - Learn about some common questions and concepts about using SYD.
   * - :doc:`api/index`
     - Learn about the SYD API and how to use it to create your own custom components.

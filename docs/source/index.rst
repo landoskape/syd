@@ -103,4 +103,5 @@ Table of Contents
    components
    tutorial
    examples
+   faq
    api/index
