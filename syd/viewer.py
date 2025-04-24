@@ -216,7 +216,6 @@ class Viewer:
         self,
         controls_position: Literal["left", "top", "right", "bottom"] = "left",
         controls_width_percent: int = 20,
-        continuous: bool = False,
         suppress_warnings: bool = True,
         update_threshold: float = 1.0,
     ):
@@ -228,7 +227,6 @@ class Viewer:
             env="notebook",
             controls_position=controls_position,
             controls_width_percent=controls_width_percent,
-            continuous=continuous,
             suppress_warnings=suppress_warnings,
             update_threshold=update_threshold,
         )

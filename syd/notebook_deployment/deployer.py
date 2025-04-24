@@ -39,7 +39,6 @@ class NotebookDeployer:
         viewer: Viewer,
         controls_position: Literal["left", "top", "right", "bottom"] = "left",
         controls_width_percent: int = 20,
-        continuous: bool = False,
         suppress_warnings: bool = True,
         update_threshold: float = 1.0,
     ):
@@ -49,7 +48,6 @@ class NotebookDeployer:
         self._updating = False  # Flag to check circular updates
         self.controls_position = controls_position
         self.controls_width_percent = controls_width_percent
-        self.continuous = continuous
 
         # Initialize containers
         self.backend_type = get_backend_type()
@@ -117,7 +115,7 @@ class NotebookDeployer:
     def build_components(self) -> None:
         """Create widget instances for all parameters and equip callbacks."""
         for name, param in self.viewer.parameters.items():
-            widget = create_widget(param, continuous=self.continuous)
+            widget = create_widget(param)
             self.components[name] = widget
             callback = lambda _, n=name: self.handle_component_engagement(n)
             widget.observe(callback)
