@@ -17,6 +17,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
+    "nbsphinx",
 ]
 autosummary_generate = True
 
