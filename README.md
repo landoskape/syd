@@ -198,4 +198,4 @@ black . # from the root directory of the repo
   - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
 - [ ] Idea for sharing: https://github.com/analyticalmonk/awesome-neuroscience, https://github.com/fasouto/awesome-dataviz
-- [ ] Let's get nbsphinx in the documentation!!!!
+- [ ] The handling of value in Selection parameters is kind of weird.... I think we need to think more about what to do for fails!!!!
