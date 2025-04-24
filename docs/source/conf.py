@@ -4,6 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
 sys.path.insert(0, os.path.abspath("./_ext"))
+sys.path.insert(0, os.path.abspath("../../examples"))
 
 project = "Syd"
 copyright = "2025"
@@ -17,9 +18,13 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
-    "nbsphinx",
+    "sphinx_design",
 ]
 autosummary_generate = True
+
+# Configure nbsphinx settings
+nbsphinx_allow_errors = True
+nbsphinx_execute = "never"  # Don't execute notebooks during build
 
 html_static_path = ["_static"]
 html_theme_options = {

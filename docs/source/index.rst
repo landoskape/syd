@@ -102,4 +102,5 @@ Table of Contents
    quickstart
    components
    tutorial
+   examples
    api/index

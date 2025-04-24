@@ -108,8 +108,8 @@ You can check out the above example in a notebook `here <https://github.com/land
 or run it yourself in colab:
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
-   :target: https://colab.research.google.com/github/landoskape/syd/blob/main/examples/1-simple_example.ipynb
-   :alt: Open In Colab
+  :target: https://colab.research.google.com/github/landoskape/syd/blob/main/examples/1-simple_example.ipynb
+  :alt: Open In Colab
 
 
 Learn More About How to Use SYD
@@ -117,14 +117,16 @@ Learn More About How to Use SYD
 There's a lot more you can do with SYD. To learn more, check out the following sections:
 
 .. list-table:: 
-   :widths: 20 80
-   :header-rows: 1
+  :widths: 20 80
+  :header-rows: 1
 
-   * - Section
-     - What for? 
-   * - :doc:`components`
-     - Learn about the different types of parameters you can use to create your interactive plots.
-   * - :doc:`tutorial`
-     - Learn how to create more complex interactive plots with SYD.
-   * - :doc:`api/index`
-     - Learn about the SYD API and how to use it to create your own custom components.
+  * - Section
+    - What for? 
+  * - :doc:`components`
+    - Learn about the different types of parameters you can use to create your interactive plots.
+  * - :doc:`tutorial`
+    - Learn how to create more complex interactive plots with SYD.
+  * - :doc:`examples`
+    - See more fleshed out examples of how to use SYD.
+  * - :doc:`api/index`
+    - Learn about the SYD API and how to use it to create your own custom components.
