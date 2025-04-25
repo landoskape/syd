@@ -1,5 +1,5 @@
 from abc import ABCMeta
-from typing import Any, List
+from typing import Any, List, Union
 from warnings import warn
 from contextlib import contextmanager
 import matplotlib.pyplot as plt
@@ -12,7 +12,7 @@ def show_open_servers():
     print(server_manager.servers)
 
 
-def close_servers(port: int | None = None):
+def close_servers(port: Union[int, None] = None):
     """Close any Flask servers running on a given port (or all of them).
 
     Parameters
