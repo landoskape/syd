@@ -171,7 +171,21 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## Contributing
 
-Contributions are welcome! Here's how you can help:
+Contributions are welcome! If you have an idea for an improvement or a bug report, please let us know by opening an
+issue on the [github issues page](https://github.com/landoskape/syd/issues). You can also contribute code by submitting
+a pull request. Here are some guidelines for contributing:
+
+### 1. Reporting Bugs
+If you find a bug, (e.g. any error or strange behavior that is not expected), please let us know by opening an issue on the [github issues page](https://github.com/landoskape/syd/issues).
+
+### 2. Suggesting Features
+If you have an idea for a feature or improvement, please let tell us. Opening an issue on the [github issues page](https://github.com/landoskape/syd/issues).
+
+### 3. Improvements to the Documentation
+A package is only as good as its documentation. If you think the documentation is missing something, confusing, or could be improved in any way, please let us know by opening an issue on the [github issues page](https://github.com/landoskape/syd/issues).
+
+### 4. Contributing Code
+If you want to contribute code (good for you!), here's how you can do it:
 
 1. Fork the repository
 2. Create a new branch (`git checkout -b feature/amazing-feature`)
@@ -181,7 +195,7 @@ Contributions are welcome! Here's how you can help:
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request online
 
-Please make sure to update tests as appropriate and adhere to the existing coding style (black, line-length=88, other style guidelines not capture by black, generally following pep8 guidelines). Try to make the code coverage report improve or stay the same rather than decrease (right now the deployment system isn't covered by tests). I don't have any precommit hooks or anything so you're responsible for checking this yourself. You can process the code with black as follows:
+Please make sure to update tests as appropriate and adhere to the existing coding style (black, line-length=88, other style guidelines not capture by black, generally following pep8 guidelines). Try to make the code coverage report improve or stay the same rather than decrease (right now the deployment system isn't covered by tests). There aren't any precommit hooks or anything so you're responsible for checking this yourself. You can process the code with black as follows:
 ```bash
 pip install black
 black . # from the root directory of the repo
@@ -199,4 +213,3 @@ black . # from the root directory of the repo
   - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
 - [ ] Idea for sharing: https://github.com/analyticalmonk/awesome-neuroscience, https://github.com/fasouto/awesome-dataviz
 - [ ] The handling of value in Selection parameters is kind of weird.... I think we need to think more about what to do for fails!!!!
-- [ ] Range parameters render poorly in browser mode. 

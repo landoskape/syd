@@ -2,8 +2,8 @@ Welcome to Syd's documentation!
 ===============================
 
 Syd is a Python library for creating interactive matplotlib visualizations with just a few lines of code. It 
-allows you to make interactive GUIs for data science as easy as possible. No boilerplate, no complicated GUI
-management, just a few extra lines of code to define interactive components, and Syd will handle the rest.
+allows you to make interactive GUIs for data science with ease and expediency. No boilerplate, no complicated
+GUI state management, just a few lines of code to define interactive components, and Syd will handle the rest.
 
 Example
 -------
@@ -80,6 +80,12 @@ You can install Syd using pip:
 .. code-block:: bash
 
    pip install syd
+
+Or if you want to upgrade to get the latest features and bug fixes:
+
+.. code-block:: bash
+
+   pip install --upgrade syd
 
 Requirements
 ------------
