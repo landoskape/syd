@@ -69,15 +69,7 @@ export function createSystemControls(container) {
 
     // Add custom event listeners
     // Width Control Listeners
-    const widthSlider = widthControl.querySelector('input[type="range"]');
-    const widthInput = widthControl.querySelector('input[type="number"]');
-
-    widthSlider.addEventListener('input', function() { // Real-time update for number input
-        widthInput.value = this.value;
-    });
-
-    widthSlider.addEventListener('change', function() {
-        const width = parseFloat(this.value);
+    function updateControlsWidth(width) {
         setConfigValue('controlsWidthPercent', width); // Use setter from config.js
 
         // Update the root containers using querySelector for classes
@@ -95,6 +87,17 @@ export function createSystemControls(container) {
         // Ensure slider/input values match
         widthSlider.value = width;
         widthInput.value = width;
+    }
+    
+    const widthSlider = widthControl.querySelector('input[type="range"]');
+    const widthInput = widthControl.querySelector('input[type="number"]');
+
+    widthSlider.addEventListener('input', function() { // Real-time update for number input
+        updateControlsWidth(this.value);
+    });
+
+    widthInput.addEventListener('change', function() {
+        updateControlsWidth(this.value);
     });
 
     // Threshold Control Listeners
