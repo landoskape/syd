@@ -5,6 +5,31 @@ from contextlib import contextmanager
 import matplotlib.pyplot as plt
 
 
+def show_open_servers():
+    """Show all open Flask servers."""
+    from .flask_deployment.deployer import server_manager
+
+    print(server_manager.servers)
+
+
+def close_servers(port: int | None = None):
+    """Close any Flask servers running on a given port (or all of them).
+
+    Parameters
+    ----------
+    port : int | None, optional
+        The port of the Flask server to close. If None, all servers will be closed.
+
+    Examples
+    --------
+    >>> close()  # Close all Flask servers
+    >>> close(8000)  # Close the Flask server running on port 8000
+    """
+    from .flask_deployment.deployer import server_manager
+
+    server_manager.close_app(port)
+
+
 @contextmanager
 def plot_context():
     plt.ioff()
