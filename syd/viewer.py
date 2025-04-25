@@ -271,6 +271,8 @@ class Viewer:
         host: str = "127.0.0.1",
         port: Optional[int] = None,
         open_browser: bool = True,
+        update_threshold: float = 1.0,
+        timeout_threshold: float = 10.0,
     ):
         """Share the viewer on a web browser using Flask
 
@@ -286,6 +288,8 @@ class Viewer:
             host=host,
             port=port,
             open_browser=open_browser,
+            update_threshold=update_threshold,
+            timeout_threshold=timeout_threshold,
         )
 
     def deploy(self, env: str = "notebook", **kwargs):

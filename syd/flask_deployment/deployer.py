@@ -11,6 +11,7 @@ import webbrowser
 import threading
 import socket
 import warnings
+import requests
 
 from flask import (
     Flask,
@@ -80,6 +81,7 @@ class FlaskDeployer:
         port: Optional[int] = None,
         open_browser: bool = True,
         update_threshold: float = 1.0,
+        timeout_threshold: float = 10.0,
     ):
         """
         Initialize the Flask deployer.
@@ -110,11 +112,14 @@ class FlaskDeployer:
             Whether to open the web application in a browser tab (default: True).
         update_threshold : float, optional
             Time in seconds to wait before showing the loading indicator (default: 1.0)
+        timeout_threshold : float, optional
+            Time in seconds to wait for the browser to open (default: 10.0).
         """
         self.viewer = viewer
         self.suppress_warnings = suppress_warnings
         self._updating = False  # Flag to check circular updates
         self.update_threshold = update_threshold  # Store update threshold
+        self.timeout_threshold = timeout_threshold  # Store timeout threshold
 
         # Flask specific configurations
         self.config = FlaskLayoutConfig(
@@ -324,7 +329,6 @@ class FlaskDeployer:
         host: str = "127.0.0.1",
         port: Optional[int] = None,
         open_browser: bool = True,
-        **kwargs,
     ) -> None:
         """Starts the Flask development server."""
         if not self.app:
@@ -340,11 +344,30 @@ class FlaskDeployer:
 
         if open_browser:
 
-            def open_browser_tab():
-                time.sleep(1.0)
-                webbrowser.open(self.url)
+            def wait_until_responsive(url, timeout=self.timeout_threshold):
+                start_time = time.time()
+                while time.time() - start_time < timeout:
+                    try:
+                        r = requests.get(url, timeout=0.5)
+                        if r.status_code == 200:
+                            return True
+                    except requests.exceptions.RequestException:
+                        pass
+                    time.sleep(0.1)
+                return False
 
-            threading.Thread(target=open_browser_tab, daemon=True).start()
+            def open_browser_tab_when_ready():
+                if wait_until_responsive(self.url):
+                    out = webbrowser.open(self.url, new=1, autoraise=True)
+                else:
+                    print(
+                        f"Could not open browser: server at {self.url} not responding."
+                        f"Increase the timeout_threshold to fix this! It's set to {self.timeout_threshold} seconds."
+                        "You can do this from viewer.show(timeout_threshold=...) or in the FlaskDeployer constructor."
+                        "Also, this is unexpected so please report this issue on GitHub."
+                    )
+
+            threading.Thread(target=open_browser_tab_when_ready, daemon=True).start()
 
         # Run the Flask server using Werkzeug's run_simple
         # Pass debug status to run_simple for auto-reloading
@@ -352,12 +375,9 @@ class FlaskDeployer:
             self.host,
             self.port,
             self.app,
-            use_reloader=self.debug,
+            use_reloader=False,
             use_debugger=self.debug,
-            **kwargs,
         )
-
-    # --- Overridden Methods ---
 
     def deploy(self) -> None:
         """
