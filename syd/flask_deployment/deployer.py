@@ -6,7 +6,6 @@ from dataclasses import dataclass
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import io
-import time
 import webbrowser
 import threading
 import socket
@@ -20,7 +19,7 @@ from flask import (
     jsonify,
     render_template,
 )
-from werkzeug.serving import run_simple
+from werkzeug.serving import make_server
 
 # Use Deployer base class
 from ..viewer import Viewer
@@ -41,6 +40,55 @@ from ..parameters import (
 from ..support import ParameterUpdateWarning, plot_context
 
 mpl.use("Agg")
+
+
+class ServerManager:
+    def __init__(self):
+        self.servers: dict[int, "ServerThread"] = {}
+
+    def register_server(self, server: "ServerThread", port: int):
+        self.servers[port] = server
+
+    def close_app(self, port: int | None = None):
+        if port is None:
+            for server in self.servers.values():
+                server.shutdown()
+            self.servers.clear()
+        else:
+            if port in self.servers:
+                self.servers[port].shutdown()
+                del self.servers[port]
+
+
+server_manager = ServerManager()
+
+
+class ServerThread(threading.Thread):
+    def __init__(self, host: str, port: int, app, debug: bool):
+        super().__init__(daemon=True)
+        self.server = make_server(host, port, app, threaded=True)
+        self.port = port
+        self.debug = debug
+        self.ready = threading.Event()
+
+        num_open_servers = len(server_manager.servers)
+        if num_open_servers >= 10:
+            open_servers = "\n".join([f"{port}" for port in server_manager.servers])
+            print(
+                f"\nYou have {num_open_servers} open servers!\n"
+                f"Open servers:\n{open_servers}\n"
+                "You can close them with syd.close_servers() or a particular one with syd.close_servers(port).\n"
+                "To see a list, use: syd.show_open_servers()."
+            )
+
+    def run(self):
+        server_manager.register_server(self, self.port)
+        self.ready.set()
+        self.server.serve_forever()
+
+    def shutdown(self):
+        # Call this to stop the server cleanly
+        self.server.shutdown()
 
 
 @dataclass
@@ -80,6 +128,7 @@ class FlaskDeployer:
         port: Optional[int] = None,
         open_browser: bool = True,
         update_threshold: float = 1.0,
+        timeout_threshold: float = 10.0,
     ):
         """
         Initialize the Flask deployer.
@@ -110,11 +159,14 @@ class FlaskDeployer:
             Whether to open the web application in a browser tab (default: True).
         update_threshold : float, optional
             Time in seconds to wait before showing the loading indicator (default: 1.0)
+        timeout_threshold : float, optional
+            Time in seconds to wait for the browser to open (default: 10.0).
         """
         self.viewer = viewer
         self.suppress_warnings = suppress_warnings
         self._updating = False  # Flag to check circular updates
         self.update_threshold = update_threshold  # Store update threshold
+        self.timeout_threshold = timeout_threshold  # Store timeout threshold
 
         # Flask specific configurations
         self.config = FlaskLayoutConfig(
@@ -324,7 +376,6 @@ class FlaskDeployer:
         host: str = "127.0.0.1",
         port: Optional[int] = None,
         open_browser: bool = True,
-        **kwargs,
     ) -> None:
         """Starts the Flask development server."""
         if not self.app:
@@ -338,26 +389,59 @@ class FlaskDeployer:
         self.url = f"http://{self.host}:{self.port}"
         print(f" * Syd Flask server running on {self.url}")
 
-        if open_browser:
+        # if open_browser:
 
-            def open_browser_tab():
-                time.sleep(1.0)
-                webbrowser.open(self.url)
+        #     def wait_until_responsive(url, timeout=self.timeout_threshold):
+        #         start_time = time.time()
+        #         while time.time() - start_time < timeout:
+        #             try:
+        #                 r = requests.get(url, timeout=0.5)
+        #                 if r.status_code == 200:
+        #                     return True
+        #             except requests.exceptions.RequestException:
+        #                 pass
+        #             time.sleep(0.1)
+        #         return False
 
-            threading.Thread(target=open_browser_tab, daemon=True).start()
+        #     def open_browser_tab_when_ready():
+        #         if wait_until_responsive(self.url):
+        #             out = webbrowser.open(self.url, new=1, autoraise=True)
+        #         else:
+        #             print(
+        #                 f"Could not open browser: server at {self.url} not responding."
+        #                 f"Increase the timeout_threshold to fix this! It's set to {self.timeout_threshold} seconds."
+        #                 "You can do this from viewer.show(timeout_threshold=...) or in the FlaskDeployer constructor."
+        #                 "Also, this is unexpected so please report this issue on GitHub."
+        #             )
 
-        # Run the Flask server using Werkzeug's run_simple
-        # Pass debug status to run_simple for auto-reloading
-        run_simple(
-            self.host,
-            self.port,
-            self.app,
-            use_reloader=self.debug,
-            use_debugger=self.debug,
-            **kwargs,
-        )
+        #     threading.Thread(target=open_browser_tab_when_ready, daemon=True).start()
 
-    # --- Overridden Methods ---
+        # # Run the Flask server using Werkzeug's run_simple
+        # # Pass debug status to run_simple for auto-reloading
+        # run_simple(
+        #     self.host,
+        #     self.port,
+        #     self.app,
+        #     use_reloader=False,
+        #     use_debugger=self.debug,
+        # )
+
+        # 1) Spin up the server thread
+        srv_thread = ServerThread(self.host, self.port, self.app, debug=self.debug)
+        srv_thread.start()
+
+        # 2) Wait for the socket‐bind event (not for an HTTP 200)
+        if not srv_thread.ready.wait(timeout=self.timeout_threshold):
+            print(
+                f"[!] Server did not bind within {self.timeout_threshold:.1f}s; it may already be in use."
+            )
+        else:
+            # 3) Now we know the app is truly listening; open a focused window
+            if open_browser:
+                webbrowser.open(self.url, new=1, autoraise=True)
+
+        # 4) Keep the thread handle around so you can call srv_thread.shutdown()
+        self._server_thread = srv_thread
 
     def deploy(self) -> None:
         """
@@ -607,7 +691,7 @@ class FlaskDeployer:
             )
 
 
-def _find_available_port(start_port=5000, max_attempts=100):
+def _find_available_port(start_port=5000, max_attempts=1000):
     """
     Find an available port starting from start_port.
     (Identical to original)

@@ -138,126 +138,6 @@ function createBooleanControl(name, param) {
 }
 
 /**
- * Create integer control with slider and number input
- */
-function createIntegerControl(name, param) {
-    const container = document.createElement('div');
-    container.className = 'numeric-control';
-
-    // Create slider
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.id = `${name}-slider`;
-    slider.min = param.min;
-    slider.max = param.max;
-    slider.step = param.step || 1;
-    slider.value = param.value;
-
-    // Create number input
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.id = `${name}-input`;
-    input.min = param.min;
-    input.max = param.max;
-    input.step = param.step || 1;
-    input.value = param.value;
-
-    // Add event listeners
-    slider.addEventListener('input', function() {
-        input.value = this.value;
-    });
-
-    slider.addEventListener('change', function() {
-        const value = parseInt(this.value, 10);
-        input.value = value;
-        updateParameter(name, value);
-    });
-
-    input.addEventListener('change', function() {
-        const value = parseInt(this.value, 10);
-        if (!isNaN(value) && value >= param.min && value <= param.max) {
-            slider.value = value;
-            updateParameter(name, value);
-        } else {
-            // Revert to current state value if input is invalid
-            this.value = state[name];
-        }
-    });
-
-    container.appendChild(slider);
-    container.appendChild(input);
-    return container;
-}
-
-/**
- * Create float control with slider and number input
- */
-function createFloatControl(name, param) {
-    // Use the shared controller creator
-    const container = createFloatController(name, param);
-    const slider = container.querySelector('input[type="range"]');
-    const input = container.querySelector('input[type="number"]');
-
-    // Add event listeners specific to parameter updates
-    slider.addEventListener('input', function() {
-        input.value = this.value;
-    });
-
-    slider.addEventListener('change', function() {
-        const value = parseFloat(this.value);
-        input.value = value;
-        updateParameter(name, value);
-    });
-
-    input.addEventListener('change', function() {
-        const value = parseFloat(this.value);
-        if (!isNaN(value) && value >= param.min && value <= param.max) {
-            slider.value = value;
-            updateParameter(name, value);
-        } else {
-            // Revert to current state value if input is invalid
-            this.value = state[name];
-        }
-    });
-
-    return container;
-}
-
-/**
- * Create float controller object (container with slider and number input).
- * Exported because it's also used by system_controls.js
- * @param {string} name - Base name for element IDs.
- * @param {object} param - Parameter info (min, max, step, value).
- */
-export function createFloatController(name, param) {
-    const container = document.createElement('div');
-    // We add 'numeric-control' class here, but system_controls adds 'system-control' too
-    container.className = 'numeric-control';
-
-    // Create slider
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.id = `${name}-slider`;
-    slider.min = param.min;
-    slider.max = param.max;
-    slider.step = param.step || 0.01; // Default step for float
-    slider.value = param.value;
-
-    // Create number input
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.id = `${name}-input`;
-    input.min = param.min;
-    input.max = param.max;
-    input.step = param.step || 0.01; // Default step for float
-    input.value = param.value;
-
-    container.appendChild(slider);
-    container.appendChild(input);
-    return container;
-}
-
-/**
  * Create selection dropdown control
  */
 function createSelectionControl(name, param) {
@@ -370,6 +250,125 @@ function createMultipleSelectionControl(name, param) {
 }
 
 /**
+ * Create integer control with slider and number input
+ */
+function createIntegerControl(name, param) {
+    const container = document.createElement('div');
+    container.className = 'numeric-control';
+
+    // Create slider
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.id = `${name}-slider`;
+    slider.min = param.min;
+    slider.max = param.max;
+    slider.step = param.step || 1;
+    slider.value = param.value;
+
+    // Create number input
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.id = `${name}-input`;
+    input.min = param.min;
+    input.max = param.max;
+    input.step = param.step || 1;
+    input.value = param.value;
+
+    // Add event listeners
+    slider.addEventListener('input', function() {
+        input.value = this.value;
+    });
+
+    slider.addEventListener('change', function() {
+        const value = parseInt(this.value, 10);
+        input.value = value;
+        updateParameter(name, value);
+    });
+
+    input.addEventListener('change', function() {
+        const value = parseInt(this.value, 10);
+        if (!isNaN(value) && value >= param.min && value <= param.max) {
+            slider.value = value;
+            updateParameter(name, value);
+        } else {
+            // Revert to current state value if input is invalid
+            this.value = state[name];
+        }
+    });
+
+    container.appendChild(slider);
+    container.appendChild(input);
+    return container;
+}
+
+/**
+ * Create float control with slider and number input
+ */
+function createFloatControl(name, param) {
+    // Use the shared controller creator
+    const container = createFloatController(name, param);
+    const slider = container.querySelector('input[type="range"]');
+    const input = container.querySelector('input[type="number"]');
+
+    // Add event listeners specific to parameter updates
+    slider.addEventListener('input', function() {
+        input.value = this.value;
+    });
+
+    slider.addEventListener('change', function() {
+        const value = parseFloat(this.value);
+        input.value = value;
+        updateParameter(name, value);
+    });
+
+    input.addEventListener('change', function() {
+        const value = parseFloat(this.value);
+        if (!isNaN(value) && value >= param.min && value <= param.max) {
+            slider.value = value;
+            updateParameter(name, value);
+        } else {
+            // Revert to current state value if input is invalid
+            this.value = state[name];
+        }
+    });
+
+    return container;
+}
+
+/**
+ * Create float controller object (container with slider and number input).
+ * Exported because it's also used by system_controls.js
+ * @param {string} name - Base name for element IDs.
+ * @param {object} param - Parameter info (min, max, step, value).
+ */
+export function createFloatController(name, param) {
+    const container = document.createElement('div');
+    container.className = 'numeric-control';
+
+    // Create slider
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.id = `${name}-slider`;
+    slider.min = param.min;
+    slider.max = param.max;
+    slider.step = param.step || 0.01; // Default step for float
+    slider.value = param.value;
+
+    // Create number input
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.id = `${name}-input`;
+    input.min = param.min;
+    input.max = param.max;
+    input.step = param.step || 0.01; // Default step for float
+    input.value = param.value;
+
+    container.appendChild(slider);
+    container.appendChild(input);
+    return container;
+}
+
+/**
  * Create integer range control with dual sliders
  */
 function createIntegerRangeControl(name, param) {
@@ -404,6 +403,16 @@ function createRangeControl(name, param, converter) {
     minInput.step = param.step || (converter === parseInt ? 1 : 0.01); // Default step
     minInput.value = param.value[0];
 
+    // Create max input
+    const maxInput = document.createElement('input');
+    maxInput.type = 'number';
+    maxInput.id = `${name}-max-input`;
+    maxInput.className = 'range-input';
+    maxInput.min = param.min;
+    maxInput.max = param.max;
+    maxInput.step = param.step || (converter === parseInt ? 1 : 0.01);
+    maxInput.value = param.value[1];
+    
     // Create slider container
     const sliderContainer = document.createElement('div');
     sliderContainer.className = 'range-slider-container';
@@ -427,16 +436,6 @@ function createRangeControl(name, param, converter) {
     maxSlider.max = param.max;
     maxSlider.step = param.step || (converter === parseInt ? 1 : 0.01);
     maxSlider.value = param.value[1];
-
-    // Create max input
-    const maxInput = document.createElement('input');
-    maxInput.type = 'number';
-    maxInput.id = `${name}-max-input`;
-    maxInput.className = 'range-input';
-    maxInput.min = param.min;
-    maxInput.max = param.max;
-    maxInput.step = param.step || (converter === parseInt ? 1 : 0.01);
-    maxInput.value = param.value[1];
 
     // --- Event Listeners --- 
 
