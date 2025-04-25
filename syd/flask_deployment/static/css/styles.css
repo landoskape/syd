@@ -102,6 +102,8 @@ input[type="range"] {
     margin: 5px 0;
 }
 
+/* Commenting out generic thumb styles to avoid conflicts */
+/*
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 18px;
@@ -120,6 +122,7 @@ input[type="range"]::-moz-range-thumb {
     cursor: pointer;
     border: 1px solid #2c3e90;
 }
+*/
 
 /* Checkbox styling */
 .checkbox-container {
@@ -204,71 +207,72 @@ button.active {
 
 .range-slider-container {
     position: relative;
-    margin: 5px 0;
+    margin: 10px 0 15px 0;
     background: linear-gradient(to right,
         #ddd 0%,
         #ddd var(--min-pos, 0%),
-        #3f51b5 var(--min-pos, 0%),
-        #3f51b5 var(--max-pos, 100%),
+        #4a90e2 var(--min-pos, 0%),
+        #4a90e2 var(--max-pos, 100%),
         #ddd var(--max-pos, 100%),
         #ddd 100%);
-    border-radius: 3px;
-    height: 18px;
+    border-radius: 4px;
+    height: 8px;
+    width: 100%;
 }
 
 .range-slider {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0;
     left: 0;
     width: 100%;
+    height: 100%;
     pointer-events: none;
     -webkit-appearance: none;
     appearance: none;
-    background: transparent;
+    background: none;
     cursor: pointer;
     margin: 0;
-    height: 18px;
+    padding: 0;
 }
 
 /* Transparent Track for Webkit */
-.range-slider::-webkit-slider-runnable-track {
+.range-slider-container .range-slider::-webkit-slider-runnable-track {
     background: transparent;
     border: none;
-    border-radius: 3px;
+    border-radius: 4px;
+    height: 8px;
 }
 
 /* Transparent Track for Firefox */
-.range-slider::-moz-range-track {
+.range-slider-container .range-slider::-moz-range-track {
     background: transparent;
     border: none;
-    border-radius: 3px;
+    border-radius: 4px;
+    height: 8px;
 }
 
-.range-slider.active {
-    z-index: 2;
-}
-
-.range-slider::-webkit-slider-thumb {
+.range-slider-container .range-slider::-webkit-slider-thumb {
     pointer-events: auto;
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    background: #3f51b5;
+    background: #fff;
     cursor: pointer;
-    border: 1px solid #2c3e90;
+    border: 1px solid #888;
+    margin-top: -4px;
 }
 
-.range-slider::-moz-range-thumb {
+.range-slider-container .range-slider::-moz-range-thumb {
     pointer-events: auto;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    background: #3f51b5;
+    background: #fff;
     cursor: pointer;
-    border: 1px solid #2c3e90;
+    border: 1px solid #888;
+    margin-top: -4px;
 }
 
 .min-slider {
