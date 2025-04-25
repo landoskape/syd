@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-04-25
+
+This is the first release of Syd as a "complete" package with all the promised functionality. This is the first changelog entry that
+really matters since everything before was essentially just pre-release testing and development. 
+
+### Added
+- Web browser deployment via Flask and SocketIO (`viewer.share()`). Includes dynamic HTML/JS frontend (`index.html`, `viewer.js`, `styles.css`).
+- Notebook deployment refactored into `NotebookDeployer` using `ipywidgets`.
+- `make_viewer` factory function for simplified viewer instantiation.
+- `NoInitialValue` singleton to allow creating parameters without an initial value.
+- Explicit callback registration system (`viewer.on_change`).
+- Comprehensive documentation built with Sphinx (`pydata-sphinx-theme`), including tutorials, API reference, and core concepts.
+- New example notebook for hierarchical callbacks (`4-hierarchical_callbacks.ipynb`).
+
+### Changed
+- **Breaking**: Renamed main class `InteractiveViewer` to `Viewer`. Access via `from syd import Viewer`.
+- **Breaking**: Simplified deployment API: `viewer.show()` for notebooks and `viewer.share()` for web browser replace `viewer.deploy(env=...)`.
+- **Breaking**: Integer and Float parameters now use `min` and `max` keyword arguments instead of `min_value` and `max_value`.
+- **Breaking**: Callback function signature simplified to accept only the `state` dictionary.
+- Refactored parameter implementation into base `Parameter` class and specific subclasses (`syd.parameters`).
+- Improved parameter validation using `ParameterAddError`, `ParameterUpdateError`, and `ParameterUpdateWarning`.
+- Improved state management and update logic within the `Viewer` class.
+- Enhanced notebook deployment with debouncing and better handling of `%matplotlib widget`.
+- Enhanced web deployment with debouncing for smoother updates.
+- Updated all example notebooks (`1-simple_example.ipynb`, `2a-complex_example.ipynb`, `2b-subclass_example.ipynb`, `3-data_loading.ipynb`) to align with API changes.
+
+### Removed
+- Old deployment functions/logic superseded by `Viewer.show()` and `Viewer.share()`.
+- Deprecated parameter exception classes.
+- Removed internal `syd.support` module; functionality integrated into relevant modules.
+
 ## [0.2.0] - 2025-04-15
 
 ### Added
