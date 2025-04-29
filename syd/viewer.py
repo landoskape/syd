@@ -157,12 +157,14 @@ class Viewer:
     >>> viewer = MyViewer()
     >>> viewer.add_float('x', value=1.0, min=0, max=10)
     >>> viewer.on_change('x', viewer.update_based_on_x)
+    >>> viewer.show()
     """
 
     parameters: Dict[str, Parameter]
     callbacks: Dict[str, List[Callable]]
     _app_deployed: bool
     _in_callbacks: bool
+    _figure: Figure
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
@@ -170,6 +172,7 @@ class Viewer:
         instance.callbacks = {}
         instance._app_deployed = False
         instance._in_callbacks = False
+        instance._figure = None
         return instance
 
     @property
@@ -195,6 +198,13 @@ class Viewer:
             for name, param in self.parameters.items()
             if not param._is_action
         }
+
+    @property
+    def figure(self) -> Figure:
+        """
+        Get the last opened figure. Returns None if no figure has been opened yet.
+        """
+        return self._figure
 
     def plot(self, state: Dict[str, Any]) -> Figure:
         """Create and return a matplotlib figure.
@@ -942,6 +952,7 @@ class Viewer:
         *,
         label: Union[str, NoInitialValue] = NO_INITIAL_VALUE,
         callback: Callable[[], None],
+        replot: bool = True,
     ) -> None:
         """
         Add a button parameter to the viewer.
@@ -959,16 +970,24 @@ class Viewer:
             If not provided, the parameter's label will be set to the name.
         callback : callable
             Function to call when the button is clicked (takes state as a single argument)
+        replot : bool, optional
+            Whether to replot the figure after the callback is called.
+            (default: True)
 
         Examples
         --------
-        >>> def reset_plot(state):
-        ...     print("Resetting plot...")
-        >>> viewer.add_button('reset', label='Reset Plot', callback=reset_plot)
+        >>> def save_figure(state):
+        ...     print("Saving figure...")
+        ...     viewer.figure.savefig('last_figure.png')
+        >>> viewer.add_button('save', label='Save Figure', callback=save_figure, replot=False)
 
         >>> def print_plot_info(state):
         ...     print(f"Current plot info: {state['plot_info']}")
-        >>> viewer.add_button('print_info', label='Print Plot Info', callback=print_plot_info)
+        >>> viewer.add_button('print_info', label='Print Plot Info', callback=print_plot_info, replot=False)
+
+        >>> def reset_plot(state):
+        ...     print("Resetting plot...")
+        >>> viewer.add_button('reset', label='Reset Plot', callback=reset_plot)
         """
         try:
             callback = self._prepare_function(
@@ -976,7 +995,7 @@ class Viewer:
                 context="Setting button callback:",
             )
 
-            new_param = ActionType.button.value(name, label, callback)
+            new_param = ActionType.button.value(name, label, callback, replot)
         except Exception as e:
             raise ParameterAddError(name, "button", str(e)) from e
         else:
@@ -1398,6 +1417,7 @@ class Viewer:
         *,
         label: Union[str, NoUpdate] = NO_UPDATE,
         callback: Union[Callable[[], None], NoUpdate] = NO_UPDATE,
+        replot: Union[bool, NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update a button parameter's label and/or callback function.
@@ -1413,6 +1433,9 @@ class Viewer:
             New text to display on the button (if not provided, no change)
         callback : Union[callable, NoUpdate], optional
             New function to call when clicked (if not provided, no change)
+        replot : Union[bool, NoUpdate], optional
+            Whether to replot the figure after the callback is called.
+            (default: True)
 
         Examples
         --------
@@ -1420,7 +1443,8 @@ class Viewer:
         ...     print("New action...")
         >>> viewer.update_button('reset',
         ...                     label='New Action!',
-        ...                     callback=new_callback)
+        ...                     callback=new_callback,
+        ...                     replot=False)
         """
         updates = {}
         if not label == NO_UPDATE:
@@ -1439,5 +1463,7 @@ class Viewer:
                 ) from e
             else:
                 updates["callback"] = callback
+        if not replot == NO_UPDATE:
+            updates["replot"] = replot
         if updates:
             self.parameters[name].update(updates)

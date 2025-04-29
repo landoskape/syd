@@ -48,7 +48,7 @@ export async function updateParameterOnServer(name, value, action = false) {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return await response.json(); // Return the server response (likely includes updated state)
+        return await response.json(); // Return the server response
     } catch (error) {
         console.error('Error updating parameter:', error);
         updateStatus('Error updating parameter');
@@ -76,8 +76,9 @@ export function handleButtonClick(name) {
             } else {
                 // Update state with any changes from callbacks
                 updateStateFromServer(data.state, data.params);
-                // Update plot if needed (plot.js handles this now)
-                updatePlot();
+                if (data.replot) {
+                    updatePlot();
+                }
                 updateStatus('Ready!');
             }
         })

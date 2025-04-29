@@ -244,15 +244,18 @@ class NotebookDeployer:
                     # If the component is an action, call the callback
                     parameter = self.viewer.parameters[name]
                     parameter.callback(self.viewer.state)
+                    replot = parameter.replot
                 else:
                     # Otherwise, update the parameter value
                     self.viewer.set_parameter_value(name, component.value)
+                    replot = True
 
                 # Update any components that changed due to dependencies
                 self.sync_components_with_state()
 
                 # Update the plot
-                self.update_plot()
+                if replot:
+                    self.update_plot()
 
     def sync_components_with_state(self, exclude: Optional[str] = None) -> None:
         """Sync component values with viewer state."""
@@ -270,6 +273,7 @@ class NotebookDeployer:
 
         with plot_context():
             figure = self.viewer.plot(state)
+            self.viewer._figure = figure
 
         # Update components if plot function updated a parameter
         self.sync_components_with_state()
@@ -296,7 +300,13 @@ class NotebookDeployer:
                     display(figure.canvas)
 
                 else:
-                    raise ValueError(f"Unsupported backend type: {self.backend_type}")
+                    display(figure)
+                    plt.close(figure)
+                    print(
+                        f"Backend type: ({self.backend_type}) is not explicitly supported."
+                        "If you encounter weird behavior, try restarting with '%matplotlib inline' or '%matplotlib widget'."
+                        "And please report this issue on github please :)."
+                    )
 
             if store_figure:
                 self._last_figure = figure

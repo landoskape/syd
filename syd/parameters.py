@@ -1305,12 +1305,15 @@ class ButtonAction(Parameter[None]):
         Text to display on the button (default is the button's name)
     callback : callable
         Function to execute when the button is clicked
+    replot : bool, optional
+        Whether to replot the figure after the callback is called.
+        (default: True)
 
     Examples
     --------
     >>> def print_hello():
     ...     print("Hello!")
-    >>> button = ButtonAction("greeting", label="Say Hello", callback=print_hello)
+    >>> button = ButtonAction("greeting", label="Say Hello", callback=print_hello, replot=False)
     >>> button.callback()  # Simulates clicking the button
     Hello!
     >>> # Update the button's label and callback
@@ -1323,14 +1326,14 @@ class ButtonAction(Parameter[None]):
     Notes
     -----
     Unlike other Parameter types, ButtonAction:
-    - Has no value (always None)
-    - Is marked as an action (_is_action = True)
+    - Has no value (always None, therefore cannot be updated through the value property
     - Executes code directly rather than storing state
-    - Cannot be updated through the value property
+    - Has an option to turn off replotting after the callback is called for cases where you want to access the last figure only.
     """
 
     label: str
     callback: Callable
+    replot: bool
     value: None = field(default=None, repr=False)
     _is_action: bool = field(default=True, repr=False)
 
@@ -1339,6 +1342,7 @@ class ButtonAction(Parameter[None]):
         name: str,
         label: Union[str, NoInitialValue],
         callback: Callable,
+        replot: bool = True,
     ):
         """
         Initialize a button.
@@ -1351,12 +1355,16 @@ class ButtonAction(Parameter[None]):
             Text to display on the button (default is the button's name)
         callback : callable
             Function to execute when the button is clicked
+        replot : bool, optional
+            Whether to replot the figure after the callback is called.
+            (default: True)
         """
         self.name = name
         if isinstance(label, NoInitialValue):
             label = name
         self.label = label
         self.callback = callback
+        self.replot = replot
         self._value = None
 
     def _validate(self, new_value: Any) -> None:
@@ -1370,6 +1378,12 @@ class ButtonAction(Parameter[None]):
                 self.name,
                 type(self).__name__,
                 f"Callback {self.callback} is not callable",
+            )
+        if not isinstance(self.replot, bool):
+            raise ParameterUpdateError(
+                self.name,
+                type(self).__name__,
+                f"Replet must be a boolean, got {type(self.replot)}",
             )
         try:
             str(self.label)

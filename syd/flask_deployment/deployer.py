@@ -252,6 +252,7 @@ class FlaskDeployer:
                 with plot_context():
                     # Use the viewer's plot method with its current state
                     fig = self.viewer.plot(self.viewer.state)
+                    self.viewer._figure = fig
                     if not isinstance(fig, mpl.figure.Figure):
                         raise TypeError(
                             f"viewer.plot() must return a matplotlib Figure, but got {type(fig)}"
@@ -310,6 +311,7 @@ class FlaskDeployer:
                     return jsonify({"error": f"Parameter '{name}' not found"}), 404
 
                 parameter = self.viewer.parameters[name]
+                replot = True
 
                 # Optionally suppress warnings during updates
                 with warnings.catch_warnings():
@@ -323,6 +325,7 @@ class FlaskDeployer:
                         if isinstance(parameter, ButtonAction) and parameter.callback:
                             # Pass the current state dictionary to the callback
                             parameter.callback(self.viewer.state)
+                            replot = parameter.replot
                         else:
                             app.logger.warning(
                                 f"Received action request for non-action parameter: {name}"
@@ -351,7 +354,12 @@ class FlaskDeployer:
                     for name, param in self.viewer.parameters.items()
                 }
                 return jsonify(
-                    {"success": True, "state": final_state, "params": final_param_info}
+                    {
+                        "success": True,
+                        "state": final_state,
+                        "params": final_param_info,
+                        "replot": replot,
+                    }
                 )
 
             except Exception as e:
