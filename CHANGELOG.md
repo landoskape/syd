@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2025-04-29
+
+### Added
+- Now, the Syd GUI (i.e. the deployers) store a reference to the last figure generated in the viewer. This
+  is available via the `viewer.figure` property method and returns None when no figure has been generated yet.
+- Added `save_figure` example to the tutorial.
+
+### Changed
+- Buttons now have a `replot` keyword argument to control whether the figure is replotted when the button is clicked. If this
+  is set to False, the button will only trigger the callback function, and update parameters, but not replot the figure. 
+
+### Fixed
+- Previously, the deployer was aggressive at rejecting matplotlib backends that weren't recognized. Now, it permits any backend,
+but just sends a warning that there might be strange behavior. 
+
 ## [1.2.1] - 2025-04-25
 
 ### Fixed
