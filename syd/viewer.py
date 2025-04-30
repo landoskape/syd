@@ -319,8 +319,6 @@ class Viewer:
 
             if "port" not in kwargs:
                 kwargs["port"] = None
-            if "continuous" in kwargs:
-                kwargs.pop("continuous")
 
             deployer = FlaskDeployer(self, **kwargs)
             deployer.deploy()
