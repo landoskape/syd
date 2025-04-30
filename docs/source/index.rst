@@ -90,7 +90,7 @@ Or if you want to upgrade to get the latest features and bug fixes:
 Requirements
 ------------
 
-- Python 3.9+ (it might work on older versions but it isn't tested on them!)
+- Python 3.8+
 - matplotlib
 - ipywidgets
 - ipympl
