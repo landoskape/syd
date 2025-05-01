@@ -7,9 +7,8 @@ tags:
   - data-visualization
   - interactive
 authors:
-  - name: 
-    - given-names: Andrew T.
-    - surname: Landau
+  - given-names: Andrew T.
+    surname: Landau
     corresponding: true
     orcid: 0000-0001-9105-1636
     affiliation: 1
