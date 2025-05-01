@@ -49,7 +49,7 @@ and _which parameters you want to be interactive_; it handles all the behind
 the scenes action required to make an interface.
 
 `Syd` "viewers" are made by defining a plot function which accepts a `state`
-dictionary as input and returns a `matplotlib` `figure` object [@matplotlib].
+dictionary as input and returns a `matplotlib` `figure` object [@Matplotlib].
 Then, parameters are added to the viewer with simple declarative functions. If
 required, `Syd` also provides an intuitive system for callbacks that greatly
 minimizes boilerplate GUI code. The simplicity of the interface means that
@@ -60,7 +60,7 @@ Because `Syd` handles the behind-the-scenes implementation code, it permits a
 user to "deploy" viewers in multiple environments without any changes to the
 code. Viewers can be deployed in jupyter notebooks for fast and local analysis
 (depending on the [@ipywidgets] package) or deployed on web browsers for
-sharing across local networks (depending on the [@flask] package). In this
+sharing across local networks (depending on the [@Flask] package). In this
 way, a scientist can study their data at their desk, then use the same code to
 share the results interactively with their advisor or with their lab at
 different computers. 
