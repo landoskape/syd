@@ -58,11 +58,11 @@ analyst's typical workflow - as easy as making plots.
 Because `Syd` handles the behind-the-scenes implementation code, it permits a
 user to "deploy" viewers in multiple environments without any changes to the
 code. Viewers can be deployed in jupyter notebooks for fast and local analysis
-(depending on the @ipywidgets package) or deployed on web browsers for
-sharing across local networks (depending on the @Flask package). In this
-way, a scientist can study their data at their desk, then use the same code to
-share the results interactively with their advisor or with their lab at
-different computers. 
+or deployed on web browsers for sharing across local networks. These deployment
+environments depend on `ipywidgets` and `flask`, respectively
+[@ipywidgets; @Flask]. In this way, a scientist can study their data at their
+desk, then use the same code to share the results interactively with their
+advisor or with their lab at different computers. 
 
 
 \pagebreak
