@@ -64,6 +64,10 @@ way, a scientist can study their data at their desk, then use the same code to
 share the results interactively with their advisor or with their lab at
 different computers. 
 
+
+\pagebreak
+
+
 # Example Viewer
 
 This is a simple example that demonstrates how easy it is to make interactive
@@ -71,7 +75,7 @@ visualization tools with `Syd`.
 
 1. A plot function is defined that accepts `state` as input.
 2. A viewer is created, and three parameters are added.
-3. (Optionally) a callback function is defined and attached to a parameter.
+3. (Optional) Callback functions are defined and attached to parameters.
 4. The viewer is deployed in the desired environment.
 
 ```python
@@ -94,24 +98,14 @@ def plot(state):
 viewer = make_viewer(plot)
 viewer.add_float("amplitude", value=1.0, min=0.1, max=5.0)
 viewer.add_float("frequency", value=1.0, min=0.1, max=5.0)
-viewer.add_selection("color", options=["red", "blue", "green", "black"])
-
-# Callback definition
-def force_black_for_large_amplitude(state):
-    amplitude = state["amplitude"]
-    if amplitude > 4:
-        viewer.update_selection("color", value="black", options=["black"])
-    else:
-        viewer.update_selection("color", options=["red", "blue", "green", "black"])
-        
-viewer.on_change("amplitude", force_black_for_large_amplitude)
+viewer.add_selection("color", options=["black", "blue", "green", "red"])
 
 # Deployment
 viewer.show() # for viewing in a jupyter notebook
 # viewer.share() # for viewing in a web browser
 ```
 
-![Example Syd Viewer](docs/assets/viewer_screenshots/1-simple_example.png)
+![Example Syd Viewer](../docs/assets/viewer_screenshots/1-simple_example.png)
 
 # Acknowledgements
 
