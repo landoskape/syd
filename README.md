@@ -202,6 +202,7 @@ black . # from the root directory of the repo
 ```
 
 ## To-Do List
+This section doubles as a checklist for things I think could be useful and _a place to get feedback about what users think is useful_. If you think something in this is critical and should be prioritized, or if you think something is missing, please let me know by submitting an issue on the [github issues page](https://github.com/landoskape/syd/issues).
 - Layout controls
   - [ ] Add a "save" button that saves the current state of the viewer to a json file
   - [ ] Add a "load" button that loads the viewer state from a json file
