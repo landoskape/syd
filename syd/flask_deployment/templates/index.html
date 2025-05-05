@@ -23,10 +23,9 @@
     
     <!-- Store config as data attributes for JS to access -->
     <div id="viewer-config" 
-         data-figure-width="{{ config.figure_width }}"
-         data-figure-height="{{ config.figure_height }}"
          data-controls-position="{{ config.controls_position }}"
          data-controls-width-percent="{{ config.controls_width_percent }}"
+         data-plot-margin-percent="{{ config.plot_margin_percent }}"
          style="display:none;"></div>
          
     <script type="module" src="{{ url_for('static', filename='js/viewer.js') }}"></script>

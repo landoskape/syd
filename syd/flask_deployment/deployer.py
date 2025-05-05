@@ -97,6 +97,7 @@ class FlaskLayoutConfig:
 
     controls_position: str = "left"  # Options are: 'left', 'top', 'right', 'bottom'
     controls_width_percent: int = 15
+    plot_margin_percent: float = 10
 
     def __post_init__(self):
         valid_positions = ["left", "top", "right", "bottom"]
@@ -121,7 +122,8 @@ class FlaskDeployer:
         viewer: Viewer,
         controls_position: str = "left",
         fig_dpi: int = 300,
-        controls_width_percent: int = 15,
+        controls_width_percent: int = 20,
+        plot_margin_percent: float = 2.5,
         suppress_warnings: bool = True,
         debug: bool = False,
         host: str = "127.0.0.1",
@@ -147,6 +149,8 @@ class FlaskDeployer:
             Approximate height for template layout guidance (inches)
         controls_width_percent : int, optional
             Width of the controls panel as a percentage of the total width
+        plot_margin_percent : float, optional
+            Margin around the plot (inches)
         suppress_warnings : bool, optional
             Whether to suppress ParameterUpdateWarning during updates
         debug : bool, optional
@@ -172,6 +176,7 @@ class FlaskDeployer:
         self.config = FlaskLayoutConfig(
             controls_position=controls_position,
             controls_width_percent=controls_width_percent,
+            plot_margin_percent=plot_margin_percent,
         )
         self.fig_dpi = fig_dpi
         self.debug = debug

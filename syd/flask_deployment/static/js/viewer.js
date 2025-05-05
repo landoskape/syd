@@ -44,15 +44,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         await fetchInitialData();
         createControls(); // Populates #parameter-controls
         if (['left', 'right'].includes(config.controlsPosition)) {
-            // Pass the already created systemControls element
             createSystemControls(systemControls); // Populates #system-controls
         }
         updatePlot();
         updateStatus('Ready!');
     } catch (error) {
         console.error("Initialization failed:", error);
-        // Status might have already been updated by the failing function (e.g., fetchInitialData)
-        // If not, uncomment the line below:
-        // updateStatus('Initialization failed.');
+        updateStatus('Initialization failed.');
     }
 });
