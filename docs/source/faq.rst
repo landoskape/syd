@@ -319,3 +319,15 @@ Whenever a parameter change is initiated by interaction with the GUI, a few thin
 
 .. note::
     Any other parameters that are changed by a callback *will not* trigger additional callbacks.
+
+
+My syd viewer isn't showing, what's wrong?
+------------------------------------------
+
+There's probably a variety of reasons that can cause this. Some common issues relate to python / conda environment management 
+and to the "environment" that your viewer is displayed in. So - if you are attached to your python environment -- try using the
+alternative syd deployment option (if using ``show()``, try ``share()`` instead). Or - if you are comfortable rebuilding your 
+conda environment, try that again with with a fresh install of syd in a clean background.
+
+.. note::
+    If you have trouble and are able to successfully debug it - please tell us by opening an issue on the `github issues page <https://github.com/landoskape/syd/issues>`_.
