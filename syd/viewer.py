@@ -279,7 +279,7 @@ class Viewer:
         plot_margin_percent: float = 2.5,
         suppress_warnings: bool = True,
         debug: bool = False,
-        host: str = "127.0.0.1",
+        host: Optional[str] = None,
         port: Optional[int] = None,
         open_browser: bool = True,
         update_threshold: float = 1.0,
