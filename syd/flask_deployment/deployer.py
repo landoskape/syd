@@ -396,48 +396,13 @@ class FlaskDeployer:
                 "Flask app not built. Call build_layout() before display()."
             )
 
+        print(self.port, self.host)
+
         # Find an available port if none is specified
-        self.port = port or _find_available_port()
         self.host = host or socket.gethostbyname(socket.gethostname())
+        self.port = port or _find_available_port(address=self.host)
         self.url = f"http://{self.host}:{self.port}"
         print(f" * Syd Flask server running on {self.url}")
-
-        # if open_browser:
-
-        #     def wait_until_responsive(url, timeout=self.timeout_threshold):
-        #         start_time = time.time()
-        #         while time.time() - start_time < timeout:
-        #             try:
-        #                 r = requests.get(url, timeout=0.5)
-        #                 if r.status_code == 200:
-        #                     return True
-        #             except requests.exceptions.RequestException:
-        #                 pass
-        #             time.sleep(0.1)
-        #         return False
-
-        #     def open_browser_tab_when_ready():
-        #         if wait_until_responsive(self.url):
-        #             out = webbrowser.open(self.url, new=1, autoraise=True)
-        #         else:
-        #             print(
-        #                 f"Could not open browser: server at {self.url} not responding."
-        #                 f"Increase the timeout_threshold to fix this! It's set to {self.timeout_threshold} seconds."
-        #                 "You can do this from viewer.show(timeout_threshold=...) or in the FlaskDeployer constructor."
-        #                 "Also, this is unexpected so please report this issue on GitHub."
-        #             )
-
-        #     threading.Thread(target=open_browser_tab_when_ready, daemon=True).start()
-
-        # # Run the Flask server using Werkzeug's run_simple
-        # # Pass debug status to run_simple for auto-reloading
-        # run_simple(
-        #     self.host,
-        #     self.port,
-        #     self.app,
-        #     use_reloader=False,
-        #     use_debugger=self.debug,
-        # )
 
         # 1) Spin up the server thread
         srv_thread = ServerThread(self.host, self.port, self.app, debug=self.debug)
@@ -460,7 +425,7 @@ class FlaskDeployer:
         """
         Deploy the viewer using Flask.
 
-        Builds components (no-op), layout (Flask app/routes),
+        Builds components, layout (Flask app/routes),
         and then starts the server.
         """
         # build_layout creates the Flask app and routes
@@ -704,14 +669,15 @@ class FlaskDeployer:
             )
 
 
-def _find_available_port(start_port=5000, max_attempts=1000):
+def _find_available_port(
+    start_port=5000,
+    max_attempts=1000,
+    address: str = "127.0.0.1",
+):
     """
     Find an available port starting from start_port.
-    (Identical to original)
     """
     for port in range(start_port, start_port + max_attempts):
-        # Use localhost address explicitly
-        address = "127.0.0.1"
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 # Check if the port is usable
