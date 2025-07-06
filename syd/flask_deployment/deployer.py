@@ -316,7 +316,8 @@ class FlaskDeployer:
                     return jsonify({"error": f"Parameter '{name}' not found"}), 404
 
                 parameter = self.viewer.parameters[name]
-                replot = True
+                update_plot = parameter.update_plot
+                update_components = parameter.update_components
 
                 # Optionally suppress warnings during updates
                 with warnings.catch_warnings():
@@ -330,7 +331,6 @@ class FlaskDeployer:
                         if isinstance(parameter, ButtonAction) and parameter.callback:
                             # Pass the current state dictionary to the callback
                             parameter.callback(self.viewer.state)
-                            replot = parameter.replot
                         else:
                             app.logger.warning(
                                 f"Received action request for non-action parameter: {name}"
@@ -363,7 +363,8 @@ class FlaskDeployer:
                         "success": True,
                         "state": final_state,
                         "params": final_param_info,
-                        "replot": replot,
+                        "update_plot": update_plot,
+                        "update_components": update_components,
                     }
                 )
 

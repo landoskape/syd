@@ -240,21 +240,24 @@ class NotebookDeployer:
 
                 # Get the component
                 component = self.components[name]
+                parameter = self.viewer.parameters[name]
+                update_components = parameter.update_components
+                update_plot = parameter.update_plot
+
+                # Implement the appropriate callback
                 if component.is_action:
                     # If the component is an action, call the callback
-                    parameter = self.viewer.parameters[name]
                     parameter.callback(self.viewer.state)
-                    replot = parameter.replot
                 else:
                     # Otherwise, update the parameter value
                     self.viewer.set_parameter_value(name, component.value)
-                    replot = True
 
                 # Update any components that changed due to dependencies
-                self.sync_components_with_state()
+                if update_components:
+                    self.sync_components_with_state()
 
                 # Update the plot
-                if replot:
+                if update_plot:
                     self.update_plot()
 
     def sync_components_with_state(self, exclude: Optional[str] = None) -> None:

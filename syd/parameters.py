@@ -30,6 +30,12 @@ class Parameter(Generic[T], ABC, metaclass=ParameterMeta):
         The name of the parameter, used as a label in the GUI
     value : T
         The current value of the parameter
+    update_plot : bool, optional
+        Whether to update_plot the figure after the parameter is updated.
+        (default: True)
+    update_components : bool, optional
+        Whether to update the components of the parameter after the parameter is updated.
+        (default: True)
 
     Notes
     -----
@@ -39,6 +45,8 @@ class Parameter(Generic[T], ABC, metaclass=ParameterMeta):
 
     name: str
     value: T
+    update_plot: bool = True
+    update_components: bool = True
     _is_action: bool = False
 
     @abstractmethod
@@ -172,6 +180,12 @@ class TextParameter(Parameter[str]):
         The name of the parameter
     value : Union[str, NoInitialValue]
         The initial text value
+    update_plot : bool, optional
+        Whether to update_plot the figure after the parameter is updated.
+        (default: True)
+    update_components : bool, optional
+        Whether to update the components of the parameter after the parameter is updated.
+        (default: True)
 
     Examples
     --------
@@ -183,11 +197,23 @@ class TextParameter(Parameter[str]):
     'Bob'
     """
 
-    def __init__(self, name: str, value: Union[str, NoInitialValue]):
+    def __init__(
+        self,
+        name: str,
+        value: Union[str, NoInitialValue],
+        update_plot: bool = True,
+        update_components: bool = True,
+    ):
         self.name = name
         if isinstance(value, NoInitialValue):
             value = ""
         self._value = self._validate(value)
+        if update_components and not update_plot:
+            raise ValueError(
+                "If you want to update the components, you must also update_plot"
+            )
+        self.update_plot = update_plot
+        self.update_components = update_components
 
     def _validate(self, new_value: Any) -> str:
         """
@@ -1305,15 +1331,12 @@ class ButtonAction(Parameter[None]):
         Text to display on the button (default is the button's name)
     callback : callable
         Function to execute when the button is clicked
-    replot : bool, optional
-        Whether to replot the figure after the callback is called.
-        (default: True)
 
     Examples
     --------
     >>> def print_hello():
     ...     print("Hello!")
-    >>> button = ButtonAction("greeting", label="Say Hello", callback=print_hello, replot=False)
+    >>> button = ButtonAction("greeting", label="Say Hello", callback=print_hello, update_plot=False)
     >>> button.callback()  # Simulates clicking the button
     Hello!
     >>> # Update the button's label and callback
@@ -1328,12 +1351,10 @@ class ButtonAction(Parameter[None]):
     Unlike other Parameter types, ButtonAction:
     - Has no value (always None, therefore cannot be updated through the value property
     - Executes code directly rather than storing state
-    - Has an option to turn off replotting after the callback is called for cases where you want to access the last figure only.
     """
 
     label: str
     callback: Callable
-    replot: bool
     value: None = field(default=None, repr=False)
     _is_action: bool = field(default=True, repr=False)
 
@@ -1342,7 +1363,8 @@ class ButtonAction(Parameter[None]):
         name: str,
         label: Union[str, NoInitialValue],
         callback: Callable,
-        replot: bool = True,
+        update_plot: bool = True,
+        update_components: bool = True,
     ):
         """
         Initialize a button.
@@ -1355,8 +1377,11 @@ class ButtonAction(Parameter[None]):
             Text to display on the button (default is the button's name)
         callback : callable
             Function to execute when the button is clicked
-        replot : bool, optional
-            Whether to replot the figure after the callback is called.
+        update_plot : bool, optional
+            Whether to update_plot the figure after the callback is called.
+            (default: True)
+        update_components : bool, optional
+            Whether to update the components of the parameter after the callback is called.
             (default: True)
         """
         self.name = name
@@ -1364,7 +1389,8 @@ class ButtonAction(Parameter[None]):
             label = name
         self.label = label
         self.callback = callback
-        self.replot = replot
+        self.update_plot = update_plot
+        self.update_components = update_components
         self._value = None
 
     def _validate(self, new_value: Any) -> None:
@@ -1378,12 +1404,6 @@ class ButtonAction(Parameter[None]):
                 self.name,
                 type(self).__name__,
                 f"Callback {self.callback} is not callable",
-            )
-        if not isinstance(self.replot, bool):
-            raise ParameterUpdateError(
-                self.name,
-                type(self).__name__,
-                f"Replet must be a boolean, got {type(self.replot)}",
             )
         try:
             str(self.label)

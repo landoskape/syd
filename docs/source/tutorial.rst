@@ -335,13 +335,14 @@ Buttons are added using the :func:`~syd.viewer.add_button` method. This method h
 * ``name``: The name of the button.
 * ``label``: The label of the button.
 * ``callback``: The function to call when the button is clicked. (See the :ref:`callbacks` section for more details.)
-* ``replot``: Whether to replot the figure when the button is clicked.
+* ``update_plot``: Whether to update the plot when the button is clicked.
+* ``update_components``: Whether to update the components of the parameter when the button is clicked.
 
 You can also update buttons in a similar way to parameters (with the :func:`~syd.viewer.update_button` method).
 
 .. note::
 
-    Consider whether to set ``replot=False`` carefully! If you set it to ``False``, the figure will *not* be updated
+    Consider whether to set ``update_plot=False`` carefully! If you set it to ``False``, the figure will *not* be updated
     after you click the button... even if clicking the button causes changes to other parameters! The parameters will
     be changed, but the plot won't regenerate until you change a parameter.
 
@@ -382,7 +383,7 @@ details on how callbacks work. Note how we use the ``viewer.figure`` / ``self.fi
         viewer.add_float_range("ylimits", value=(-1.0, 1.0), min=-10, max=10)
         viewer.add_multiple_selection("labels", value=["x", "y", "title", "legend"], options=["x", "y", "title", "legend"])
         viewer.add_boolean("show_grid", value=True)
-        viewer.add_button("save_figure", label="Save Figure", callback=save_figure, replot=False)
+        viewer.add_button("save_figure", label="Save Figure", callback=save_figure, update_plot=False)
         
   .. tab:: Subclass-based
 
@@ -404,7 +405,7 @@ details on how callbacks work. Note how we use the ``viewer.figure`` / ``self.fi
                 self.add_float_range("ylimits", value=(-1.0, 1.0), min=-10, max=10)
                 self.add_multiple_selection("labels", value=["x", "y", "title", "legend"], options=["x", "y", "title", "legend"])
                 self.add_boolean("show_grid", value=True)
-                self.add_button("save_figure", label="Save Figure", callback=self.save_figure, replot=False)
+                self.add_button("save_figure", label="Save Figure", callback=self.save_figure, update_plot=False)
 
             def save_figure(self, state):
                 # Get the current figure
@@ -805,7 +806,7 @@ want to see them in action, you can check out the examples in a notebook or on c
         viewer.add_float_range("ylimits", value=(-1, 1), min=-10, max=10)
         viewer.add_multiple_selection("labels", value=["x", "y", "title", "legend"], options=["x", "y", "title", "legend"])
         viewer.add_boolean("show_grid", value=True)
-        viewer.add_button("save_figure", label="Save Figure", callback=save_figure, replot=False)
+        viewer.add_button("save_figure", label="Save Figure", callback=save_figure, update_plot=False)
 
         def plot(state):
             # Get the data based on the current state
@@ -929,7 +930,7 @@ want to see them in action, you can check out the examples in a notebook or on c
                 self.add_float_range("ylimits", value=(0, 10), min=-10, max=10)
                 self.add_multiple_selection("labels", value=["x", "y", "title", "legend"], options=["x", "y", "title", "legend"])
                 self.add_boolean("show_grid", value=True)
-                self.add_button("save_figure", label="Save Figure", callback=self.save_figure, replot=False)
+                self.add_button("save_figure", label="Save Figure", callback=self.save_figure, update_plot=False)
                 
                 # Add the callback to the viewer
                 self.on_change(["amplitude", "offset"], self.update_offset)

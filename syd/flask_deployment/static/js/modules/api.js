@@ -75,8 +75,10 @@ export function handleButtonClick(name) {
                 updateStatus(`Error processing ${name}`);
             } else {
                 // Update state with any changes from callbacks
-                updateStateFromServer(data.state, data.params);
-                if (data.replot) {
+                if (data.update_components) {
+                    updateStateFromServer(data.state, data.params);
+                }
+                if (data.update_plot) {
                     updatePlot();
                 }
                 updateStatus('Ready!');

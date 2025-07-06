@@ -952,7 +952,8 @@ class Viewer:
         *,
         label: Union[str, NoInitialValue] = NO_INITIAL_VALUE,
         callback: Callable[[], None],
-        replot: bool = True,
+        update_plot: bool = True,
+        update_components: bool = True,
     ) -> None:
         """
         Add a button parameter to the viewer.
@@ -970,8 +971,11 @@ class Viewer:
             If not provided, the parameter's label will be set to the name.
         callback : callable
             Function to call when the button is clicked (takes state as a single argument)
-        replot : bool, optional
-            Whether to replot the figure after the callback is called.
+        update_plot : bool, optional
+            Whether to update the plot after the callback is called.
+            (default: True)
+        update_components : bool, optional
+            Whether to update the components of the parameter after the callback is called.
             (default: True)
 
         Examples
@@ -979,11 +983,11 @@ class Viewer:
         >>> def save_figure(state):
         ...     print("Saving figure...")
         ...     viewer.figure.savefig('last_figure.png')
-        >>> viewer.add_button('save', label='Save Figure', callback=save_figure, replot=False)
+        >>> viewer.add_button('save', label='Save Figure', callback=save_figure, update_plot=False)
 
         >>> def print_plot_info(state):
         ...     print(f"Current plot info: {state['plot_info']}")
-        >>> viewer.add_button('print_info', label='Print Plot Info', callback=print_plot_info, replot=False)
+        >>> viewer.add_button('print_info', label='Print Plot Info', callback=print_plot_info, update_plot=False)
 
         >>> def reset_plot(state):
         ...     print("Resetting plot...")
@@ -994,8 +998,13 @@ class Viewer:
                 callback,
                 context="Setting button callback:",
             )
-
-            new_param = ActionType.button.value(name, label, callback, replot)
+            new_param = ActionType.button.value(
+                name,
+                label,
+                callback,
+                update_plot,
+                update_components,
+            )
         except Exception as e:
             raise ParameterAddError(name, "button", str(e)) from e
         else:
@@ -1417,7 +1426,6 @@ class Viewer:
         *,
         label: Union[str, NoUpdate] = NO_UPDATE,
         callback: Union[Callable[[], None], NoUpdate] = NO_UPDATE,
-        replot: Union[bool, NoUpdate] = NO_UPDATE,
     ) -> None:
         """
         Update a button parameter's label and/or callback function.
@@ -1433,9 +1441,6 @@ class Viewer:
             New text to display on the button (if not provided, no change)
         callback : Union[callable, NoUpdate], optional
             New function to call when clicked (if not provided, no change)
-        replot : Union[bool, NoUpdate], optional
-            Whether to replot the figure after the callback is called.
-            (default: True)
 
         Examples
         --------
@@ -1443,8 +1448,7 @@ class Viewer:
         ...     print("New action...")
         >>> viewer.update_button('reset',
         ...                     label='New Action!',
-        ...                     callback=new_callback,
-        ...                     replot=False)
+        ...                     callback=new_callback)
         """
         updates = {}
         if not label == NO_UPDATE:
@@ -1463,7 +1467,5 @@ class Viewer:
                 ) from e
             else:
                 updates["callback"] = callback
-        if not replot == NO_UPDATE:
-            updates["replot"] = replot
         if updates:
             self.parameters[name].update(updates)
