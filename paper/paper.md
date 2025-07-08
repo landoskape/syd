@@ -70,22 +70,21 @@ advisor or with their lab at different computers.
 # Why Syd? (State of the Field)
 There are many powerful packages in the python ecosystem for interactive data-visualization. So, why use Syd? 
 
-
 Syd is a minimalist package that helps turn any matplotlib plot into an interactive data visualization tool with a few lines of code and minimal cognitive load. It is not a general-purpose, sophisticated dashboard framework. Researchers who need more advanced functionality or want to learn a more unique plotting package should turn to other options. However, Syd offers the simplest and most straightforward tools for enabling fast-paced, on-the-fly exploratory data analysis.
 
-| Capability / Package                              |     **Syd**     |     **Panel**     | **Plotly** |      **Altair**     | **Streamlit** |
-| ------------------------------------------------- | :-------------: | :---------------: | :--------: | :-----------------: | :-----------: |
-| Interactive widgets<sup>①</sup>                  |        ✅        |         ✅         |      ✅     |          ✅          |       ❌       |
-| Runs *inside* Jupyter/IPython                     |        ✅        |         ✅         |      ✅     |          ✅          |       ❌       |
-| Boilerplate required for a simple GUI<sup>③</sup> |     **Tiny**    |       Low      |   Medium   |        Low       |      Low      |
-| Learning curve / cognitive load                   |     **Tiny**    |       Low      |   Medium   |        Medium       |      Low      |
-| Native **Matplotlib** support                     |        ✅        |         ✅         |      ❌     |          ❌          |       ✅       |
-| “Bring-your-own-plot function”<sup>②</sup>        | **First-class** |         ✅         |      ✅     | ⚠️ (Transform only) |       ✅       |
-| Separate web server needed                        |        ❌        | ✅ (Bokeh/Tornado) |      ❌     |          ❌          |       ✅       |
+| Capability / Package                  |     **Syd**     |    **Panel**    | **Plotly** |    **Altair**   | **Streamlit** |
+| ------------------------------------- | :-------------: | :-------------: | :--------: | :-------------: | :-----------: |
+| Interactive widgets (no full rerun)   |        Yes      |       Yes       |     Yes    |      Yes        |      No       |
+| Runs *inside* Jupyter/IPython         |        Yes      |       Yes       |     Yes    |      Yes        |      No       |
+| Boilerplate required for a simple GUI |     **Tiny**    |       Low       |   Medium   |      Low        |      Low      |
+| Learning curve / cognitive load       |     **Tiny**    |       Low       |   Medium   |      Medium     |      Low      |
+| Native **Matplotlib** support         |        Yes      |       Yes       |      No    |      No         |      Yes      |
+| “Bring-your-own-plot function”        | **First-class** |       Yes       |      Yes   |      Partly     |      Yes      |
+| Separate web server needed            |        No       |       Yes       |      No    |      No         |      Yes      |
 
-<sup>①</sup> Interactivity here means dynamically updating plots without re-running the entire Python cell.
-<sup>②</sup> Syd’s only abstraction is a state dict passed to your matplotlib function; nothing else to learn.
-<sup>③</sup> Syd's declarative style makes it's code footprint tiny. 
+#### Extra points
+- Syd’s only abstraction is a state dict passed to your matplotlib function; nothing else to learn.
+- Syd's declarative style makes it's code footprint tiny. 
 
 
 # Example Viewer
