@@ -331,3 +331,63 @@ conda environment, try that again with with a fresh install of syd in a clean ba
 
 .. note::
     If you have trouble and are able to successfully debug it - please tell us by opening an issue on the `github issues page <https://github.com/landoskape/syd/issues>`_.
+
+
+How do I make the plots in a Syd viewer interactive?
+----------------------------------------------------
+
+Syd is built on top of matplotlib, and matplotlib enables interactive plots within jupyter notebooks using the ``%matplotlib widget``
+magic command. So, if you are using a jupyter notebook, you can use the following:
+
+.. code-block:: python
+
+    %matplotlib widget
+
+    # ... then build your viewer as usual ...
+   
+This should work for any kind of plot in a notebook. Due to the way we handle the webbrowser view, it *won't work* in the ``viewer.share()`` mode. If this is something that you'd like, please let us know by opening an issue on the `github issues page <https://github.com/landoskape/syd/issues>`_.
+
+Note, updating axis limits with the ``%matplotlib widget`` method will not be persistent when you update any parameters. See the above FAQ for a better way to handle this titled "How do I change the axis limits of a plot and keep them there?".
+
+
+I want to use Seaborn in my Syd viewer, how do I do that?
+---------------------------------------------------------
+
+Just make a seaborn plot and return the ``figure`` object! Since Syd is built on top of matplotlib, any plotting package that is built on top of matplotlib will work. This includes seaborn!
+
+There are a few tricks that show up occasionally depending on the type of Seaborn plot you're making.
+
+Seaborn plots that allow / require you to set the ``ax`` object.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For seaborn plots that allow you to set the ``ax`` object, your job will be to make a ``fig, ax``, tell seaborn to use your desired ``ax``, and then return the ``fig`` object.
+
+.. code-block:: python
+
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    def plot(state):
+        fig, ax = plt.subplots()
+        sns.scatterplot(x=x, y=y, ax=ax)
+        return fig
+
+Seaborn plots that create a new figure.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For seaborn plots that create a new figure internally, you have to retrieve the figure object that it created and return that. For example, the ``jointplot`` function returns a ``JointGrid`` object, which you can then use to get the ``figure`` object. Each seaborn plot function is different, so you'll have to look up the correct way to get the figure object for the plot you're making.
+
+.. code-block:: python
+
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    def plot(state):
+        joint_grid = sns.jointplot(x=x, y=y)
+        fig = joint_grid._figure
+        return fig
+
+
+
+
+

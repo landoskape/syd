@@ -31,6 +31,18 @@ This section contains links to example notebooks that demonstrate how to use Syd
      - |colab4|
      - Demonstrates how to handle complicated callback situations with nested dependencies.
      - How to manage complex state dependencies and create cascading updates in your interactive visualizations.
+   * - `Interactive plots with Seaborn <https://github.com/landoskape/syd/blob/main/examples/5-interactive-with-seaborn.ipynb>`_
+     - |colab5|
+     - Demonstrates building interactive plots along with Seaborn.
+     - How to use Syd to build interactive plots and use Seaborn for fancy plotting.
+   * - `Histology Viewer <https://github.com/landoskape/syd/blob/main/examples/6-histology-viewer.ipynb>`_
+     - |colab6|
+     - Histology viewer with Syd
+     - How to use Syd to create a histology viewer for viewing histology slides on the fly.
+   * - `Image Labeler <https://github.com/landoskape/syd/blob/main/examples/7-image-labeler.ipynb>`_
+     - |colab7|
+     - Image labeler with Syd
+     - How to use Syd to create an image labeler for annotating images (like ROIs).
 
 .. |colab1| image:: https://colab.research.google.com/assets/colab-badge.svg
    :target: https://colab.research.google.com/github/landoskape/syd/blob/main/examples/1-simple_example.ipynb
@@ -46,3 +58,14 @@ This section contains links to example notebooks that demonstrate how to use Syd
 
 .. |colab4| image:: https://colab.research.google.com/assets/colab-badge.svg
    :target: https://colab.research.google.com/github/landoskape/syd/blob/main/examples/4-hierarchical_callbacks.ipynb
+
+.. |colab5| image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/github/landoskape/syd/blob/main/examples/5-interactive-with-seaborn.ipynb
+
+.. |colab6| image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/github/landoskape/syd/blob/main/examples/6-histology-viewer.ipynb
+
+.. |colab7| image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/github/landoskape/syd/blob/main/examples/7-image-labeler.ipynb
+
+
