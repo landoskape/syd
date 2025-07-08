@@ -29,7 +29,7 @@ pip install syd
 The full documentation is available [here](https://shareyourdata.readthedocs.io/). It includes a quick start guide, a comprehensive tutorial, and an API reference for the different elements of Syd. If you have any questions or want to suggest improvements to the docs, please let us know on the [github issues page](https://github.com/landoskape/syd/issues)!
 
 ## Quick Start
-This is an example of a sine wave viewer which is about as simple as it gets. You can choose which env to use - if you use ``env="notebook"`` then the GUI will deploy as the output of a jupyter cell (this only works in jupyter!). If you use ``env="browser"`` then the GUI will open a page in your default web browser and you can interact with the data there (works in jupyter notebooks and also from python scripts!).
+This is an example of a sine wave viewer which is about as simple as it gets. You can choose where you want to display the viewer. If you use ``viewer.show()`` then the GUI will deploy as the output of a jupyter cell (this only works in jupyter or colab!). If you use ``viewer.share()`` then the GUI will open a page in your default web browser and you can interact with the data there (works in jupyter notebooks and also from python scripts!).
 
 ```python
 import numpy as np
@@ -64,7 +64,9 @@ We have several examples of more complex viewers with detailed explanations in t
 | [Making a Viewer Class](examples/2b-subclass_example.ipynb) | Rewrites the comprehensive example as a class, which is useful when you have complex data processing or callbacks. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/2b-subclass_example.ipynb) |
 | [Data Loading](examples/3-data_loading.ipynb) | Showcases different ways to get your data into a Syd viewer. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/3-data_loading.ipynb) |
 | [Hierarchical Callbacks](examples/4-hierarchical_callbacks.ipynb) | Demonstrates how to handle complicated callback situations. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/4-hierarchical_callbacks.ipynb) |
-
+| [Interactive plots with Seaborn](examples/5-interactive-with-seaborn.ipynb) | Showcases how to use Syd with Seaborn. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/5-interactive-with-seaborn.ipynb) |
+| [Histology Viewer](examples/6-histology-viewer.ipynb) | Showcases how to use Syd to create a histology viewer for viewing histology slides on the fly. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/6-histology-viewer.ipynb) |
+| [Image Labeler](examples/7-image-labeler.ipynb) | Showcases how to use Syd to create an image labeler for annotating images (like ROIs). | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/landoskape/syd/blob/main/examples/7-image-labeler.ipynb) |
 
 ### Data loading
 Thinking about how to get data into a Syd viewer can be non-intuitive. For some examples that showcase different ways to get your data into a Syd viewer, check out the [data loading example](examples/3-data_loading.ipynb). Or, if you just want a quick and fast example, check this one out:
@@ -202,6 +204,7 @@ black . # from the root directory of the repo
 ```
 
 ## To-Do List
+This section doubles as a checklist for things I think could be useful and _a place to get feedback about what users think is useful_. If you think something in this is critical and should be prioritized, or if you think something is missing, please let me know by submitting an issue on the [github issues page](https://github.com/landoskape/syd/issues).
 - Layout controls
   - [ ] Add a "save" button that saves the current state of the viewer to a json file
   - [ ] Add a "load" button that loads the viewer state from a json file
