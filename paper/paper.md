@@ -67,8 +67,10 @@ advisor or with their lab at different computers.
 
 \pagebreak
 
-# Why Syd? (State of the Field)
-There are many powerful packages in the python ecosystem for interactive data-visualization. So, why use Syd? 
+# Why choose Syd?
+There are many powerful packages in the python ecosystem for interactive data-visualization. 
+
+So, why use Syd? 
 
 Syd is a minimalist package that helps turn any matplotlib plot into an interactive data visualization tool with a few lines of code and minimal cognitive load. It is not a general-purpose, sophisticated dashboard framework. Researchers who need more advanced functionality or want to learn a more unique plotting package should turn to other options. However, Syd offers the simplest and most straightforward tools for enabling fast-paced, on-the-fly exploratory data analysis.
 
@@ -81,10 +83,14 @@ Syd is a minimalist package that helps turn any matplotlib plot into an interact
 | Native **Matplotlib** support         |        Yes      |       Yes       |      No    |      No         |      Yes      |
 | “Bring-your-own-plot function”        | **First-class** |       Yes       |      Yes   |      Partly     |      Yes      |
 | Separate web server needed            |        No       |       Yes       |      No    |      No         |      Yes      |
+| Primarily for interactive plots       |       Yes       |       No        |      Yes   |      Yes        |      No       |
 
 #### Extra points
 - Syd’s only abstraction is a state dict passed to your matplotlib function; nothing else to learn.
 - Syd's declarative style makes it's code footprint tiny. 
+
+
+\pagebreak
 
 
 # Example Viewer
