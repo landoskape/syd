@@ -2,6 +2,7 @@
 _historical/
 _planning/
 local/
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
