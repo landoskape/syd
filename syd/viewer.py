@@ -209,7 +209,7 @@ class Viewer:
     def plot(self, state: Dict[str, Any]) -> Figure:
         """Create and return a matplotlib figure.
 
-        This is a placeholder. You must either:
+        Hello user! This is a placeholder that raises a NotImplementedError. You must either:
 
         1. Call set_plot() with your plotting function
         This will look like this:
@@ -249,7 +249,19 @@ class Viewer:
         )
 
     def set_plot(self, func: Callable) -> None:
-        """Set the plot method for the viewer"""
+        """Set the plot method for the viewer.
+
+        For viewers created with make_viewer(), this function is used to set the plot method.
+        The input must be a callable function that takes a state dictionary and returns a matplotlib figure.
+
+        Examples
+        --------
+        >>> def plot(state):
+        >>>     ... generate figure, plot stuff ...
+        >>>     return fig
+        >>> viewer = make_viewer()
+        >>> viewer.set_plot(plot)
+        """
         self.plot = self._prepare_function(func, context="Setting plot:")
 
     def show(
@@ -259,9 +271,25 @@ class Viewer:
         suppress_warnings: bool = True,
         update_threshold: float = 1.0,
     ):
-        """Show the viewer in a notebook
+        """
+        Show the viewer locally in a notebook.
 
-        Same as deploy(env="notebook") except it doesn't return the viewer object.
+        This method displays the viewer in a Jupyter notebook environment with interactive controls.
+
+        Parameters
+        ----------
+        controls_position : {'left', 'top', 'right', 'bottom'}, optional
+            Position of the controls relative to the plot (default is 'left').
+        controls_width_percent : int, optional
+            Width of the controls as a percentage of the total viewer width (default is 20).
+        suppress_warnings : bool, optional
+            If True, suppress warnings during deployment (default is True).
+        update_threshold : float, optional
+            Minimum time in seconds between updates to the viewer (default is 1.0).
+
+        Notes
+        -----
+        This method is equivalent to calling `deploy(env="notebook")` but does not return the viewer object.
         """
         _ = self.deploy(
             env="notebook",
@@ -285,9 +313,37 @@ class Viewer:
         update_threshold: float = 1.0,
         timeout_threshold: float = 10.0,
     ):
-        """Share the viewer on a web browser using Flask
+        """
+        Share the viewer on a web browser using Flask.
 
-        Same as deploy(env="browser") except it doesn't return the viewer object.
+        Parameters
+        ----------
+        controls_position : str, optional
+            Position of the controls relative to the plot (default is 'left').
+        fig_dpi : int, optional
+            Dots per inch for the figure resolution (default is 300).
+        controls_width_percent : int, optional
+            Width of the controls as a percentage of the total viewer width (default is 20).
+        plot_margin_percent : float, optional
+            Margin around the plot as a percentage of the plot size (default is 2.5).
+        suppress_warnings : bool, optional
+            If True, suppress warnings during deployment (default is True).
+        debug : bool, optional
+            If True, run the server in debug mode (default is False).
+        host : str, optional
+            Hostname to use for the server (default is None, which uses 'localhost').
+        port : int, optional
+            Port number to use for the server (default is None, which selects the first available port).
+        open_browser : bool, optional
+            If True, automatically open the web browser to the viewer (default is True).
+        update_threshold : float, optional
+            Minimum time in seconds between updates to the viewer (default is 1.0).
+        timeout_threshold : float, optional
+            Maximum time in seconds to wait for a response before timing out (default is 10.0).
+
+        Notes
+        -----
+        This method is equivalent to calling `deploy(env="browser")` but does not return the viewer object.
         """
         _ = self.deploy(
             env="browser",

@@ -78,8 +78,8 @@ and a dropdown menu.
 
 You can view your GUI ("deploy" in Syd lingo) in a jupyter notebook or on a web-browser. There's
 two commands you can use for each environment, :func:`~syd.viewer.Viewer.show` and 
-:func:`~syd.viewer.Viewer.share` for notebook and browsers, respectively. Use the toggle in the
-top-right corner of the page to see what it looks like in each environment. 
+:func:`~syd.viewer.Viewer.share` for notebook and browsers, respectively. Use the tabs below to
+see what it looks like in each environment. 
 
 .. tabs::
   
@@ -98,6 +98,13 @@ top-right corner of the page to see what it looks like in each environment.
     .. code-block:: python
 
       viewer.share() # for viewing in a web browser
+
+      # If you want to set the port manually, you can add the kwarg!
+      # for example:
+      # viewer.share(port=8080)
+      # Otherwise, it'll select the first available port automatically.
+
+      # (There's other customization settings you can add, see the docs for more details)
 
     .. image:: ../assets/viewer_screenshots/1-simple_example_browser.png
         :alt: Quick Start Example
