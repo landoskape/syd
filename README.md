@@ -5,6 +5,7 @@
 [![Documentation Status](https://readthedocs.org/projects/shareyourdata/badge/?version=stable)](https://shareyourdata.readthedocs.io/en/stable/?badge=stable)
 [![codecov](https://codecov.io/gh/landoskape/syd/branch/main/graph/badge.svg)](https://codecov.io/gh/landoskape/syd)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.08447/status.svg)](https://doi.org/10.21105/joss.08447)
 
 
 <div>
@@ -203,16 +204,8 @@ pip install black
 black . # from the root directory of the repo
 ```
 
-## To-Do List
-This section doubles as a checklist for things I think could be useful and _a place to get feedback about what users think is useful_. If you think something in this is critical and should be prioritized, or if you think something is missing, please let me know by submitting an issue on the [github issues page](https://github.com/landoskape/syd/issues).
-- Layout controls
-  - [ ] Add a "save" button that saves the current state of the viewer to a json file
-  - [ ] Add a "load" button that loads the viewer state from a json file
-  - [ ] Add a "freeze" button that allows the user to update state variables without updating the plot until unfreezing
-  - [ ] Add a window for capturing any error messages that might be thrown by the plot function. Maybe we could have a little interface for looking at each one (up to a point) and the user could press a button to throw an error for the traceback. 
-- [ ] Consider "app_deployed" context for each deployer...
-- Export options:
-  - [ ] Export lite: export the viewer as a HTML/Java package that contains an incomplete set of renderings of figures -- using a certain set of parameters.
-  - [ ] Export full: export the viewer in a way that contains the data to give full functionality.
-- [ ] Idea for sharing: https://github.com/analyticalmonk/awesome-neuroscience, https://github.com/fasouto/awesome-dataviz
-- [ ] The handling of value in Selection parameters is kind of weird.... I think we need to think more about what to do for fails!!!!
+## Citing this package
+If you use this package, let us know! It's made to help the community so we're happy to hear about how this has helped (or any suggestions!). 
+If you publish anything that depended on Syd, we'd appreciate if you cite the JOSS paper:
+
+Landau, A., (2025). Syd: A package for making interactive data visualizations in python. Journal of Open Source Software, 10(112), 8447, https://doi.org/10.21105/joss.08447
