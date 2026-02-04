@@ -2,7 +2,6 @@ import pytest
 from syd.parameters import ParameterType, TextParameter
 from syd.viewer import Viewer, validate_parameter_operation
 
-
 with pytest.raises(ValueError):
 
     class TestViewer(Viewer):
