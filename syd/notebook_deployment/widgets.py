@@ -20,6 +20,8 @@ from ..parameters import (
 T = TypeVar("T", bound=Parameter[Any])
 W = TypeVar("W", bound=widgets.Widget)
 
+_NONE_SENTINEL = "__None__"
+
 
 class BaseWidget(Generic[T, W], ABC):
     """
@@ -158,6 +160,18 @@ class BooleanWidget(BaseWidget[BooleanParameter, widgets.ToggleButton]):
 class SelectionWidget(BaseWidget[SelectionParameter, widgets.Dropdown]):
     """Widget for single selection parameters."""
 
+    @staticmethod
+    def _encode_options(options: List[Any]) -> List[Any]:
+        return [_NONE_SENTINEL if o is None else o for o in options]
+
+    @staticmethod
+    def _encode_value(value: Any) -> Any:
+        return _NONE_SENTINEL if value is None else value
+
+    @staticmethod
+    def _decode_value(value: Any) -> Any:
+        return None if value == _NONE_SENTINEL else value
+
     def _create_widget(
         self,
         parameter: SelectionParameter,
@@ -166,22 +180,31 @@ class SelectionWidget(BaseWidget[SelectionParameter, widgets.Dropdown]):
         description_width: str = "initial",
     ) -> widgets.Dropdown:
         return widgets.Dropdown(
-            value=parameter.value,
-            options=parameter.options,
+            value=self._encode_value(parameter.value),
+            options=self._encode_options(parameter.options),
             description=parameter.name,
             layout=widgets.Layout(width=width, margin=margin),
             style={"description_width": description_width},
         )
 
+    @property
+    def value(self) -> Any:
+        return self._decode_value(self._widget.value)
+
+    @value.setter
+    def value(self, new_value: Any) -> None:
+        self._widget.value = self._encode_value(new_value)
+
     def matches_parameter(self, parameter: SelectionParameter) -> bool:
         """Check if the widget matches the parameter."""
         return (
-            self.value == parameter.value and self._widget.options == parameter.options
+            self.value == parameter.value
+            and self._widget.options == tuple(self._encode_options(parameter.options))
         )
 
     def extra_updates_from_parameter(self, parameter: SelectionParameter) -> None:
         """Extra updates from the parameter."""
-        new_options = parameter.options
+        new_options = self._encode_options(parameter.options)
         current_value = self._widget.value
         new_value = current_value if current_value in new_options else new_options[0]
         self._widget.options = new_options
@@ -193,6 +216,18 @@ class MultipleSelectionWidget(
 ):
     """Widget for multiple selection parameters."""
 
+    @staticmethod
+    def _encode_options(options: List[Any]) -> List[Any]:
+        return [_NONE_SENTINEL if o is None else o for o in options]
+
+    @staticmethod
+    def _encode_value(value: Any) -> Any:
+        return _NONE_SENTINEL if value is None else value
+
+    @staticmethod
+    def _decode_value(value: Any) -> Any:
+        return None if value == _NONE_SENTINEL else value
+
     def _create_widget(
         self,
         parameter: MultipleSelectionParameter,
@@ -200,26 +235,37 @@ class MultipleSelectionWidget(
         margin: str = "3px 0px",
         description_width: str = "initial",
     ) -> widgets.SelectMultiple:
+        encoded_options = self._encode_options(parameter.options)
+        encoded_value = tuple(self._encode_value(v) for v in parameter.value)
         return widgets.SelectMultiple(
-            value=parameter.value,
-            options=parameter.options,
+            value=encoded_value,
+            options=encoded_options,
             description=parameter.name,
             rows=min(len(parameter.options), 4),
             layout=widgets.Layout(width=width, margin=margin),
             style={"description_width": description_width},
         )
 
+    @property
+    def value(self) -> Any:
+        return tuple(self._decode_value(v) for v in self._widget.value)
+
+    @value.setter
+    def value(self, new_value: Any) -> None:
+        self._widget.value = tuple(self._encode_value(v) for v in new_value)
+
     def matches_parameter(self, parameter: MultipleSelectionParameter) -> bool:
         """Check if the widget matches the parameter."""
         return (
-            self.value == parameter.value and self._widget.options == parameter.options
+            self.value == tuple(parameter.value)
+            and self._widget.options == tuple(self._encode_options(parameter.options))
         )
 
     def extra_updates_from_parameter(
         self, parameter: MultipleSelectionParameter
     ) -> None:
         """Extra updates from the parameter."""
-        new_options = parameter.options
+        new_options = self._encode_options(parameter.options)
         current_values = set(self._widget.value)
         new_values = [v for v in current_values if v in new_options]
         self._widget.options = new_options

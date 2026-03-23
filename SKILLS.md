@@ -17,7 +17,7 @@ Syd creates interactive matplotlib GUIs from plotting functions. Convert functio
 
 **State:** Plot functions receive `state: Dict[str, Any]` with current parameter values. Access via `state["param_name"]` or `viewer.state`.
 
-**Lifecycle:** Add parameters BEFORE deployment (`add_*`), update AFTER deployment (`update_*`).
+**Lifecycle:** Add parameters before deployment (`add_*`). Use `update_*` anytime to change parameter values or properties.
 
 ## Basic Example
 
@@ -160,7 +160,7 @@ viewer.deploy(env="notebook")  # or "browser"
 | `update_unbounded_float(name, value=..., step=...)` | `value`, `step` |
 | `update_button(name, label=..., callback=..., replot=...)` | `label`, `callback`, `replot` |
 
-**Updates:** Only work AFTER deployment. Omit parameters to update only specific fields.
+**Updates:** Omit parameters to update only specific fields (e.g. value, min, max).
 
 ## Common Patterns
 
@@ -186,7 +186,6 @@ viewer.figure  # Returns matplotlib Figure or None
 
 **Lifecycle restrictions:**
 - Cannot add parameters while deployed (raises `RuntimeError`)
-- Cannot update parameters before deployment (raises `ParameterUpdateError`)
 - Cannot update non-existent parameters (raises `ParameterUpdateError`)
 - Cannot register `on_change()` for non-existent parameters (raises `ValueError`)
 

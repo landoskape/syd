@@ -53,8 +53,7 @@ def validate_parameter_operation(
     1. The operation type matches the method name (add/update)
     2. The parameter type matches the method's intended parameter type
     3. Parameters can only be added when the app is not deployed
-    4. Parameters can only be updated when the app is deployed
-    5. For updates, validates that the parameter exists and is of the correct type
+    4. For updates, validates that the parameter exists and is of the correct type
 
     Args:
         operation (str): The type of operation to validate. Must be either 'add' or 'update'.
@@ -66,7 +65,7 @@ def validate_parameter_operation(
     Raises:
         ValueError: If the operation type doesn't match the method name or if updating a non-existent parameter
         TypeError: If updating a parameter with an incorrect type
-        RuntimeError: If adding parameters while deployed or updating while not deployed
+        RuntimeError: If adding parameters while deployed
 
     Example:
         @validate_parameter_operation('add', ParameterType.text)
