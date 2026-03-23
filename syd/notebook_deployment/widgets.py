@@ -197,9 +197,8 @@ class SelectionWidget(BaseWidget[SelectionParameter, widgets.Dropdown]):
 
     def matches_parameter(self, parameter: SelectionParameter) -> bool:
         """Check if the widget matches the parameter."""
-        return (
-            self.value == parameter.value
-            and self._widget.options == tuple(self._encode_options(parameter.options))
+        return self.value == parameter.value and self._widget.options == tuple(
+            self._encode_options(parameter.options)
         )
 
     def extra_updates_from_parameter(self, parameter: SelectionParameter) -> None:
@@ -256,9 +255,8 @@ class MultipleSelectionWidget(
 
     def matches_parameter(self, parameter: MultipleSelectionParameter) -> bool:
         """Check if the widget matches the parameter."""
-        return (
-            self.value == tuple(parameter.value)
-            and self._widget.options == tuple(self._encode_options(parameter.options))
+        return self.value == tuple(parameter.value) and self._widget.options == tuple(
+            self._encode_options(parameter.options)
         )
 
     def extra_updates_from_parameter(
