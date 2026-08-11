@@ -1,6 +1,7 @@
 from typing import Literal, Optional
 import warnings
 from contextlib import contextmanager
+from io import BytesIO
 import ipywidgets as widgets
 from IPython.display import display
 import matplotlib as mpl
@@ -130,7 +131,13 @@ class NotebookDeployer:
     def build_layout(self) -> None:
         """Create the main layout combining controls and plot."""
 
+        # Inline figures are rendered into one persistent Image widget. Unlike an
+        # Output widget, replacing Image.value cannot accumulate display records.
+        self.plot_image = widgets.Image(format="png")
         self.plot_output = widgets.Output()
+        plot_widget = (
+            self.plot_image if self.backend_type == "inline" else self.plot_output
+        )
         self.loading_indicator = widgets.HTML(
             value="",
             layout=widgets.Layout(height="28px"),
@@ -209,7 +216,7 @@ class NotebookDeployer:
 
         # Create plot container
         self.plot_container = widgets.VBox(
-            [self.loading_indicator, self.plot_output],
+            [self.loading_indicator, plot_widget],
             layout=widgets.Layout(
                 width=(
                     f"{100 - self.controls_width_percent}%"
@@ -302,25 +309,27 @@ class NotebookDeployer:
         if self._last_figure is not None:
             plt.close(self._last_figure)
 
-        self.plot_output.clear_output(wait=True)
-        with self.plot_output:
-            if self.backend_type == "inline":
-                display(figure)
-
-                # Also required to make sure a second figure window isn't opened
+        if self.backend_type == "inline":
+            image_buffer = BytesIO()
+            try:
+                figure.savefig(image_buffer, format="png", bbox_inches="tight")
+                self.plot_image.value = image_buffer.getvalue()
+            finally:
                 plt.close(figure)
 
-            elif self.backend_type == "widget":
-                display(figure.canvas)
-
-            else:
-                display(figure)
-                plt.close(figure)
-                print(
-                    f"Backend type: ({self.backend_type}) is not explicitly supported."
-                    "If you encounter weird behavior, try restarting with '%matplotlib inline' or '%matplotlib widget'."
-                    "And please report this issue on github please :)."
-                )
+        else:
+            self.plot_output.clear_output(wait=True)
+            with self.plot_output:
+                if self.backend_type == "widget":
+                    display(figure.canvas)
+                else:
+                    display(figure)
+                    plt.close(figure)
+                    print(
+                        f"Backend type: ({self.backend_type}) is not explicitly supported."
+                        "If you encounter weird behavior, try restarting with '%matplotlib inline' or '%matplotlib widget'."
+                        "And please report this issue on github please :)."
+                    )
 
         self._last_figure = figure
 
