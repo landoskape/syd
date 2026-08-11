@@ -1,6 +1,5 @@
 from typing import Literal, Optional
 import warnings
-import threading
 from contextlib import contextmanager
 import ipywidgets as widgets
 from IPython.display import display
@@ -57,51 +56,59 @@ class NotebookDeployer:
                 "The behavior of the viewer will almost definitely not work as expected!"
             )
         self._last_figure = None
-        self._update_event = threading.Event()
         self.update_threshold = update_threshold
-        self._slow_loading_figure = None
-        self._display_lock = threading.Lock()  # Lock for synchronizing display updates
 
-    def _show_slow_loading(self):
-        if self.backend_type == "inline":
-            if not self._update_event.wait(self.update_threshold):
-                if self._slow_loading_figure is None:
-                    fig = plt.figure()
-                    ax = fig.add_subplot(111)
-                    ax.text(
-                        0.5,
-                        0.5,
-                        "waiting for next figure...",
-                        ha="center",
-                        va="center",
-                        fontsize=12,
-                        weight="bold",
-                        color="black",
-                    )
-                    ax.axis("off")
-                    self._slow_loading_figure = fig
-                if not self._showing_new_figure:
-                    self._display_figure(self._slow_loading_figure, store_figure=False)
-                    self._showing_slow_loading_figure = True
+    def _show_loading_indicator(self) -> None:
+        """Start a browser-side spinner without replacing the current plot."""
+        delay = max(0.0, float(self.update_threshold))
+        self.loading_indicator.value = f"""
+        <style>
+            @keyframes syd-spinner-rotate {{
+                to {{ transform: rotate(360deg); }}
+            }}
+            @keyframes syd-spinner-reveal {{
+                to {{ opacity: 1; }}
+            }}
+            .syd-loading-indicator {{
+                align-items: center;
+                animation: syd-spinner-reveal 0s linear {delay}s forwards;
+                color: #555;
+                display: flex;
+                font-size: 13px;
+                gap: 8px;
+                opacity: 0;
+            }}
+            .syd-loading-spinner {{
+                animation: syd-spinner-rotate 0.8s linear infinite;
+                border: 3px solid #d9d9d9;
+                border-radius: 50%;
+                border-top-color: #3b82f6;
+                box-sizing: border-box;
+                height: 18px;
+                width: 18px;
+            }}
+        </style>
+        <div class="syd-loading-indicator" role="status" aria-live="polite">
+            <span class="syd-loading-spinner" aria-hidden="true"></span>
+            <span>Updating plot…</span>
+        </div>
+        """
+
+    def _hide_loading_indicator(self) -> None:
+        """Remove the spinner, including a reveal that has not fired yet."""
+        self.loading_indicator.value = ""
 
     @contextmanager
-    def _perform_update(self):
+    def _perform_update(self, show_loading: bool = True):
         self._updating = True
-        self._showing_new_figure = False
-        self._showing_slow_loading_figure = False
-        self._update_event.clear()
-
-        thread = threading.Thread(target=self._show_slow_loading, daemon=True)
-        thread.start()
+        if show_loading:
+            self._show_loading_indicator()
 
         try:
             yield
         finally:
             self._updating = False
-            self._update_event.set()
-            thread.join()
-            if self._showing_slow_loading_figure:
-                self._display_figure(self._last_figure)
+            self._hide_loading_indicator()
             self._update_status("Ready!")
 
     def deploy(self) -> None:
@@ -124,6 +131,10 @@ class NotebookDeployer:
         """Create the main layout combining controls and plot."""
 
         self.plot_output = widgets.Output()
+        self.loading_indicator = widgets.HTML(
+            value="",
+            layout=widgets.Layout(height="28px"),
+        )
 
         # Controls width slider for horizontal layouts
         self.controls = {}
@@ -146,7 +157,7 @@ class NotebookDeployer:
                 value=self.update_threshold,
                 min=0.1,
                 max=10.0,
-                description="Update Threshold",
+                description="Loading Delay",
                 layout=widgets.Layout(width="95%"),
                 style={"description_width": "initial"},
             )
@@ -198,7 +209,7 @@ class NotebookDeployer:
 
         # Create plot container
         self.plot_container = widgets.VBox(
-            [self.plot_output],
+            [self.loading_indicator, self.plot_output],
             layout=widgets.Layout(
                 width=(
                     f"{100 - self.controls_width_percent}%"
@@ -231,7 +242,13 @@ class NotebookDeployer:
             )
             return
 
-        with self._perform_update():
+        component = self.components[name]
+        if component.is_action:
+            will_replot = self.viewer.parameters[name].replot
+        else:
+            will_replot = True
+
+        with self._perform_update(show_loading=will_replot):
             self._update_status(f"Updating {name}")
             # Optionally suppress warnings during parameter updates
             with warnings.catch_warnings():
@@ -239,7 +256,6 @@ class NotebookDeployer:
                     warnings.filterwarnings("ignore", category=ParameterUpdateWarning)
 
                 # Get the component
-                component = self.components[name]
                 if component.is_action:
                     # If the component is an action, call the callback
                     parameter = self.viewer.parameters[name]
@@ -280,36 +296,33 @@ class NotebookDeployer:
 
         self._display_figure(figure)
 
-        self._showing_new_figure = True
+    def _display_figure(self, figure: plt.Figure) -> None:
+        # Closing the Python figure does not remove its already-rendered notebook
+        # output, so the previous plot remains visible until the replacement arrives.
+        if self._last_figure is not None:
+            plt.close(self._last_figure)
 
-    def _display_figure(self, figure: plt.Figure, store_figure: bool = True) -> None:
-        with self._display_lock:
-            # Close the last figure if it exists to keep matplotlib clean
-            if self._last_figure is not None:
-                plt.close(self._last_figure)
+        self.plot_output.clear_output(wait=True)
+        with self.plot_output:
+            if self.backend_type == "inline":
+                display(figure)
 
-            self.plot_output.clear_output(wait=True)
-            with self.plot_output:
-                if self.backend_type == "inline":
-                    display(figure)
+                # Also required to make sure a second figure window isn't opened
+                plt.close(figure)
 
-                    # Also required to make sure a second figure window isn't opened
-                    plt.close(figure)
+            elif self.backend_type == "widget":
+                display(figure.canvas)
 
-                elif self.backend_type == "widget":
-                    display(figure.canvas)
+            else:
+                display(figure)
+                plt.close(figure)
+                print(
+                    f"Backend type: ({self.backend_type}) is not explicitly supported."
+                    "If you encounter weird behavior, try restarting with '%matplotlib inline' or '%matplotlib widget'."
+                    "And please report this issue on github please :)."
+                )
 
-                else:
-                    display(figure)
-                    plt.close(figure)
-                    print(
-                        f"Backend type: ({self.backend_type}) is not explicitly supported."
-                        "If you encounter weird behavior, try restarting with '%matplotlib inline' or '%matplotlib widget'."
-                        "And please report this issue on github please :)."
-                    )
-
-            if store_figure:
-                self._last_figure = figure
+        self._last_figure = figure
 
     def _handle_container_width_change(self, _) -> None:
         """Handle changes to container width proportions."""

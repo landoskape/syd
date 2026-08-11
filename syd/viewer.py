@@ -284,7 +284,8 @@ class Viewer:
         suppress_warnings : bool, optional
             If True, suppress warnings during deployment (default is True).
         update_threshold : float, optional
-            Minimum time in seconds between updates to the viewer (default is 1.0).
+            Time in seconds to wait before showing the loading indicator
+            (default is 1.0).
 
         Notes
         -----
@@ -336,7 +337,8 @@ class Viewer:
         open_browser : bool, optional
             If True, automatically open the web browser to the viewer (default is True).
         update_threshold : float, optional
-            Minimum time in seconds between updates to the viewer (default is 1.0).
+            Time in seconds to wait before showing the loading indicator
+            (default is 1.0).
         timeout_threshold : float, optional
             Maximum time in seconds to wait for a response before timing out (default is 10.0).
 
