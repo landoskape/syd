@@ -1,4 +1,4 @@
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 from .viewer import make_viewer, Viewer
 from .support import show_open_servers, close_servers

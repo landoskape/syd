@@ -133,7 +133,10 @@ class NotebookDeployer:
 
         # Inline figures are rendered into one persistent Image widget. Unlike an
         # Output widget, replacing Image.value cannot accumulate display records.
-        self.plot_image = widgets.Image(format="png")
+        self.plot_image = widgets.Image(
+            format="png",
+            layout=widgets.Layout(align_self="flex-start", max_width="100%"),
+        )
         self.plot_output = widgets.Output()
         plot_widget = (
             self.plot_image if self.backend_type == "inline" else self.plot_output
@@ -311,9 +314,21 @@ class NotebookDeployer:
 
         if self.backend_type == "inline":
             image_buffer = BytesIO()
+            render_dpi = figure.dpi * 2
             try:
-                figure.savefig(image_buffer, format="png", bbox_inches="tight")
-                self.plot_image.value = image_buffer.getvalue()
+                figure.savefig(
+                    image_buffer,
+                    format="png",
+                    bbox_inches="tight",
+                    dpi=render_dpi,
+                )
+                image_data = image_buffer.getvalue()
+                # PNG stores its pixel width in bytes 16:20. Rendering at 2x and
+                # displaying at half that width matches IPython's Retina formatter,
+                # including the dimensions produced by bbox_inches="tight".
+                pixel_width = int.from_bytes(image_data[16:20], byteorder="big")
+                self.plot_image.value = image_data
+                self.plot_image.layout.width = f"{pixel_width / 2:g}px"
             finally:
                 plt.close(figure)
 
